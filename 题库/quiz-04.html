@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 4 章题库 · Pandas 表格数据</title>
+</head>
+<body>
+<script>
+window.QUIZ_TITLE = "第 4 章题库 · Pandas 表格数据";
+window.QUIZ_SUB = "10 题。做完讲义与官方 Getting started 前 6 篇再来。";
+window.QUESTIONS = [
+  {
+    "section": "一 · 两个主角",
+    "type": "choice",
+    "q": "Series 和 DataFrame 的关系是?",
+    "options": [
+      "Series 是旧版本的表格结构,DataFrame 是它的升级替代品",
+      "DataFrame 是一整张表;Series 是其中带标签的一列(或一行)",
+      "Series 只能存数值,DataFrame 才能同时存数值和文本",
+      "Series 存一行数据,DataFrame 存多行,两者是记录与表的关系"
+    ],
+    "answer": 1,
+    "explain": "DataFrame 可以理解成「多个 Series 按列拼起来的表」,取一列 df[\"Age\"] 得到的就是 Series。理解这层关系,很多 API 的行为(为什么某些操作返回 Series)就顺了。"
+  },
+  {
+    "type": "predict",
+    "q": "df 有 891 行。执行 print(df[\"Age\"].isna().sum()) 输出 177。这说明什么?",
+    "options": [
+      "Age 列有 177 个不同的值",
+      "Age 列有 177 行数据",
+      "Age 列有 177 个缺失值",
+      "Age 列的总和是 177"
+    ],
+    "answer": 2,
+    "explain": "isna() 把每个格子变成 True/False(是否缺失),sum() 把 True 当 1 相加,所以是缺失个数 177。这是数据体检最常用的一行(项目 P1 第 2 步)。"
+  },
+  {
+    "section": "二 · 选取与筛选",
+    "type": "choice",
+    "q": "loc 和 iloc 的区别是?",
+    "options": [
+      "loc 返回副本,iloc 返回视图,区别在于会不会影响原表",
+      "loc 用于取行,iloc 用于取列,分工不同",
+      "loc 是新版写法,iloc 是旧版写法,建议统一用 loc",
+      "loc 按「标签名」取,iloc 按「整数位置」取"
+    ],
+    "answer": 3,
+    "explain": "df.loc[3, \"Age\"] 是按标签(索引值 3、列名 Age);df.iloc[3, 5] 是按位置(第 4 行第 6 列)。索引恰好是 0,1,2… 时两者看着像,一旦索引被筛选打乱就完全不同——这是最常见的困惑源。"
+  },
+  {
+    "type": "debug",
+    "q": "想筛出年龄大于 30 且是女性的乘客,下面哪种写法是对的?",
+    "options": [
+      "df[(df.Age > 30) & (df.Sex == \"female\")]",
+      "df[df.Age > 30 and df.Sex == \"female\"]",
+      "df[df.Age > 30 & df.Sex == \"female\"]",
+      "df.filter(Age > 30, Sex == \"female\")"
+    ],
+    "answer": 0,
+    "explain": "Pandas 用 &(与)、|(或),且每个条件必须用括号包起来(因为 & 的运算优先级比比较运算符高)。用 Python 的 and 会报「truth value is ambiguous」,因为它无法对一整列布尔值求单一真假。"
+  },
+  {
+    "type": "judge",
+    "q": "判断:df.dropna() 默认返回一个新对象,原来的 df 并不会被改变。",
+    "options": [
+      "对",
+      "错"
+    ],
+    "answer": 0,
+    "explain": "对。大多数 Pandas 方法都返回新对象,要生效得写 df = df.dropna()。这个默认行为很安全,但也常让人以为「代码跑了没效果」。"
+  },
+  {
+    "section": "三 · 清洗与聚合",
+    "type": "predict",
+    "q": "df.groupby(\"Sex\")[\"Survived\"].mean() 返回什么?",
+    "options": [
+      "每种性别的存活人数(整数计数)",
+      "每种性别的存活率(0~1 的比例)",
+      "所有人的平均存活率(只有一个数)",
+      "按性别分组后重新排序的整张表"
+    ],
+    "answer": 1,
+    "explain": "Survived 存的是 0/1,取平均就等于「1 的比例」= 存活率。这是 0/1 编码的一个好用性质。groupby 的套路是:先分堆 → 再对每堆算统计。"
+  },
+  {
+    "type": "choice",
+    "q": "一列本该是数字,却被读成了文本(不能算均值),最可能的原因和修法是?",
+    "options": [
+      "Pandas 版本过旧导致类型推断失败,升级到最新版后重新读取即可自动识别为数值",
+      "该列的数值超出了 int64 的表示范围,读取时指定 dtype=\"float64\" 就能正常解析",
+      "列里混了非数字(如 N/A、千分位逗号),用 pd.to_numeric 转,转不动的变 NaN",
+      "读取时没有声明列类型,只要在 read_csv 里加上 dtype=float 就能强制转换成功"
+    ],
+    "answer": 2,
+    "explain": "整列只要有一个非数字,Pandas 就会把整列判成 object(文本)。errors=\"coerce\" 会把转不了的变成 NaN,再按缺失值处理(D06)。这是真实数据里最高频的类型问题。 完整写法是 pd.to_numeric(df[\"col\"], errors=\"coerce\"),errors=\"coerce\" 就是「转不动的别报错,变成 NaN」。"
+  },
+  {
+    "type": "shape",
+    "q": "df 形状 (891, 12)。执行 df2 = df[[\"Age\", \"Fare\"]] 之后,df2.shape 是?",
+    "options": [
+      "(2, 891)",
+      "(891, 12)",
+      "(2, 2)",
+      "(891, 2)"
+    ],
+    "answer": 3,
+    "explain": "用列名列表选多列,行数不变、列数变成 2。注意双层方括号:df[\"Age\"] 返回 Series(一维),df[[\"Age\"]] 返回 DataFrame(二维)——这个区别在传给 sklearn 时很关键。"
+  },
+  {
+    "type": "short",
+    "q": "简答:为什么课程把 Pandas 排在所有模型课之前?",
+    "model": "因为真实数据几乎都是脏的表格,而「垃圾进垃圾出」——模型的上限由数据质量决定(D06)。不会清洗数据,后面的模型课只能在玩具数据上打转;而且数据体检是每个项目的第一步(P1)。"
+  },
+  {
+    "type": "scene",
+    "q": "场景:拿到一份新的销售 CSV,要在五分钟内判断它能不能用。该依次做哪几件事?",
+    "model": "①df.head() 看前几行真实数据(检查列是否错位、有无表头混入);②df.shape 看规模;③df.dtypes 看类型是否合理(该数字的列是不是被读成文本);④df.isna().sum() 看缺失分布;⑤df.describe() 看数值范围有无离谱值;⑥对关键类别列做 value_counts() 看取值是否统一(如「北京/北京市」)。这正是项目 P1 的六步体检。"
+  }
+];
+</script>
+<script src="../assets/quiz-engine.js"></script>
+</body>
+</html>

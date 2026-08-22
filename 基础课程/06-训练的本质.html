@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>06 · 训练的本质:损失与梯度下降</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+.crv{fill:none;stroke:var(--acc);stroke-width:2;} .crv-ink{fill:none;stroke:var(--ink);stroke-width:1.6;}
+.ax{stroke:var(--ink-faint);stroke-width:1;}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="05-机器学习核心概念.html">05 机器学习核心</a><span class="sep">—</span>
+      <a href="06-训练的本质.html" class="current">06 训练的本质</a><span class="sep">—</span>
+      <a href="07-神经网络入门.html">07 神经网络入门</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-06.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">基础课程 · Chapter 06</p>
+        <h1>训练的本质:损失与梯度下降</h1>
+        <p class="recap">上一章说模型能「从数据里学」,但一直没讲怎么学。这一章钻进这个黑箱:模型先用一个数(<b>损失</b>)量出自己错得多离谱,再顺着「下坡」方向一小步一小步地调,把这个数降到最低——这套调法叫<b>梯度下降</b>。搞懂它,「训练」就从黑话变成一个能画出来的过程。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,外部精读 + 动手约 3~5 小时。全程只用到「差多少」和「坡度往哪」这种直觉,不推公式。每出现一个新词,当场用白话解释。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>损失函数——用一个数量出「预测和答案差多少」,越小越好</li>
+          <li>梯度下降——顺着坡往下走,一步步把损失降到最低(下山)</li>
+          <li>学习率——每一步迈多大;太大跳过谷底,太小走到天黑</li>
+          <li>迭代与 epoch——反复走很多步,看完一遍数据算一个 epoch</li>
+          <li>训练循环——预测 → 算损失 → 算坡度 → 调参数 → 重复</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接上一章:</b>第 5 章讲了「学好了」长什么样(泛化)。<b>通向下一章:</b><a href="07-神经网络入门.html">第 7 章 神经网络</a>里,成千上万个参数就是靠本章的梯度下降来调的——反向传播只是「高效地算出每个参数的坡度」。本章是理解神经网络怎么学的地基。</p>
+      </div>
+
+      <!-- ========== 模块 A ========== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>知道机器学习「从数据里学」,但一说到「模型怎么调出来的」就发懵的人。</li>
+        <li>老听到损失函数、梯度下降、学习率、epoch,想把它们串成一个过程的人。</li>
+        <li>准备学神经网络,想先把「训练」这件事的骨架打通、别到时被反向传播吓住的人。</li>
+      </ul>
+      <p><b>不适合</b>:已经能手写梯度下降、理解学习率影响的人——直接跳到第 7 章。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>一样:<a href="05-机器学习核心概念.html">第 5 章</a>——知道模型是「从例子里学出的、能预测的东西」,以及要用没见过的数据评估。数学不需要:全章用「差多少」「坡往哪」的直觉代替公式。想跑结尾的代码,有 <code>numpy</code> 即可(第 3 章装过)。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>用一句话解释损失函数是什么、为什么要它。</li>
+        <li>用「下山」的比喻讲清梯度下降每一步在做什么。</li>
+        <li>说出学习率太大、太小分别会出什么问题。</li>
+        <li>分清一步(iteration)和一轮(epoch)的区别。</li>
+        <li>读懂一段十几行的、手写的梯度下降代码,看出它在「往下挪」。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">训练 = 不停地问两件事:「现在错多少?」(损失)和「往哪个方向调、能让错变少?」(梯度),然后<b>朝那个方向挪一小步</b>,反复千万次,直到错到最小。</p>
+      <p>模型内部有一堆可调的旋钮(参数)。一开始随便设,预测得很烂。训练就是:量出现在错多少,算出每个旋钮该往哪拧一点点能让错变小,拧一小步,再来一遍。像蒙着眼下山,靠脚感觉哪边是下坡,就往哪边挪一小步,一步步走到谷底。谷底就是「错到最小」——模型就调好了。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <p>先记住「就这五块」。中间是本章目标,四周是达成它要用的五块地基,下面模块 C 逐块拆。</p>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="训练的本质五块地基环绕核心目标">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">把「错」</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">一步步降到最小</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 损失函数</text>
+          <rect x="588" y="122" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="670" y="150" text-anchor="middle" class="nl">② 梯度下降</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ 学习率</text>
+          <rect x="144" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="226" y="358" text-anchor="middle" class="nl">④ 迭代 / epoch</text>
+          <rect x="8" y="122" width="150" height="46" rx="8" class="d-ink nf"/>
+          <text x="83" y="150" text-anchor="middle" class="nl">⑤ 训练循环</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。把它们组装起来,就能看懂第 12 节那段手写的梯度下降代码在做什么。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 B ========== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>本章每一小节只负责把概念用图讲清。真正把梯度下降吃透,靠<b>一条外部主线</b>。这一章的最佳主线是视频——因为「下山」这件事,动画讲得比文字清楚得多。下面选好主线,顺着走完即可。</p>
+
+      <div class="callout go">
+        <span class="label">默认主线 · 视频(强烈推荐)</span>
+        <p><b>3Blue1Brown「深度学习」系列第 2 章:Gradient descent, how neural networks learn(免费)。</b>为什么是它:全网公认最好的可视化,用动画把「损失曲面」和「顺坡下山」讲得一看就懂,专为零基础做的直觉。<b>先看这一集(约 21 分钟)</b>;第 1 集「But what is a neural network?」留到下一章看。链接:<a href="https://www.youtube.com/watch?v=IHZwWFHWa-w" target="_blank" rel="noopener">youtube.com/watch?v=IHZwWFHWa-w</a>(或官网 <a href="https://www.3blue1brown.com/lessons/gradient-descent" target="_blank" rel="noopener">3blue1brown.com</a>)。</p>
+      </div>
+
+      <table class="tbl">
+        <caption>表 1 · 本章骨架 ↔ 主线对应</caption>
+        <thead><tr><th>本章骨架(先看图)</th><th>主线精读(3B1B 第 2 章 + Google 速成课)</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td>第 7 节 · 损失函数</td><td>3B1B「cost function」段 + Google「Linear regression: Loss」</td></tr>
+          <tr><td>第 8 节 · 梯度下降</td><td>3B1B「gradient descent」段(本章核心)</td></tr>
+          <tr><td>第 9 节 · 学习率</td><td>Google「Linear regression: Hyperparameters(learning rate)」</td></tr>
+          <tr><td>第 10 节 · 迭代 / epoch</td><td>Google「Gradient descent / iterative approach」</td></tr>
+        </tbody>
+      </table>
+
+      <p><b>想要手绘讲透、或结构化课程:</b></p>
+      <ul>
+        <li><b>StatQuest · Gradient Descent, Step-by-Step</b> — <a href="https://www.youtube.com/watch?v=sDv4f4s2SB8" target="_blank" rel="noopener">Josh Starmer 一步步手算一遍梯度下降</a>,把「算坡度、挪一步」抠到最细,补上 3B1B 的直觉。</li>
+        <li><b>Google 机器学习速成课</b> — <a href="https://developers.google.com/machine-learning/crash-course/linear-regression" target="_blank" rel="noopener">Linear Regression 模块(Loss / Gradient descent / Learning rate)</a>,有交互,把损失和学习率讲成能上手调的东西。</li>
+      </ul>
+
+      <!-- ========== 模块 C ========== -->
+      <p class="handoff">先把第一块立起来:模型怎么知道自己错了、错多少。</p>
+      <h2 id="loss"><span class="no">7</span><span>损失函数:错多少</span></h2>
+      <p class="one-liner">损失函数<span class="en">loss function</span>:把「模型的预测」和「真实答案」之间的差距,压成<b>一个数</b>。这个数越小,模型越准;训练的目标就是把它降到最低。</p>
+      <p>没有这个数,模型就不知道自己好坏,更谈不上改进。最常见的做法:每个样本算「预测减答案」的差,平方后全部加起来求平均——这叫<b>均方误差(MSE)</b>。平方是为了让正负差都变成正的、且错得越离谱惩罚越重。分类问题用另一种(交叉熵),但思想一样:<b>用一个数量出错得多远</b>。</p>
+      <figure>
+        <svg viewBox="0 0 620 200" role="img" aria-label="损失=预测线到真实点的差距">
+          <line x1="60" y1="30" x2="60" y2="170" class="ax"/>
+          <line x1="60" y1="170" x2="560" y2="170" class="ax"/>
+          <text x="40" y="40" class="el">答案</text>
+          <text x="530" y="188" class="el">输入</text>
+          <line x1="80" y1="150" x2="540" y2="55" class="crv"/>
+          <text x="470" y="48" class="el-acc">模型的预测线</text>
+          <circle cx="150" cy="110" r="5" class="dot"/><line x1="150" y1="110" x2="150" y2="136" class="d-soft"/>
+          <circle cx="250" cy="80" r="5" class="dot"/><line x1="250" y1="80" x2="250" y2="115" class="d-soft"/>
+          <circle cx="350" cy="105" r="5" class="dot"/><line x1="350" y1="105" x2="350" y2="94" class="d-soft"/>
+          <circle cx="450" cy="60" r="5" class="dot"/><line x1="450" y1="60" x2="450" y2="73" class="d-soft"/>
+          <text x="310" y="192" text-anchor="middle" class="el">每根虚线 = 一个样本的「差」;全部平方求平均 = 损失</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>损失:每个真实点(灰)到预测线(蓝)的竖直差距。把这些差平方后求平均,得到一个数——损失越小,线越贴合数据。</figcaption>
+      </figure>
+
+      <p class="handoff">有了「错多少」这个数,下一步是最关键的:怎么调参数让它变小。</p>
+      <h2 id="gd"><span class="no">8</span><span>梯度下降:顺坡下山</span></h2>
+      <p class="one-liner">梯度下降<span class="en">gradient descent</span>:把损失想成一片山地,当前参数是所在的位置。每一步<b>感觉哪边是下坡(梯度),就往那边挪一小步</b>,反复走,直到谷底(损失最小)。</p>
+      <p>「梯度」就是坡度——它同时给出「最陡的下坡朝哪」和「有多陡」。站在半山腰不用看到整座山,只要摸清脚下的坡,朝下坡挪一步,就离谷底更近一点。挪一步、重新算坡、再挪一步……千万次之后,基本停在谷底。这就是几乎所有 AI 模型「学」的底层动作,神经网络也不例外。</p>
+      <figure>
+        <svg viewBox="0 0 620 250" role="img" aria-label="损失曲面上顺坡下山到谷底">
+          <line x1="50" y1="30" x2="50" y2="215" class="ax"/>
+          <line x1="50" y1="215" x2="590" y2="215" class="ax"/>
+          <text x="30" y="40" class="el">损失</text>
+          <text x="540" y="234" class="el">参数(旋钮的值)</text>
+          <path d="M70,55 Q310,300 550,55" class="crv-ink"/>
+          <circle cx="110" cy="93" r="9" class="dot-acc"/>
+          <circle cx="160" cy="122" r="5" class="dot-acc"/>
+          <circle cx="210" cy="143" r="5" class="dot-acc"/>
+          <circle cx="260" cy="156" r="5" class="dot-acc"/>
+          <circle cx="310" cy="160" r="5" class="dot-acc"/>
+          <path d="M120,100 L152,118" class="d-acc" marker-end="url(#m-gd)"/>
+          <path d="M170,128 L202,140" class="d-acc" marker-end="url(#m-gd)"/>
+          <path d="M220,148 L252,155" class="d-acc" marker-end="url(#m-gd)"/>
+          <defs><marker id="m-gd" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <text x="120" y="78" class="el-acc" font-weight="700">起点:随便设的参数</text>
+          <text x="310" y="185" text-anchor="middle" class="el-acc" font-weight="700">谷底:损失最小</text>
+          <text x="180" y="205" text-anchor="middle" class="el">每步:摸坡度 → 往下挪一点</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>梯度下降。损失是一片山地,从随机起点出发,每步顺着最陡的下坡挪一小步,一路走到谷底(损失最小)。</figcaption>
+      </figure>
+      <div class="callout warn"><span class="label">可能停在小坑里</span><p>真实损失曲面坑坑洼洼,梯度下降可能停在一个不是最深的小坑(局部最小)。实践里靠随机起点、动量等技巧缓解;对神经网络,这通常不致命,能到一个「够好」的坑就行。</p></div>
+
+      <p class="handoff">每一步挪多大,是个要命的旋钮——学习率。</p>
+      <h2 id="lr"><span class="no">9</span><span>学习率:每步迈多大</span></h2>
+      <p class="one-liner">学习率<span class="en">learning rate</span>:每一步往下挪的<b>步长</b>。太小,走到天黑还没到谷底;太大,一步跨过谷底、来回乱蹦甚至越走越高。</p>
+      <p>这是训练里最需要调的旋钮之一。步子太小,训练慢得让人抓狂;步子太大,直接跨过最低点,在两边反复横跳,损失降不下去反而炸掉。合适的学习率让损失又快又稳地下降。怎么找?看<b>损失曲线</b>:随训练平滑往下走就对了,一直不降或忽上忽下就是学习率不对。</p>
+      <figure>
+        <svg viewBox="0 0 720 190" role="img" aria-label="学习率太小 刚好 太大三种情况">
+          <g>
+            <text x="120" y="24" text-anchor="middle" class="el">太小:太慢</text>
+            <path d="M55,150 Q120,230 185,150" class="crv-ink"/>
+            <circle cx="70" cy="120" r="4" class="dot-acc"/><circle cx="82" cy="132" r="4" class="dot-acc"/><circle cx="94" cy="142" r="4" class="dot-acc"/><circle cx="106" cy="150" r="4" class="dot-acc"/>
+            <text x="120" y="176" text-anchor="middle" class="el">一小步一小步,磨蹭</text>
+          </g>
+          <g>
+            <text x="360" y="24" text-anchor="middle" class="el-acc" font-weight="700">刚好:又快又稳</text>
+            <path d="M295,150 Q360,230 425,150" class="crv-ink"/>
+            <circle cx="310" cy="118" r="4" class="dot-acc"/><circle cx="335" cy="150" r="4" class="dot-acc"/><circle cx="360" cy="168" r="4" class="dot-acc"/>
+            <text x="360" y="176" text-anchor="middle" class="el">几步就稳稳到谷底</text>
+          </g>
+          <g>
+            <text x="600" y="24" text-anchor="middle" class="el">太大:跳过 / 发散</text>
+            <path d="M535,150 Q600,230 665,150" class="crv-ink"/>
+            <circle cx="555" cy="130" r="4" class="dot-acc"/><circle cx="645" cy="120" r="4" class="dot-acc"/><circle cx="545" cy="95" r="4" class="dot-acc"/><circle cx="660" cy="80" r="4" class="dot-acc"/>
+            <path d="M558,128 L642,122" class="d-soft"/><path d="M648,118 L548,98" class="d-soft"/>
+            <text x="600" y="176" text-anchor="middle" class="el">跨过谷底,来回蹦</text>
+          </g>
+        </svg>
+        <figcaption><span class="fig-num">图 4</span>学习率:太小磨蹭、刚好又快又稳、太大跨过谷底来回蹦(甚至越蹦越高)。</figcaption>
+      </figure>
+
+      <p class="handoff">走一步叫一次迭代,反复走很多步、看很多遍数据,这就引出迭代和 epoch。</p>
+      <h2 id="epoch"><span class="no">10</span><span>迭代与 epoch</span></h2>
+      <p class="one-liner">一次<b>迭代(iteration)</b>=挪一步(用一批数据更新一次参数)。一个 <b>epoch</b>=把训练数据<b>完整看过一遍</b>。训练通常要很多个 epoch。</p>
+      <p>数据太多,不会一次全塞进去算,而是切成小批(batch),每批算一次损失、挪一步——这是一次迭代。所有批都过完一遍,算一个 epoch。为什么要很多 epoch:一遍下山远不够,得反复走很多趟才逼近谷底。判断该停没停,还是看<b>损失曲线</b>:降不动了、或验证集开始变差(过拟合),就该停。</p>
+
+      <p class="handoff">把这五块串起来,就是所有训练代码共有的那个循环。</p>
+      <h2 id="loop"><span class="no">11</span><span>训练循环:五步一圈</span></h2>
+      <p class="one-liner">训练循环:<b>预测 → 算损失 → 算梯度 → 更新参数 → 回到预测</b>,一圈又一圈,直到损失够小或不再下降。</p>
+      <figure>
+        <svg viewBox="0 0 660 180" role="img" aria-label="训练循环五步成一圈">
+          <defs><marker id="m-lp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="20" y="60" width="104" height="50" rx="8" class="d-ink nf"/><text x="72" y="90" text-anchor="middle" class="nl">① 预测</text>
+          <line x1="124" y1="85" x2="160" y2="85" class="d-acc" marker-end="url(#m-lp)"/>
+          <rect x="164" y="60" width="104" height="50" rx="8" class="d-ink nf"/><text x="216" y="83" text-anchor="middle" class="nl">② 算损失</text><text x="216" y="100" text-anchor="middle" class="el">错多少</text>
+          <line x1="268" y1="85" x2="304" y2="85" class="d-acc" marker-end="url(#m-lp)"/>
+          <rect x="308" y="60" width="104" height="50" rx="8" class="d-ink nf"/><text x="360" y="83" text-anchor="middle" class="nl">③ 算梯度</text><text x="360" y="100" text-anchor="middle" class="el">坡往哪</text>
+          <line x1="412" y1="85" x2="448" y2="85" class="d-acc" marker-end="url(#m-lp)"/>
+          <rect x="452" y="60" width="116" height="50" rx="8" class="d-acc nf-acc" stroke-width="1.6"/><text x="510" y="83" text-anchor="middle" class="nl-acc">④ 更新参数</text><text x="510" y="100" text-anchor="middle" class="el">挪一步</text>
+          <path d="M510,110 L510,140 L72,140 L72,112" class="d-soft" marker-end="url(#m-lp)"/>
+          <text x="290" y="158" text-anchor="middle" class="el">⑤ 回到①,再来一圈(直到损失够小)</text>
+        </svg>
+        <figcaption><span class="fig-num">图 5</span>训练循环:预测→算损失→算梯度→更新,再绕回预测。所有模型的训练代码都是这个圈,神经网络也是。</figcaption>
+      </figure>
+      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:3B1B 第 2 章把这个循环讲成动画。<b>往后连:</b>第 7 章神经网络的「反向传播」,就是第③步「算梯度」的高效做法——上万个参数一次性算出各自的坡度。这个循环一模一样。</p></div>
+
+      <!-- ========== 模块 D ========== -->
+      <p class="handoff">五块地基到齐了。下面用十几行 NumPy,手写一个最小的梯度下降,亲眼看损失一步步降下去。</p>
+      <h2 id="assemble"><span class="no">12</span><span>实战:手写一次梯度下降</span></h2>
+      <p>不用任何机器学习库,就用 NumPy,让程序自己「学」出一堆数的平均值——因为「让均方误差最小的那个数」正好就是平均值。看损失怎么一步步降到最低:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">gradient_descent.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> numpy </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> np</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">data </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([2.0, 4.0, 6.0, 8.0])   </span><span style="color:#8B95A8;font-style:italic"># 真实答案(平均值应是 5)</span></span>
+<span class="line"><span style="color:#14181F">guess </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 0.0            </span><span style="color:#8B95A8;font-style:italic"># ① 随便设的参数(我们猜的"平均值")</span></span>
+<span class="line"><span style="color:#14181F">lr </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 0.1               </span><span style="color:#8B95A8;font-style:italic"># 学习率:每步迈多大</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> step </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> range(20):                  </span><span style="color:#8B95A8;font-style:italic"># 迭代 20 步</span></span>
+<span class="line"><span style="color:#14181F">    loss </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.mean((guess </span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F"> data) </span><span style="color:#14181F;font-weight:bold">**</span><span style="color:#14181F"> 2) </span><span style="color:#8B95A8;font-style:italic"># ② 算损失:均方误差</span></span>
+<span class="line"><span style="color:#14181F">    grad </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.mean(2 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> (guess </span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F"> data))  </span><span style="color:#8B95A8;font-style:italic"># ③ 算梯度:损失对 guess 的坡度</span></span>
+<span class="line"><span style="color:#14181F">    guess </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> guess </span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F"> lr </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> grad           </span><span style="color:#8B95A8;font-style:italic"># ④ 顺坡下山:往下挪一小步</span></span>
+<span class="line"><span style="color:#14181F">    print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"step </span><span style="color:#557089">{</span><span style="color:#14181F">step</span><span style="color:#14181F;font-weight:bold">:2d</span><span style="color:#557089">}</span><span style="color:#557089">  guess=</span><span style="color:#557089">{</span><span style="color:#14181F">guess</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089">  loss=</span><span style="color:#557089">{</span><span style="color:#14181F">loss</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># guess 会一步步逼近 5.0,loss 一步步逼近 0</span></span></code></pre>
+      </div>
+      <p>读一遍:<code>loss</code> 是<b>损失</b>;<code>grad</code> 是<b>梯度</b>(坡度);<code>guess = guess - lr * grad</code> 就是<b>顺坡下山挪一步</b>,<code>lr</code> 是<b>学习率</b>;整个 <code>for</code> 是<b>训练循环</b>,每轮是一次<b>迭代</b>。跑一下,会看到 <code>guess</code> 从 0 一步步爬到 5、<code>loss</code> 一步步掉到 0——这就是训练,神经网络只是把这套放大到上百万个参数。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战</span>
+        <h3>改改看</h3>
+        <p>①把 <code>lr</code> 改成 <code>0.01</code>,观察 loss 降得多慢(学习率太小)。②改成 <code>1.1</code>,看 loss 怎么<b>炸开</b>(学习率太大、发散)。③把打印的 <code>loss</code> 收集进一个列表,想象把它画成曲线——那就是训练时最该盯的「损失曲线」。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。均于 2026-08-14 核实在线;打不开就记住名字搜一下。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=IHZwWFHWa-w" target="_blank" rel="noopener">3Blue1Brown · 梯度下降</a></span><span class="spine">默认主线</span><span class="tags">视频 · 有中文字幕 · 21min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">用顶级动画把"梯度下降怎么滑到损失最低点"讲得看得见的经典一集。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章讲清训练的机制;它把梯度下降的画面钉进脑子,直觉最牢。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">整集(约 21 分钟)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「梯度下降」「学习率」节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=sDv4f4s2SB8" target="_blank" rel="noopener">StatQuest · Gradient Descent, Step-by-Step</a></span><span class="tags">视频 · 英文(可开字幕) · 20min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">一步步手算梯度下降的短片。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">3B1B 给直觉,它给"手上怎么算";两个一起看最扎实。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">整集。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「梯度下降」「训练循环」节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://developers.google.com/machine-learning/crash-course/linear-regression" target="_blank" rel="noopener">Google · Linear Regression 模块</a></span><span class="tags">官方课程 · 可切中文 · 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">带交互演示的损失/梯度下降/学习率入门。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想亲手调学习率、看它太大太小各会怎样时用它。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Loss / Gradient descent / Learning rate 三节。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「学习率」节的动手。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 3 · 五个新手误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>模型是一步算出最优解的</td><td>是一小步一小步「挪」出来的,靠梯度下降迭代千万次逼近最优。</td></tr>
+          <tr><td>梯度是很玄的数学</td><td>梯度就是坡度:给出最陡的下坡朝哪、有多陡。顺着它往下走就对了。</td></tr>
+          <tr><td>学习率越大训练越快</td><td>太大越过谷底、来回蹦甚至发散。要「刚好」,靠看损失曲线调。</td></tr>
+          <tr><td>epoch 越多越好</td><td>过了头会过拟合。看验证集:开始变差就该停(早停 early stopping)。</td></tr>
+          <tr><td>神经网络的训练是另一套</td><td>还是这套循环。反向传播只是「高效算梯度」的方法,下山逻辑一模一样。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>一句话定义。</b>用「下山」解释:损失、梯度、学习率各对应下山时的什么?<details><summary>参考答案</summary><p>损失=所在的海拔(越低越好);梯度=脚下坡度(最陡下坡朝哪);学习率=每步迈多大。</p></details></li>
+        <li><b>诊断。</b>训练时损失一开始猛降,后来忽上忽下、降不动了,最可能是什么问题?<details><summary>参考答案</summary><p>学习率偏大,在谷底附近来回横跳。可调小学习率,或用会自动衰减学习率的优化器。</p></details></li>
+        <li><b>区分。</b>数据 1000 条、每批 100 条,跑 5 个 epoch,一共挪了多少步(迭代)?<details><summary>参考答案</summary><p>每 epoch 有 1000/100=10 步,5 个 epoch 共 50 步。</p></details></li>
+        <li><b>连回上一章。</b>训练损失一直降、但测试损失开始回升,这是第 5 章的什么现象?<details><summary>参考答案</summary><p>过拟合。训练久了在背训练数据的噪声;该早停,或简化模型/加正则。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上再进第 7 章(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能解释损失函数是什么、为什么训练需要它</li>
+          <li><input type="checkbox"> 我能用「下山」讲清梯度下降每一步在做什么</li>
+          <li><input type="checkbox"> 我知道梯度就是坡度(方向 + 陡峭程度)</li>
+          <li><input type="checkbox"> 我能说出学习率太大、太小各会出什么问题</li>
+          <li><input type="checkbox"> 我能区分一次迭代和一个 epoch</li>
+          <li><input type="checkbox"> 我能默出训练循环五步:预测→损失→梯度→更新→重复</li>
+          <li><input type="checkbox"> 我读懂了第 12 节手写梯度下降,看出它在「往下挪」</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>这一章手里已经有了「训练」这台发动机:损失量错、梯度指路、学习率控制步长、循环反复挪。<a href="07-神经网络入门.html">第 7 章 神经网络</a>把可调的参数从一两个放大到成千上万个,堆成一层层的「神经元」。到那时会发现,神经网络的「学」还是本章这套下山循环;新出现的<b>反向传播</b>,只是「怎么高效地算出这上万个参数各自的坡度」。发动机没变,只是零件多了。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="05-机器学习核心概念.html"><span class="lb">上一章</span><span class="tt">05 · 机器学习核心</span></a>
+        <a href="07-神经网络入门.html" class="next"><span class="lb">下一章</span><span class="tt">07 · 神经网络入门</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">第 6 章 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="loss" href="#loss"><i>7</i>损失函数</a>
+        <a data-toc-target="gd" href="#gd"><i>8</i>梯度下降</a>
+        <a data-toc-target="lr" href="#lr"><i>9</i>学习率</a>
+        <a data-toc-target="epoch" href="#epoch"><i>10</i>迭代/epoch</a>
+        <a data-toc-target="loop" href="#loop"><i>11</i>训练循环</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>实战:手写梯度下降</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="06" data-kind="chapter" data-title="训练的本质:损失与梯度下降"></script>
+</body>
+</html>

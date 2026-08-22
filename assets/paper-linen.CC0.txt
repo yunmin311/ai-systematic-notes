@@ -1,0 +1,2 @@
+﻿paper-linen.jpg / paper-linen-v3.jpg = 由 ambientCG 的 Fabric036(细织物,CC0)提亮并调成灰蓝而来。
+ambientCG 的素材采用 CC0 公有领域授权,可商用、免署名。原始素材:https://ambientcg.com/view?id=Fabric036

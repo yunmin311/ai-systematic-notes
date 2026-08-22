@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-09 · 最小 harness:二十行里的每一个治理抓手</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="lab-08-Token与账单.html">lab-08</a><span class="sep">—</span>
+      <a href="lab-09-最小harness.html" class="current">lab-09 最小 harness</a>
+      
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-09 · 配套 A05 Agent 的 harness 底层框架 · U03 指令为什么不生效</p>
+        <h1>最小 harness:二十行里的每一个治理抓手</h1>
+        <p class="recap">这个实验不调任何 API、不花一分钱——模型部分用一个写死的桩替代。要看的不是模型有多聪明,而是<b>外面那圈框架都管了什么</b>:工具注册、循环、步数上限、日志、危险动作拦截。这五样,正是治理能落手的地方。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>一个能跑的 agent loop,总共二十来行</li>
+          <li>「自主」不来自模型,来自这个循环——把循环去掉就只剩一问一答</li>
+          <li>步数上限拦住死循环的那一刻</li>
+          <li>危险动作在<b>执行前</b>被挡住,而不是靠提示词请它别做</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../应用工程/A05-Agent的harness底层框架.html">A05</a> 的 agent loop 与治理抓手、<a href="../AI使用/U03-指令为什么不生效.html">U03</a> 的规则五级强度阶梯。做完可以接 <a href="../项目/P6-一个小Agent.html">项目 P6</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p><b>方式 A · 页面内运行器</b>:每段代码旁边有「▶ 运行」,用的是 Pyodide——一个跑在浏览器里的<b>真实 Python</b>,不是模拟输出。首次点击要下载运行时,约 10–20 秒,需要联网。用到第三方库时会自动装包,第一次会再多等一会儿。</p>
+      <p><b>方式 B · 本机终端</b>:代码同时放在 <code>实验室\code\lab09\</code> 下,可以直接 <code>python step1_loop.py</code>。本机跑得更快,而且能改文件、能存结果。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>把 A05 那句话变成能跑的代码:<b>模型只是发动机,真正让它能干活也真正能被治理的,是外面那圈工程外壳。</b></p>
+
+      <h2 id="s3"><span class="no">3</span><span>循环本身</span></h2>
+      <p>模型用一个桩函数代替:它按固定剧本请求调工具。重点看循环怎么把「想 → 做 → 看」串起来。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_loop.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="22"># ---- 工具注册表:agent 只能调这里有的东西 ----
+def read_file(name):
+    return f"[{name} 的内容:共 3 行]"
+
+def word_count(text):
+    return f"{len(text.split())} 个词"
+
+TOOLS = {"read_file": read_file, "word_count": word_count}
+
+# ---- 模型的桩:真实场景里这里是一次 API 调用 ----
+SCRIPT = [
+    {"tool": "read_file", "args": ["notes.md"]},
+    {"tool": "word_count", "args": ["[notes.md 的内容:共 3 行]"]},
+    {"final": "notes.md 大约有 4 个词。"},
+]
+def fake_model(history):
+    return SCRIPT[len(history)]      # 按历史长度取下一步
+
+# ---- agent loop:整个「自主」就在这十行里 ----
+history = []
+for step in range(1, 6):
+    action = fake_model(history)
+    if "final" in action:
+        print(f"[{step}] 完成 → {action['final']}")
+        break
+    fn = TOOLS.get(action["tool"])
+    if fn is None:
+        print(f"[{step}] 拒绝:未注册的工具 {action['tool']}")
+        break
+    result = fn(*action["args"])
+    print(f"[{step}] 调用 {action['tool']}{tuple(action['args'])} → {result}")
+    history.append(result)</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>[1] 调用 read_file('notes.md',) → [notes.md 的内容:共 3 行]
+[2] 调用 word_count('[notes.md 的内容:共 3 行]',) → 4 个词
+[3] 完成 → notes.md 大约有 4 个词。</div>
+      <p>把 <code>for</code> 循环删掉,这就退化成一次普通问答。<b>「自主」不是模型的属性,是这个循环给的。</b>另外注意 <code>TOOLS.get</code> 那一行:<b>工具白名单</b>——没注册的东西模型再想调也调不到,这是第一个治理抓手。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>两道闸:步数上限与危险动作拦截</span></h2>
+      <p>换一个会犯错的桩:它陷入死循环,而且中途试图删文件。看两道闸分别在哪一刻起作用。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_guard.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="22">import datetime
+
+def read_file(name):  return f"[{name} 的内容]"
+def delete_file(name): return f"已删除 {name}"      # ← 危险动作
+TOOLS = {"read_file": read_file, "delete_file": delete_file}
+
+DANGEROUS = {"delete_file"}          # 需要人点头的动作
+MAX_STEPS = 4                        # 步数上限
+LOG = []
+
+def log(kind, detail):
+    LOG.append((datetime.datetime.now().strftime("%H:%M:%S"), kind, detail))
+
+# 一个坏掉的模型:反复读同一个文件,第 3 步想删东西
+def bad_model(history):
+    if len(history) == 2:
+        return {"tool": "delete_file", "args": ["notes.md"]}
+    return {"tool": "read_file", "args": ["notes.md"]}
+
+APPROVE = False                      # 模拟「人没点头」
+history = []
+for step in range(1, 100):
+    if step &gt; MAX_STEPS:
+        print(f"[闸 1] 步数到上限 {MAX_STEPS},强制停止")
+        log("halt", f"max_steps={MAX_STEPS}")
+        break
+    action = bad_model(history)
+    name = action["tool"]
+    if name in DANGEROUS and not APPROVE:
+        print(f"[闸 2] 危险动作 {name} 被拦下:执行前需要人确认")
+        log("blocked", name)
+        history.append("(该动作被拒绝)")
+        continue
+    result = TOOLS[name](*action["args"])
+    log("call", name)
+    print(f"[{step}] {name} → {result}")
+    history.append(result)
+
+print("\n---- 日志(第五个抓手)----")
+for t, k, d in LOG:
+    print(f"{t}  {k:&lt;8}{d}")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>[1] read_file → [notes.md 的内容]
+[2] read_file → [notes.md 的内容]
+[闸 2] 危险动作 delete_file 被拦下:执行前需要人确认
+[4] read_file → [notes.md 的内容]
+[闸 1] 步数到上限 4,强制停止
+
+---- 日志(第五个抓手)----
+20:39:49  call    read_file
+20:39:49  call    read_file
+20:39:49  blocked delete_file
+20:39:49  call    read_file
+20:39:49  halt    max_steps=4</div>
+      <p>两道闸的位置很关键:<b>危险动作是在执行<u>前</u>被挡住的</b>,不是执行完再回滚。把 <code>APPROVE</code> 改成 <code>True</code>,删除就会真的发生——这一行就是「人点头」这个环节在代码里的样子。<br>五个抓手到齐了:<b>工具白名单、步数上限、危险动作确认、全程日志、失败可回滚</b>(最后一项这里用「拒绝后继续」代替)。这正是 <a href="../应用工程/A05-Agent的harness底层框架.html">A05</a> 第 6 节说的、治理该固化的东西。</p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 把 <code>MAX_STEPS</code> 改成 100,再跑第 2 步——死循环会跑到什么时候才停?这说明步数上限拦的是什么。<br><b>②</b> 把 <code>APPROVE</code> 改成 <code>True</code>,对比日志的差别。真实系统里这个开关该由谁来拨?<br><b>③</b> 在 <code>TOOLS</code> 里加一个 <code>send_email</code>,让桩模型去调它——不加进白名单会怎样?加进白名单但不加进 <code>DANGEROUS</code> 又会怎样?</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>第 1 步报 <code>IndexError</code></td><td>剧本用完了但循环还在跑</td><td>这正好演示了步数上限的必要性;第 2 步加上了闸</td></tr>
+            <tr><td>第 2 步一直不停</td><td><code>MAX_STEPS</code> 被改大了</td><td>这是第 1 个改一改要看的现象,不是 bug</td></tr>
+            <tr><td>日志是空的</td><td>所有动作都在闸前被拦下了</td><td>看 <code>blocked</code> 那几行;被拦也是要记的</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">这二十行就是一个 agent 的骨架。真实的 harness 只是把每一块做厚:工具更多、循环更聪明、上下文要管理、日志要落盘。<b>但治理能落手的位置,一个不多一个不少,就是这五处。</b></p>
+
+      <nav class="chapter-nav">
+        <a href="lab-08-Token与账单.html"><span class="lb">上一个</span><span class="tt">lab-08 Token 与账单</span></a>
+        <a href="../台账/学习台账.html" class="next"><span class="lb">记一笔</span><span class="tt">学习台账</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-09 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>循环本身</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>两道闸</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-09" data-kind="lab" data-title="最小 harness:二十行里的每一个治理抓手"></script>
+</body>
+</html>

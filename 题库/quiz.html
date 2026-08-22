@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>题库入口 · 人工智能系统学习</title>
+<link rel="stylesheet" href="../assets/course.css">
+<style>
+.qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin:12px 0 4px;}
+.qcard{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
+  border-radius:6px;padding:10px 13px;text-decoration:none;color:var(--ink);transition:border-color .15s;}
+.qcard:hover{border-color:var(--acc);}
+.qcard .no{font-family:var(--mono);font-size:12px;color:var(--acc-dark);font-weight:700;flex:none;min-width:34px;}
+.qcard .tt{font-size:15px;font-weight:600;flex:1;line-height:1.4;}
+.qcard .n{font-family:var(--mono);font-size:11px;color:var(--muted);flex:none;}
+.modhead{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--acc-dark);font-weight:700;margin:26px 0 2px;padding-top:14px;border-top:1px solid var(--line);}
+.modnote{color:var(--muted);font-size:13px;margin:4px 0 0;}
+</style>
+<style data-paper-rollout>
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a href="../index.html">🏠 课程首页</a>
+    <span class="crumb-sep">/</span>
+    <span class="here">题库入口</span>
+  </div>
+</div>
+
+<div class="wrap wrap-narrow">
+
+  <div class="hero">
+    <div class="chip-row">
+      <span class="chip">题库</span>
+      <span class="chip teal">32 份 · 每章一份</span>
+      <span class="chip teal">九种题型</span>
+    </div>
+    <h1>题库入口</h1>
+    <p class="lede">每章学完(讲义 + 动手)再来做题。题型不止选择题:概念判断、代码阅读、输出预测、形状推导、找错、参数实验、简答、场景分析都有。<b>正确率 70% 以上视为该章通关</b>;错题不要马上重刷,先回讲义读对应小节,第二天再整份重做。</p>
+  </div>
+
+  <div class="modhead">Stage 1 / 基础课程</div>
+  <p class="modnote">建立全景与地基。第 1 章题库最长(15 题),其余每份 9–10 题。</p>
+  <div class="qgrid">
+    <a class="qcard" href="quiz-01.html"><span class="no">01</span><span class="tt">人工智能全景与学习环境</span><span class="n">15 题</span></a>
+    <a class="qcard" href="quiz-02.html"><span class="no">02</span><span class="tt">Python 基础</span><span class="n">10 题</span></a>
+    <a class="qcard" href="quiz-03.html"><span class="no">03</span><span class="tt">NumPy 数组与形状</span><span class="n">10 题</span></a>
+    <a class="qcard" href="quiz-04.html"><span class="no">04</span><span class="tt">Pandas 表格数据</span><span class="n">10 题</span></a>
+    <a class="qcard" href="quiz-05.html"><span class="no">05</span><span class="tt">机器学习核心概念</span><span class="n">10 题</span></a>
+    <a class="qcard" href="quiz-06.html"><span class="no">06</span><span class="tt">训练的本质</span><span class="n">9 题</span></a>
+    <a class="qcard" href="quiz-07.html"><span class="no">07</span><span class="tt">神经网络入门</span><span class="n">9 题</span></a>
+    <a class="qcard" href="quiz-08.html"><span class="no">08</span><span class="tt">大语言模型鸟瞰</span><span class="n">10 题</span></a>
+  </div>
+
+  <div class="modhead">Stage 2 / 深度课程 · Track A 经典机器学习</div>
+  <p class="modnote">D05 那份错得最多、也最值钱——它决定会不会被自己的模型骗。</p>
+  <div class="qgrid">
+    <a class="qcard" href="quiz-D01.html"><span class="no">D01</span><span class="tt">线性回归全拆解</span><span class="n">8 题</span></a>
+    <a class="qcard" href="quiz-D02.html"><span class="no">D02</span><span class="tt">逻辑回归与分类边界</span><span class="n">8 题</span></a>
+    <a class="qcard" href="quiz-D03.html"><span class="no">D03</span><span class="tt">决策树 / 随机森林 / 提升</span><span class="n">8 题</span></a>
+    <a class="qcard" href="quiz-D04.html"><span class="no">D04</span><span class="tt">聚类与降维</span><span class="n">8 题</span></a>
+    <a class="qcard" href="quiz-D05.html"><span class="no">D05</span><span class="tt">评价指标与验证深挖</span><span class="n">9 题</span></a>
+    <a class="qcard" href="quiz-D06.html"><span class="no">D06</span><span class="tt">特征工程与数据预处理</span><span class="n">8 题</span></a>
+  </div>
+
+  <div class="modhead">Stage 2 / 深度课程 · Track B 深度学习</div>
+  <p class="modnote">五步训练循环要能默写——D07 那份反复做。</p>
+  <div class="qgrid">
+    <a class="qcard" href="quiz-D07.html"><span class="no">D07</span><span class="tt">PyTorch 与完整训练循环</span><span class="n">8 题</span></a>
+    <a class="qcard" href="quiz-D08.html"><span class="no">D08</span><span class="tt">卷积神经网络 CNN</span><span class="n">8 题</span></a>
+    <a class="qcard" href="quiz-D09.html"><span class="no">D09</span><span class="tt">序列模型:RNN 到注意力</span><span class="n">8 题</span></a>
+    <a class="qcard" href="quiz-D10.html"><span class="no">D10</span><span class="tt">优化器、正则化与训练技巧</span><span class="n">8 题</span></a>
+    <a class="qcard" href="quiz-D11.html"><span class="no">D11</span><span class="tt">迁移学习与微调</span><span class="n">8 题</span></a>
+  </div>
+
+  <div class="modhead">Stage 2 / 深度课程 · Track C 大模型内部</div>
+  <p class="modnote">D14(注意力)是全课程核心,建议手算完再做那一份。</p>
+  <div class="qgrid">
+    <a class="qcard" href="quiz-D12.html"><span class="no">D12</span><span class="tt">Tokenizer 与词表</span><span class="n">8 题</span></a>
+    <a class="qcard" href="quiz-D13.html"><span class="no">D13</span><span class="tt">Embedding 与向量空间</span><span class="n">8 题</span></a>
+    <a class="qcard" href="quiz-D14.html"><span class="no">D14</span><span class="tt">注意力机制逐步手算</span><span class="n">9 题</span></a>
+    <a class="qcard" href="quiz-D15.html"><span class="no">D15</span><span class="tt">Transformer 完整结构</span><span class="n">8 题</span></a>
+    <a class="qcard" href="quiz-D16.html"><span class="no">D16</span><span class="tt">预训练、微调与 RLHF</span><span class="n">8 题</span></a>
+    <a class="qcard" href="quiz-D17.html"><span class="no">D17</span><span class="tt">推理、量化与部署成本</span><span class="n">8 题</span></a>
+  </div>
+
+  <div class="modhead">Stage 3 / 应用工程</div>
+  <p class="modnote">和「把 AI 用起来、把 agent 治理好」最相关的一段;A05、A06 两份尤其值得反复做。</p>
+  <div class="qgrid">
+    <a class="qcard" href="quiz-A01.html"><span class="no">A01</span><span class="tt">提示词工程与上下文</span><span class="n">9 题</span></a>
+    <a class="qcard" href="quiz-A02.html"><span class="no">A02</span><span class="tt">结构化输出与函数调用</span><span class="n">9 题</span></a>
+    <a class="qcard" href="quiz-A03.html"><span class="no">A03</span><span class="tt">RAG 检索增强生成</span><span class="n">9 题</span></a>
+    <a class="qcard" href="quiz-A04.html"><span class="no">A04</span><span class="tt">Agent 基础</span><span class="n">9 题</span></a>
+    <a class="qcard" href="quiz-A05.html"><span class="no">A05</span><span class="tt">Agent 的 harness 底层框架</span><span class="n">9 题</span></a>
+    <a class="qcard" href="quiz-A06.html"><span class="no">A06</span><span class="tt">评估、幻觉、安全与成本</span><span class="n">9 题</span></a>
+    <a class="qcard" href="quiz-A07.html"><span class="no">A07</span><span class="tt">工程化与部署</span><span class="n">9 题</span></a>
+  </div>
+
+  <div class="modhead">Stage 4 / 项目</div>
+  <p class="modnote">项目不设题库——交付物本身就是检验。每个项目页末尾有自查清单,勾满即算通过。</p>
+  <div class="qgrid">
+    <a class="qcard" href="../项目/P1-数据体检报告.html"><span class="no">P1</span><span class="tt">数据体检报告 · 自查清单</span><span class="n">动手</span></a>
+    <a class="qcard" href="../项目/P4-命令行AI助手.html"><span class="no">P4</span><span class="tt">命令行 AI 助手 · 自查清单</span><span class="n">动手</span></a>
+  </div>
+
+  <div class="note">
+    <span class="note-t">做题建议</span>
+    ①先做完讲义的动手环节再来,否则只是在考记忆;②错题不要立刻重刷刷对——回讲义读对应小节,第二天再重做整份,间隔重复比连刷三遍有效得多;③简答与场景题看完参考答案后诚实自评,那几题往往最能暴露"以为自己懂了"。
+  </div>
+
+  <div class="pagefoot">
+    <a href="../index.html">← 课程首页</a>
+    <a href="quiz-01.html">从第 1 章题库开始 →</a>
+  </div>
+
+</div>
+
+<script src="../assets/course.js"></script>
+</body>
+</html>

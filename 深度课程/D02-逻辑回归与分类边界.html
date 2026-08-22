@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D02 · 逻辑回归与分类边界</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="D01-线性回归全拆解.html">D01 线性回归</a><span class="sep">—</span>
+      <a href="D02-逻辑回归与分类边界.html" class="current">D02 逻辑回归</a><span class="sep">—</span>
+      <a href="D03-决策树随机森林与梯度提升.html">D03 决策树与集成</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D02.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track A · Chapter D02</p>
+        <h1>逻辑回归与分类边界</h1>
+        <p class="recap">名字里带"回归",干的却是<b>分类</b>的活——判断"是/否"。它是对 <a href="D01-线性回归全拆解.html">D01 线性回归</a>的一次小改造:同一条 <code>w·x+b</code> 的直线不动,只在末尾套一个 <b>S 形函数(sigmoid)</b> 把输出挤成"属于某一类的概率",再把损失从平方误差换成更适合分类的<b>交叉熵</b>。直线就从"预测数值"变成了"划分类别的边界"。它简单、可解释,还是理解神经网络最后一层的钥匙。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,动手 + 精读约 4~6 小时。全程用 D01 作对照——会看到分类不过是回归的一次改装。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>从回归到分类——预测数值 vs 预测类别,为什么不能直接拿线性回归分类</li>
+          <li>sigmoid——把任意数挤到 0~1,当"属于正类的概率"</li>
+          <li>决策边界——概率过 0.5 判正类;那条 w·x+b=0 就是边界</li>
+          <li>交叉熵——分类为什么弃用 MSE,以及它怎么狠罚"自信地错"</li>
+          <li>多分类——用 softmax 把两类推广到多类</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>直接改造 <a href="D01-线性回归全拆解.html">D01</a> 的 <code>w·x+b</code> 和梯度下降,只换输出函数和损失。<b>通向后面:</b>sigmoid + 交叉熵这套,正是<a href="../基础课程/07-神经网络入门.html">神经网络</a>最后一层做分类的标准配置;softmax 也是 <a href="../基础课程/08-大语言模型鸟瞰.html">大模型</a>"预测下一个词"那一步在用的东西。学完 <a href="../index.html">D05</a> 就能上手项目 P2。</p>
+      </div>
+
+      <!-- ===== 模块 A ===== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>学完 D01、想知道"预测是/否、几类"这种问题怎么建模的人。</li>
+        <li>想搞懂"概率""决策边界""交叉熵"这几个到处出现的词到底指什么的人。</li>
+        <li>要做分类任务(垃圾邮件、是否流失、图像是不是猫)的人。</li>
+      </ul>
+      <p><b>不适合</b>:已经会推 sigmoid 导数、手写交叉熵的人——扫图和代码即可,直接看 D03。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>核心就是 <a href="D01-线性回归全拆解.html">D01</a>:<code>w·x+b</code> 的线性部分、损失、梯度下降。这一章几乎全在这基础上"加两个零件"。有第 6 章梯度下降的直觉更顺。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清回归与分类的区别,以及线性回归为何不适合直接做分类。</li>
+        <li>解释 sigmoid 在做什么、为什么值域是 0~1。</li>
+        <li>指出"决策边界"在图上是哪条线、怎么来的。</li>
+        <li>说清为什么分类用交叉熵而不是 MSE。</li>
+        <li>用 scikit-learn 训练一个逻辑回归分类器并读懂输出。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">逻辑回归 = <b>线性回归 + sigmoid + 交叉熵</b>。先算老一套的加权和 <code>z = w·x+b</code>,再用 sigmoid 把 <code>z</code> 挤成 0~1 的概率,概率过 0.5 就判正类;训练时用交叉熵当损失、照样梯度下降。<b>直线还是那条,只是被赋予了"边界"的新身份。</b></p>
+      <p>关键的认知转变:D01 的输出 <code>w·x+b</code> 是个可大可小的数值(适合预测房价),但分类要的是"属不属于某类"——一个 0 到 1 的概率。直接拿 <code>w·x+b</code> 当概率不行(它能到 100 或 −50,没法当概率)。于是加一个 <b>sigmoid</b> 把它温柔地压进 0~1。至于损失,平方误差配 sigmoid 会让梯度下降走得很别扭(后面讲),换成<b>交叉熵</b>就顺了。就这两处改动,回归器摇身变分类器。理解这一点,会发现很多"新模型"其实都是老骨架换零件。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="逻辑回归五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">直线不变,套 S 形</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">+ 换损失 = 分类</text>
+          <rect x="290" y="32" width="180" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 回归 → 分类</text>
+          <rect x="608" y="122" width="144" height="46" rx="8" class="d-ink nf"/>
+          <text x="680" y="150" text-anchor="middle" class="nl">② sigmoid</text>
+          <rect x="446" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="528" y="358" text-anchor="middle" class="nl">③ 决策边界</text>
+          <rect x="150" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="232" y="358" text-anchor="middle" class="nl">④ 交叉熵</text>
+          <rect x="8" y="122" width="152" height="46" rx="8" class="d-ink nf"/>
+          <text x="84" y="150" text-anchor="middle" class="nl">⑤ 多分类 softmax</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。合起来就是第 12 节那个逻辑回归分类器——D01 的直线,加一层 sigmoid、换一个损失。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 B ===== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <div class="callout go">
+        <span class="label">默认主线 · 直觉优先</span>
+        <p><b>StatQuest《Logistic Regression》系列 + Google ML 速成课「分类」章。</b>为什么:StatQuest 把 sigmoid、决策边界、为什么用对数损失讲得极直观;Google 速成课配可交互演示和阈值/ROC 小节。链接:<a href="https://www.youtube.com/watch?v=yIYKR4sgzI8" target="_blank" rel="noopener">StatQuest · Logistic Regression</a>、<a href="https://developers.google.com/machine-learning/crash-course/classification" target="_blank" rel="noopener">Google ML Crash Course · Classification</a>。</p>
+      </div>
+      <p><b>再配两件:</b></p>
+      <ul>
+        <li><b>scikit-learn 文档</b> — <a href="https://scikit-learn.org/stable/modules/linear_model.html#logistic-regression" target="_blank" rel="noopener">Logistic Regression</a>,动手一手参考。</li>
+        <li><b>《动手学深度学习》softmax 回归章</b> — <a href="https://zh.d2l.ai/chapter_linear-networks/softmax-regression.html" target="_blank" rel="noopener">中文、把二分类推广到多分类 + 交叉熵</a>。</li>
+      </ul>
+
+      <!-- ===== 模块 C ===== -->
+      <p class="handoff">先分清两件不同的任务:回归和分类到底差在哪。</p>
+      <h2 id="task"><span class="no">7</span><span>从回归到分类</span></h2>
+      <p class="one-liner"><b>回归</b>预测一个连续数值(房价、气温);<b>分类</b>预测一个离散类别(是/否、猫/狗/鸟)。分类要的是"属于某类的概率",而线性回归的输出没有上下限,直接拿来当概率会出界、还对离群点极敏感——所以要改造。</p>
+      <p>具体为什么线性回归不适合分类:假设把"是垃圾邮件=1,不是=0"当数值,用 D01 硬拟合。问题一,<code>w·x+b</code> 可能算出 3.7 或 −2,当"概率"讲不通;问题二,只要来一封"极其垃圾"的邮件(特征值很大),为了照顾它,整条拟合线会被硬生生带歪,把原本分对的样本判错。分类需要的是一个"温和地把分数转成概率、且不被极端值牵着走"的机制。sigmoid 正是为此而来。</p>
+
+      <p class="handoff">这个"把分数转成概率"的零件,就是 sigmoid。</p>
+      <h2 id="sigmoid"><span class="no">8</span><span>sigmoid:把分数挤成概率</span></h2>
+      <p class="one-liner">sigmoid 是一条 <b>S 形曲线</b>:输入任意实数,输出被挤进 0~1。<code>z</code> 很大 → 趋近 1(几乎肯定是正类);<code>z</code> 很小(很负)→ 趋近 0;<code>z=0</code> → 正好 0.5(拿不准)。它把 D01 的加权和 <code>z</code> 平滑地翻译成"属于正类的概率"。</p>
+      <p>直觉上,sigmoid 做了两件好事:一是<b>有界</b>(永远在 0~1),输出天然能当概率;二是<b>平滑单调</b>,<code>z</code> 越大概率越高,且处处可导(梯度下降需要)。它中间陡、两端平——意味着"模型很有把握时(z 很大或很小),再变一点分数也几乎不改变判断",这符合直觉。逻辑回归的完整预测就是:<code>概率 = sigmoid(w·x + b)</code>。前半截和 D01 一模一样,只在最外面包了一层 S 形。</p>
+      <figure>
+        <svg viewBox="0 0 560 240" role="img" aria-label="sigmoid S 形曲线">
+          <line x1="40" y1="130" x2="530" y2="130" class="d-ink"/><line x1="285" y1="30" x2="285" y2="215" class="d-ink"/>
+          <text x="528" y="148" text-anchor="end" class="el">z = w·x+b</text>
+          <text x="300" y="44" class="el">概率</text>
+          <line x1="40" y1="50" x2="530" y2="50" class="d-soft"/><text x="30" y="54" text-anchor="end" class="el">1</text>
+          <line x1="40" y1="90" x2="530" y2="90" class="d-soft"/><text x="30" y="94" text-anchor="end" class="el">0.5</text>
+          <text x="30" y="134" text-anchor="end" class="el">0</text>
+          <path d="M50 128 C 200 126, 250 92, 285 90 C 320 88, 370 54, 520 52" class="d-acc"/>
+          <circle cx="285" cy="90" r="4" class="dot-acc"/><text x="292" y="108" class="el-acc">z=0 → 0.5(拿不准)</text>
+          <text x="70" y="120" class="el">z 很负 → 趋近 0</text>
+          <text x="410" y="72" class="el">z 很大 → 趋近 1</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>sigmoid:把任意分数 z 挤进 0~1 当概率。中间陡(判断敏感区)、两端平(已很有把握);z=0 恰好 0.5。</figcaption>
+      </figure>
+
+      <p class="handoff">有了概率,怎么落到"判成哪一类"?这就引出决策边界。</p>
+      <h2 id="boundary"><span class="no">9</span><span>决策边界</span></h2>
+      <p class="one-liner">规则很简单:<b>概率 ≥ 0.5 判正类,否则判负类</b>。而概率=0.5 恰好对应 <code>z = w·x+b = 0</code>——这个方程在特征空间里就是一条线(二维)或一个平面(高维),它就是<b>决策边界</b>:线一边判正、另一边判负。</p>
+      <p>所以 D01 那条直线并没有消失,它换了个身份:在回归里它是"预测值",在分类里它是"分界线"。<code>w、b</code> 决定这条线的位置和方向,训练就是把这条线挪到最能把两类分开的地方。注意:<b>逻辑回归的边界是直的</b>(线性),所以它只能分开"大致能用一条直线隔开"的两类;遇到犬牙交错的复杂边界,就需要更强的模型(树、神经网络)——这也是后面几章的动机。<b>阈值 0.5 也不是铁律</b>:医疗筛查宁可错杀不可放过,就把阈值调低,让更多样本判为"阳性"(这接到 D05 的精确率/召回率权衡)。</p>
+      <figure>
+        <svg viewBox="0 0 560 240" role="img" aria-label="二维特征空间里的决策边界">
+          <line x1="50" y1="210" x2="520" y2="210" class="d-ink"/><line x1="50" y1="210" x2="50" y2="20" class="d-ink"/>
+          <text x="490" y="228" class="el">特征 x₁</text><text x="30" y="30" class="el">x₂</text>
+          <line x1="90" y1="40" x2="470" y2="200" class="d-acc"/>
+          <text x="360" y="150" class="el-acc">决策边界 w·x+b=0</text>
+          <circle cx="140" cy="70" r="5" class="dot-acc"/><circle cx="190" cy="95" r="5" class="dot-acc"/><circle cx="150" cy="120" r="5" class="dot-acc"/><circle cx="230" cy="70" r="5" class="dot-acc"/>
+          <text x="150" y="55" class="el-acc">正类(概率&gt;0.5)</text>
+          <circle cx="360" cy="185" r="5" class="dot"/><circle cx="410" cy="160" r="5" class="dot"/><circle cx="320" cy="170" r="5" class="dot"/><circle cx="440" cy="190" r="5" class="dot"/>
+          <text x="330" y="205" class="el">负类(概率&lt;0.5)</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>二维时决策边界是一条直线:一边判正类、另一边判负类。训练就是把这条线挪到最能分开两类的位置。逻辑回归的边界永远是直的。</figcaption>
+      </figure>
+
+      <p class="handoff">训练要一把损失尺子——但这次不能用 D01 的平方误差。</p>
+      <h2 id="crossentropy"><span class="no">10</span><span>交叉熵:狠罚"自信地错"</span></h2>
+      <p class="one-liner">分类用<b>交叉熵</b>(对数损失)当损失,不用 MSE。核心特性:当模型<b>很自信却判错</b>时(如真实是正类、它给的概率却接近 0),损失会<b>飙到极大</b>——狠狠惩罚"自信地犯错",逼它别乱打包票。</p>
+      <p>为什么不用 MSE:一是 MSE 配上 sigmoid,损失曲面会变得"平坦难走",梯度下降经常卡住学不动;二是交叉熵天然衡量"两个概率分布差多少",和"输出概率"的任务严丝合缝。它的直觉是:<b>对正确答案给的概率越高,损失越小(给满 1 则损失为 0);给正确答案的概率越接近 0,损失越趋于无穷</b>。这就把"要有把握,但错了别嘴硬"编进了训练目标。除了换损失,训练流程和 D01 一字不差——还是求梯度、还是梯度下降下山。</p>
+      <figure>
+        <svg viewBox="0 0 520 220" role="img" aria-label="交叉熵:给正确答案的概率越低,损失越大">
+          <line x1="60" y1="180" x2="470" y2="180" class="d-ink"/><line x1="60" y1="180" x2="60" y2="30" class="d-ink"/>
+          <text x="300" y="205" text-anchor="middle" class="el">模型给"正确类别"的概率 →</text>
+          <text x="44" y="105" text-anchor="middle" class="el" transform="rotate(-90 44 105)">损失 →</text>
+          <path d="M80 40 C 140 120, 200 165, 440 176" class="d-acc"/>
+          <text x="90" y="60" class="el-acc">自信地错 → 损失爆炸</text>
+          <circle cx="440" cy="176" r="4" class="dot"/><text x="360" y="168" class="el">给满 1 → 损失≈0</text>
+        </svg>
+        <figcaption><span class="fig-num">图 4</span>交叉熵:横轴是"模型给正确答案的概率"。给得越高损失越小(给满 1 则≈0);给得越低(自信地判错)损失越飙升。它逼模型"有把握但别嘴硬"。</figcaption>
+      </figure>
+
+      <p class="handoff">两类会了,类别更多怎么办?一步推广。</p>
+      <h2 id="softmax"><span class="no">11</span><span>多分类:softmax</span></h2>
+      <p class="one-liner">类别多于两个(猫/狗/鸟)时,把 sigmoid 换成 <b>softmax</b>:给每个类别算一个分数,再统一归一化成"加起来等于 1"的一组概率,取最大的那个作预测。它是 sigmoid 的多类版,损失仍用交叉熵。</p>
+      <p>做法:每个类别有自己的一套 <code>w、b</code>,各算一个分数 <code>z</code>;softmax 把这几个 <code>z</code> 变成一组和为 1 的概率(分数高的拿走更多概率)。比如三类算出概率 [0.7, 0.2, 0.1],就判第一类。<b>为什么要记住 softmax:它就是大模型"预测下一个词"的最后一步</b>——词表里几万个词各算一个分数,softmax 归一成概率,再按概率采样。在 <a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>见过的"模型输出下一个词的概率分布",底层正是 softmax。小小的逻辑回归,一路通到 LLM。</p>
+
+      <!-- ===== 模块 D ===== -->
+      <p class="handoff">把五块拼起来——训练一个逻辑回归分类器。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:训练一个分类器</span></h2>
+      <p>先看 sigmoid 本身长什么样(几行),再用 scikit-learn 训练完整分类器:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">sigmoid_demo.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> numpy </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> np</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> sigmoid(z):</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> 1 </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> (1 </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> np.exp(</span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F">z))       </span><span style="color:#8B95A8;font-style:italic"># ② 把任意 z 挤进 0~1</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(sigmoid(0))     </span><span style="color:#8B95A8;font-style:italic"># 0.5   —— z=0 拿不准</span></span>
+<span class="line"><span style="color:#14181F">print(sigmoid(5))     </span><span style="color:#8B95A8;font-style:italic"># 0.993 —— 很大 → 几乎肯定正类</span></span>
+<span class="line"><span style="color:#14181F">print(sigmoid(</span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F">5))    </span><span style="color:#8B95A8;font-style:italic"># 0.007 —— 很负 → 几乎肯定负类</span></span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="chead"><span class="fn">logreg_sklearn.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.linear_model </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> LogisticRegression</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.datasets </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> load_breast_cancer</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.model_selection </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> train_test_split</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">X, y </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> load_breast_cancer(return_X_y</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)          </span><span style="color:#8B95A8;font-style:italic"># 一个「良性/恶性」二分类数据集</span></span>
+<span class="line"><span style="color:#14181F">X_tr, X_te, y_tr, y_te </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> train_test_split(X, y, test_size</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0.2, random_state</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">clf </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> LogisticRegression(max_iter</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">5000).fit(X_tr, y_tr)   </span><span style="color:#8B95A8;font-style:italic"># ①②④ 训练(内部就是本章那套)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"准确率:"</span><span style="color:#14181F">, clf.score(X_te, y_te))              </span><span style="color:#8B95A8;font-style:italic"># 在没见过的数据上评估</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"头 3 个样本判正类的概率:"</span><span style="color:#14181F">, clf.predict_proba(X_te)[:3, 1])   </span><span style="color:#8B95A8;font-style:italic"># ② sigmoid 出来的概率</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"判成的类别:"</span><span style="color:#14181F">, clf.predict(X_te)[:3])          </span><span style="color:#8B95A8;font-style:italic"># ③ 概率过 0.5 → 类别</span></span></code></pre>
+      </div>
+      <p>逐块对照:<code>LogisticRegression().fit</code> 内部做的就是本章全部——线性部分 + sigmoid + 交叉熵 + 梯度类优化;<code>predict_proba</code> 给出的正是 sigmoid 输出的<b>概率</b>(②);<code>predict</code> 是用 0.5 阈值把概率转成<b>类别</b>(③)。会看到它在没见过的测试集上准确率相当高——而且因为是逻辑回归,还能看 <code>clf.coef_</code> 知道<b>每个特征把判断往哪个方向推</b>(可解释性,D01 的老优点)。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战</span>
+        <h3>改改看</h3>
+        <p>①打印 <code>predict_proba</code> 全部,把默认 0.5 阈值改成 0.3 再手动判类,看有多少样本改判——体会阈值如何权衡"宁可错杀/宁可放过"(接 D05)。②看 <code>clf.coef_</code> 里最大和最小的权重对应哪些特征,解释它们把判断推向良性还是恶性。③把数据换成三分类的 <code>load_iris</code>,观察 <code>predict_proba</code> 每行是不是三个数加起来等于 1(softmax)。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;下列链接均于 2026-08-17 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=yIYKR4sgzI8" target="_blank" rel="noopener">StatQuest · Logistic Regression</a></span><span class="spine">默认主线</span><span class="tags">视频 · 英文(可开字幕) · 30min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">用动画把逻辑回归(线性 + sigmoid)讲透的经典系列。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章讲清了"分类边界"和"交叉熵"的道理,它把 sigmoid 的直觉钉死。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">系列前几集(逻辑回归 + 拟合)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「线性 + sigmoid + 交叉熵」「决策边界」几节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://developers.google.com/machine-learning/crash-course/classification" target="_blank" rel="noopener">Google 速成课 · 分类</a></span><span class="tags">官方课程 · 可切中文 · 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">分类问题的入门课,阈值 / ROC 都有交互演示。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想亲手拖阈值、看精确率召回率怎么此消彼长时用它(也预习 D05)。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Classification 章 + 交互演示。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「决策边界」节,接 <a href="D05-评价指标与验证深挖.html">D05</a>。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://zh.d2l.ai/chapter_linear-networks/softmax-regression.html" target="_blank" rel="noopener">动手学深度学习 · softmax 回归</a></span><span class="tags">中文 · 书+代码 · 40min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">把二分类推广到多分类(softmax + 交叉熵)的一章。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">softmax 正是 LLM 预测下一词的最后一步;这里把它讲全、给代码。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">softmax 回归节。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「softmax(LLM 预测下一词的最后一步)」节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://scikit-learn.org/stable/modules/linear_model.html#logistic-regression" target="_blank" rel="noopener">scikit-learn · Logistic Regression</a></span><span class="tags">官方 · 当字典查 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">逻辑回归的一手文档。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">动手训一个分类器时查参数(正则、多分类策略)。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Logistic regression 一节。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配本章代码对照。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>逻辑回归是回归算法</td><td>名字带回归,实际做分类;"回归"指内部那段线性加权和。</td></tr>
+          <tr><td>可以直接拿线性回归输出当概率</td><td>它没有 0~1 上下限、还被离群点带偏。要用 sigmoid 挤成概率。</td></tr>
+          <tr><td>分类也用均方误差就行</td><td>MSE 配 sigmoid 梯度易卡住。分类用交叉熵,狠罚"自信地错",训练更顺。</td></tr>
+          <tr><td>决策边界可以是任意曲线</td><td>逻辑回归的边界是直的(线性)。复杂边界要靠树/神经网络。</td></tr>
+          <tr><td>阈值必须是 0.5</td><td>0.5 只是默认。按代价调:重"别漏"就调低,重"别误报"就调高(D05)。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>一句话本质。</b>逻辑回归是怎么从线性回归改造来的?<details><summary>参考答案</summary><p>线性部分 w·x+b 不变,末尾套 sigmoid 挤成 0~1 概率、过 0.5 判正类,损失从 MSE 换成交叉熵;训练仍是梯度下降。</p></details></li>
+        <li><b>sigmoid。</b>z=0、z 很大、z 很负分别输出什么?<details><summary>参考答案</summary><p>z=0 → 0.5(拿不准);z 很大 → 趋近 1;z 很负 → 趋近 0。</p></details></li>
+        <li><b>边界。</b>决策边界在图上是哪条线、怎么来的?<details><summary>参考答案</summary><p>概率=0.5 对应 w·x+b=0 的那条线/面;一边判正、一边判负。逻辑回归的边界是直的。</p></details></li>
+        <li><b>损失。</b>为什么分类用交叉熵不用 MSE?<details><summary>参考答案</summary><p>MSE 配 sigmoid 梯度易卡;交叉熵衡量概率分布差异、狠罚"自信地错",与输出概率的任务契合,训练更顺。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上再进 D03(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清回归与分类的区别</li>
+          <li><input type="checkbox"> 我知道 sigmoid 把分数挤成 0~1 概率,且理解 S 形</li>
+          <li><input type="checkbox"> 我能指出决策边界是哪条线、由 w·x+b=0 而来</li>
+          <li><input type="checkbox"> 我理解分类用交叉熵、它狠罚"自信地错"</li>
+          <li><input type="checkbox"> 我知道 softmax 是多分类版,且是 LLM 预测下一个词的最后一步</li>
+          <li><input type="checkbox"> 我能用 scikit-learn 训练逻辑回归、读懂 predict_proba</li>
+          <li><input type="checkbox"> 我知道阈值 0.5 可按代价调整</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>线性回归、逻辑回归的边界都是"直的"——遇到犬牙交错的复杂数据就力不从心。<a href="D03-决策树随机森林与梯度提升.html">D03 · 决策树、随机森林与梯度提升</a>换一条完全不同的思路:不画一条线,而是<b>一层层地问"是/否"把数据切成小块</b>(像玩二十个问题);再把很多棵这样的树<b>组合起来</b>,得到表格数据上至今最能打的模型之一(XGBoost/LightGBM)。会看到"边界"可以不是直线,而是一块块拼出来的。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="D01-线性回归全拆解.html"><span class="lb">上一章</span><span class="tt">D01 · 线性回归全拆解</span></a>
+        <a href="D03-决策树随机森林与梯度提升.html" class="next"><span class="lb">下一章</span><span class="tt">D03 · 决策树与集成</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D02 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="task" href="#task"><i>7</i>回归 → 分类</a>
+        <a data-toc-target="sigmoid" href="#sigmoid"><i>8</i>sigmoid</a>
+        <a data-toc-target="boundary" href="#boundary"><i>9</i>决策边界</a>
+        <a data-toc-target="crossentropy" href="#crossentropy"><i>10</i>交叉熵</a>
+        <a data-toc-target="softmax" href="#softmax"><i>11</i>多分类 softmax</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>训练分类器</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D02" data-kind="chapter" data-title="逻辑回归与分类边界"></script>
+</body>
+</html>

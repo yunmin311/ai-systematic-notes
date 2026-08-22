@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D11 · 迁移学习与微调</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="D10-优化器正则化与训练技巧.html">D10 训练技巧</a><span class="sep">—</span>
+      <a href="D11-迁移学习与微调.html" class="current">D11 迁移学习</a><span class="sep">—</span>
+      <span class="plan">Track B 收官 · 通向 Track C</span>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D11.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track B · Chapter D11 · 深度学习收官</p>
+        <h1>迁移学习与微调</h1>
+        <p class="recap">前四章学会了<b>从零训练并调好</b>一个深度模型。但现实很骨感:好模型往往要<b>几百万张标注数据 + 一堆 GPU 训好几天</b>,而手头常常只有几百张图、一块普通显卡。这一章讲破局之道——<b>不从零训,站在别人训好的大模型肩膀上</b>:拿一个在海量数据上预训练好的模型,借用它已经学会的通用特征,只用一点点数据"微调"出自己的模型。这是今天绝大多数深度学习项目的真实做法,<b>也正是"拿开源大模型微调出专用助手"(Track C)背后同一个思想</b>。学完它,Track B 深度学习就全通了。</p>
+      </header>
+
+      <p>图解骨架约 25 分钟,动手约 3~4 小时。核心就一句话:<b>别人训好的特征,拿来直接用</b>。这一章讲怎么用、以及"冻多少、调多少"怎么定。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>为什么不从零训——数据不够、算力不够、也没必要</li>
+          <li>预训练模型——别人在海量数据上训好、学到了通用特征</li>
+          <li>特征复用(冻结)——把预训练模型当"现成的特征提取器"</li>
+          <li>微调 fine-tuning——解冻部分层,用小学习率在数据上继续训</li>
+          <li>怎么选策略——数据量 × 相似度,决定"冻多少、调多少"</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>用的还是 <a href="D07-PyTorch与完整训练循环.html">D07</a> 的训练循环 + <a href="D10-优化器正则化与训练技巧.html">D10</a> 的调参技巧,只是模型换成"预训练模型 + 新头";复用"浅层学通用特征"续 <a href="D08-卷积神经网络CNN.html">D08</a>。<b>通向后面:</b>这正是 <b>Track C</b> 里"拿预训练大语言模型微调"(<a href="../index.html">D16</a>)的同一套思想,只是从图像换成了文本、规模更大。</p>
+      </div>
+
+      <!-- ===== 模块 A ===== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>想做一个实际的图像/文本任务,但数据只有几百上千条的人。</li>
+        <li>没有强大 GPU、训不起大模型,却想要好效果的人。</li>
+        <li>好奇"为什么大家都在‘微调’大模型",想理解这背后原理的人。</li>
+      </ul>
+      <p><b>不适合</b>:还不会训练一个模型的人——请先做完 <a href="D07-PyTorch与完整训练循环.html">D07</a> 到 <a href="D10-优化器正则化与训练技巧.html">D10</a>。迁移学习是"换个模型来源",训练和调参用的都是前面那套。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>需要:<a href="D07-PyTorch与完整训练循环.html">D07</a>(训练循环)、<a href="D08-卷积神经网络CNN.html">D08</a>(CNN、"浅层学通用特征")、<a href="D10-优化器正则化与训练技巧.html">D10</a>(学习率、正则化)。没有新数学。理解一个关键直觉即可:<b>预训练模型浅层学到的"边缘、纹理"等特征是通用的,换个任务也能用。</b></p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清为什么现实中很少从零训练模型。</li>
+        <li>解释预训练模型"学到了什么、为什么能迁移"。</li>
+        <li>区分"特征复用(冻结)"和"微调",知道各在什么时候用。</li>
+        <li>根据"数据多少 × 任务像不像",选对迁移策略。</li>
+        <li>用 PyTorch 加载一个预训练模型、换掉头、在自己数据上训出结果。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">迁移学习:<b>把一个在海量数据上训好的模型,当作该任务的起点,而不是从随机权重从头学。</b>因为它前面那些层学到的"边缘、纹理、形状"等特征是通用的——只需在这个坚实的地基上,用自己的一点点数据,把最后判断的部分改造成自己要的。省数据、省算力、效果还常常更好。</p>
+      <p>为什么行得通:<a href="D08-卷积神经网络CNN.html">D08</a> 讲过 CNN 是"浅层看边缘、深层看整体"。一个在 ImageNet(上百万张图、一千个类别)上训好的模型,它<b>浅层学到的边缘/纹理/颜色探测器,对任何图像任务都通用</b>——不管要认的是猫狗、皮肤病还是零件缺陷,第一步都得先看边缘和纹理。既然别人已经用海量数据把这些通用特征学得又好又稳,何必用自己那几百张图从零重学一遍(还多半学不好、极易过拟合)?聪明的做法是<b>借用</b>:保留它学好的特征层,只把最后"做最终判断"的那一小块换成任务专属、用数据训。这就是迁移学习省数据、省算力还效果好的根源。文本领域完全同理——大语言模型就是在海量文本上"预训练"出通用语言能力,再微调到具体任务(Track C)。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="迁移学习五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="640" y1="168" x2="480" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="540" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="220" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="120" y1="168" x2="280" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">站在巨人肩上,</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">用一点数据出结果</text>
+          <rect x="270" y="32" width="220" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 为什么不从零训</text>
+          <rect x="596" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="674" y="150" text-anchor="middle" class="nl">② 预训练模型</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ 特征复用/冻结</text>
+          <rect x="150" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="232" y="358" text-anchor="middle" class="nl">④ 微调</text>
+          <rect x="8" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="86" y="150" text-anchor="middle" class="nl">⑤ 怎么选策略</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。②预训练模型是"巨人",③冻结=只借用不改、④微调=借用后再改,⑤按"数据量×相似度"决定冻多少、调多少。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 B ===== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <div class="callout go">
+        <span class="label">默认主线 · 官方手把手</span>
+        <p><b>PyTorch 官方《迁移学习》教程 + Hugging Face 课程的微调章。</b>为什么:PyTorch 教程直接演示加载预训练模型、冻结、换头、微调,和本章第 11 节落点一致;HF 课程把同一套思想搬到文本/大模型上,正好衔接 Track C。链接:<a href="https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html" target="_blank" rel="noopener">PyTorch · Transfer Learning</a>、<a href="https://huggingface.co/learn/nlp-course/chapter3/1" target="_blank" rel="noopener">HF · Fine-tuning</a>。</p>
+      </div>
+      <p><b>找现成模型:</b></p>
+      <ul>
+        <li><b>模型仓库</b> — 图像看 <a href="https://pytorch.org/vision/stable/models.html" target="_blank" rel="noopener">torchvision.models</a>(ResNet 等一行加载);文本/多模态看 <a href="https://huggingface.co/models" target="_blank" rel="noopener">Hugging Face Models</a>——几十万个预训练模型任选。</li>
+      </ul>
+
+      <!-- ===== 模块 C ===== -->
+      <p class="handoff">先把"为什么从零训是下策"这件事说透。</p>
+      <h2 id="why"><span class="no">7</span><span>为什么不从零训</span></h2>
+      <p class="one-liner">从零训练一个好模型有三道坎:<b>要海量标注数据</b>(几十万起,多半没有)、<b>要大量算力</b>(训好几天的 GPU,多半租不起)、<b>还极易过拟合</b>(数据少、参数多,模型直接背答案)。迁移学习一次绕过这三坎:通用特征别人已经学好了,只补最后一小步。</p>
+      <p>算笔账就懂了:一个像样的图像模型有几千万参数,要把它们从随机值学到位,需要的数据量和算力都是天文数字——这是大公司才玩得起的游戏。而真实任务(认某种零件缺陷、分某类医学影像)往往只有几百到几千张标注图。用这么点数据从零训一个大模型,结果必然是灾难性过拟合:训练集背得滚瓜烂熟、新数据一塌糊涂(<a href="D10-优化器正则化与训练技巧.html">D10</a>)。迁移学习把问题重新框定:要学的不是"从像素到答案的一切",而只是"在别人已经提炼好的高层特征之上,做这个任务的最后判断"——这一步需要的数据和算力,就小得多、也现实得多。</p>
+
+      <p class="handoff">巨人是谁:预训练模型到底是什么。</p>
+      <h2 id="pretrain"><span class="no">8</span><span>预训练模型</span></h2>
+      <p class="one-liner">预训练模型 = 别人已经在<b>某个大数据集上训练好、并公开权重</b>的模型。图像界的经典是在 <b>ImageNet</b>(128 万张图、1000 类)上训好的 ResNet 等;文本界就是在海量网页文本上训好的大语言模型。它们的<b>前面几层学到了通用的低/中层特征</b>,这些特征换个任务照样有用——这正是能"迁移"的原因。</p>
+      <p>关键要理解"它带来的是什么":一个 ImageNet 预训练模型,浅层是一堆训练好的边缘/纹理/颜色探测器,中层是形状/部件探测器,深层才是"这是不是某个 ImageNet 类别"的判断。前两部分(通用特征)对几乎任何图像任务都直接可用;只有最深那部分(专为 ImageNet 的 1000 类做判断)和任务无关,需要替换。所以迁移的标准动作是:<b>保留前面的特征层、换掉最后的"分类头"</b>——换成一个匹配目标类别数的新层(比如只分 3 类,就换一个输出 3 的层)。用 <code>torchvision.models.resnet18(weights=...)</code> 一行就能把这样一个巨人搬进来。文本同理:预训练大模型带来的是通用语言理解,只需在它之上微调出具体任务。</p>
+
+      <p class="handoff">借用有两种深浅:只借不改(冻结),还是借了再改(微调)。</p>
+      <h2 id="freeze"><span class="no">9</span><span>特征复用(冻结)与微调</span></h2>
+      <p class="one-liner">两种用法,深浅不同。<b>特征复用(冻结)</b>:把预训练模型的特征层<b>冻住</b>(训练时不更新它们),只把它当一个"现成的特征提取器",单独训练新换的头——快、省、数据少时最稳。<b>微调(fine-tuning)</b>:<b>解冻</b>部分(或全部)层,用一个<b>很小的学习率</b>在数据上继续训——让通用特征也朝任务微调一点,数据够时效果更好。</p>
+      <p>怎么理解"冻结":把某些层的参数标记为"不参与梯度更新"(<code>requires_grad=False</code>),训练时它们保持预训练学到的值不变,只有新加的头在学。这样需要学的参数极少,几百张图也能训得稳、还快。<b>微调</b>则更进一步:允许预训练层也被更新,但必须用<b>很小的学习率</b>(如 <code>1e-4</code> 甚至更小)——因为那些权重已经很好了,大步一走就会把学好的特征"抖坏"(灾难性遗忘)。常见的稳妥流程是<b>两段式</b>:先冻结、只训新头几轮让它站稳,再解冻、用小学习率整体微调几轮精修。到底冻多少、要不要微调,取决于下一节的两个因素。</p>
+      <figure>
+        <svg viewBox="0 0 640 220" role="img" aria-label="迁移学习:冻结特征层、换掉新头">
+          <defs><marker id="m-tf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <text x="150" y="28" text-anchor="middle" class="el">预训练模型(在海量数据上训好)</text>
+          <rect x="40" y="44" width="220" height="52" rx="8" class="frozen"/>
+          <text x="150" y="66" text-anchor="middle" class="nl">特征层(边缘/纹理/形状)</text>
+          <text x="150" y="85" text-anchor="middle" class="el">🔒 冻结:借用,不更新</text>
+          <rect x="40" y="112" width="220" height="46" rx="8" class="frozen"/>
+          <text x="150" y="140" text-anchor="middle" class="el">原分类头(ImageNet 1000 类)✗ 丢弃</text>
+          <line x1="272" y1="118" x2="332" y2="118" class="d-acc" marker-end="url(#m-tf)"/>
+          <text x="302" y="108" text-anchor="middle" class="el-acc">换头</text>
+          <text x="490" y="28" text-anchor="middle" class="el">模型</text>
+          <rect x="380" y="44" width="220" height="52" rx="8" class="frozen"/>
+          <text x="490" y="66" text-anchor="middle" class="nl">同一批特征层(借来)</text>
+          <text x="490" y="85" text-anchor="middle" class="el">🔒 冻结 或 小学习率微调</text>
+          <rect x="380" y="112" width="220" height="46" rx="8" class="box-acc"/>
+          <text x="490" y="134" text-anchor="middle" class="nl-acc">新分类头( N 类)</text>
+          <text x="490" y="151" text-anchor="middle" class="el-acc">用数据训</text>
+          <text x="320" y="196" text-anchor="middle" class="el">借用特征层(灰=冻结),只换/训最后的头(蓝=训)</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>迁移学习的标准动作:保留预训练的特征层(灰=冻结/小学习率),丢掉原来的分类头,换上匹配该任务类别数的新头(蓝),用数据训这个头。</figcaption>
+      </figure>
+
+      <p class="handoff">冻多少、要不要微调,由两个因素定,一张表说清。</p>
+      <h2 id="strategy"><span class="no">10</span><span>怎么选策略:数据量 × 相似度</span></h2>
+      <p class="one-liner">两个问题定策略:<b>数据有多少?任务和预训练数据像不像?</b> 数据少 + 很像 → 只训新头(冻结全部特征层);数据多 + 不太像 → 微调更多层甚至全部。核心权衡:<b>数据越少越要多冻</b>(防过拟合),<b>任务越不像越要多调</b>(通用特征不够用)。</p>
+      <p>四种情形:<b>数据少 + 相似</b>(如少量猫狗图,ImageNet 里就有猫狗)——最省心:冻结全部特征层,只训一个新头。<b>数据少 + 不相似</b>(如少量医学影像)——两难:数据少不敢大改,但特征又不太对口;折中办法是冻住浅层(通用边缘纹理仍有用)、只微调靠后几层 + 新头。<b>数据多 + 相似</b>——可以微调整个网络,用小学习率,效果通常最好。<b>数据多 + 不相似</b>——微调全部、甚至考虑训练更久;数据够多时迁移带来的主要是"更好的起点、更快收敛"。<b>一个万能起手式:先全冻、只训头看个基线,再逐步解冻靠后的层观察验证集有没有变好</b>——简单、安全、可控。</p>
+      <table class="tbl">
+        <caption>表 1 · 迁移策略速查(行=数据量,列=与预训练的相似度)</caption>
+        <thead><tr><th>　</th><th>任务很相似</th><th>任务不太相似</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td>数据很少</td><td>全冻特征层,只训新头</td><td>冻浅层,微调靠后几层 + 新头</td></tr>
+          <tr class="sel"><td>数据较多</td><td>微调整个网络(小学习率)</td><td>微调全部,可训久一点</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ===== 模块 D ===== -->
+      <p class="handoff">把"加载预训练 → 换头 → 冻结 → 训练"写成代码。</p>
+      <h2 id="assemble"><span class="no">11</span><span>组装:加载 ResNet、换头、微调</span></h2>
+      <p>下面用 torchvision 的预训练 ResNet18 做迁移:冻住特征层、换掉最后的分类头成 N 类,只训这个头。训练?还是 <a href="D07-PyTorch与完整训练循环.html">D07</a> 那五步:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">transfer_resnet.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch.nn </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> nn</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> torchvision </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> models</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 1. 加载预训练模型(一行搬来"巨人")</span></span>
+<span class="line"><span style="color:#14181F">model </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> models.resnet18(weights</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">models.ResNet18_Weights.DEFAULT)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 2. 冻结所有特征层:标记为不更新(特征复用)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> p </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> model.parameters():</span></span>
+<span class="line"><span style="color:#14181F">    p.requires_grad </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> False</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 3. 换掉最后的分类头:原来输出 1000 类 → 换成你的 N 类</span></span>
+<span class="line"><span style="color:#14181F">num_classes </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 3                      </span><span style="color:#8B95A8;font-style:italic"># 假设你只分 3 类</span></span>
+<span class="line"><span style="color:#14181F">model.fc </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.Linear(model.fc.in_features, num_classes)</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 新换的 fc 层默认 requires_grad=True,所以只有它会被训练</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 4. 优化器只优化"需要更新的参数"(也就是新头),用小学习率</span></span>
+<span class="line"><span style="color:#14181F">optimizer </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> torch.optim.Adam(</span></span>
+<span class="line"><span style="color:#14181F">    [p </span><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> p </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> model.parameters() </span><span style="color:#14181F;font-weight:bold">if</span><span style="color:#14181F"> p.requires_grad], lr</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">1e-3)</span></span>
+<span class="line"><span style="color:#14181F">loss_fn </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.CrossEntropyLoss()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 5. 训练:还是 D07 的五步循环(此处略),只训新头,几百张图也能训得又快又好</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 想进一步微调?把第 2 步部分层改回 requires_grad=True、再用更小的 lr=1e-4 续训</span></span></code></pre>
+      </div>
+      <p>逐块对照本章:第 1 步 <code>resnet18(weights=...)</code> 把"巨人"搬来(第 8 节);第 2 步 <code>requires_grad=False</code> 就是"冻结"(第 9 节),让特征层保持预训练的值;第 3 步换 <code>model.fc</code> 就是"换头"(图 2),输出改成类别数;第 4 步优化器只收 <code>requires_grad=True</code> 的参数——也就是只训新头,又快又稳。要从"特征复用"升级成"微调",只需把靠后几层解冻、再用更小的学习率续训(第 9 节的两段式)。<b>就这么几行,就用几百张图和一块普通显卡,站上了别人几百万张图训出来的肩膀。</b></p>
+      <div class="challenge">
+        <span class="label">进阶挑战 · 迁移一把</span>
+        <h3>用几百张图训一个像样的分类器</h3>
+        <p>①找一个小图像数据集(如 torchvision 的 Hymenoptera 蜜蜂/蚂蚁,或自己拍几百张分两三类),按上面的代码做"冻结 + 换头 + 只训头",记下验证准确率。②对比:同样的数据,<b>从零训</b>一个同样结构的模型,看准确率差多远、过拟合多严重——会直观感到迁移学习的威力。③再做"两段式微调"(先训头、再解冻靠后层用 <code>lr=1e-4</code> 续训),看能不能再提几个点。④想想:这套"预训练 + 微调"的思想,搬到文本上会是什么样?(带着这个问题进 Track C。)</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">12</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;下列链接均于 2026-08-19 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html" target="_blank" rel="noopener">PyTorch · Transfer Learning 教程</a></span><span class="spine">默认主线</span><span class="tags">官方 · 动手 · 2h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">官方教程:加载预训练 ResNet、冻结、换头、微调,一条龙可运行代码。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">和本章第 11 节的落点几乎逐行对应,跟完就能用几百张图训出自己的分类器。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全教程;重点看"finetuning"与"fixed feature extractor"两种做法的对比。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§8↔预训练模型、§9↔冻结/微调、§11↔ResNet 代码;跟它把进阶挑战跑通。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://huggingface.co/learn/nlp-course/chapter3/1" target="_blank" rel="noopener">Hugging Face 课程 · Fine-tuning</a></span><span class="tags">课程 · 可切中文 · 2h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">把"预训练 + 微调"从图像搬到文本/大模型的官方课程章节。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章埋的伏笔——"这套思想搬到文本是什么样"——这里给答案,直通 Track C。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Chapter 3(用 Trainer 微调一个预训练模型);可切换中文。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 16 节(收官)+ 进阶挑战④"搬到文本会怎样"一起看。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://cs231n.github.io/transfer-learning/" target="_blank" rel="noopener">斯坦福 CS231n · Transfer Learning</a></span><span class="tags">讲义 · 英文 · 30min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">简明讲清"什么时候冻、什么时候微调"的经典讲义。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">把本章第 10 节那张"数据量×相似度"决策表背后的道理讲透。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全文很短;重点是四种情形的策略建议。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 10 节(怎么选策略)读。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://pytorch.org/vision/stable/models.html" target="_blank" rel="noopener">torchvision.models</a></span><span class="tags">官方 · 当字典查 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">现成预训练图像模型(ResNet 等)的清单与加载方式。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">挑一个"巨人"搬来用时的参考;一行代码就能加载带权重的模型。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Classification 一节,看 <code>weights=</code> 怎么写。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 11 节代码第 1 步(加载预训练模型)。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">13</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 3 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>做深度学习都得从零训模型</td><td>正相反:现实中绝大多数是拿预训练模型微调。从零训是少数大机构的事。</td></tr>
+          <tr><td>微调时用正常学习率就行</td><td>要用很小的学习率(如 1e-4)。预训练权重已很好,大步会把学好的特征抖坏。</td></tr>
+          <tr><td>数据越少越要微调更多层</td><td>反了。数据越少越要多冻(只训头),防过拟合;数据多才敢多调。</td></tr>
+          <tr><td>换头就是随便加一层</td><td>头的输出维度要匹配类别数;通常先只训头拿基线,再决定要不要解冻。</td></tr>
+          <tr><td>迁移学习只用于图像</td><td>文本(大模型微调)、语音、蛋白质都在用。"预训练+微调"是通用范式,也是 Track C 的核心。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">14</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>为什么不从零训。</b>说出从零训的三道坎。<details><summary>参考答案</summary><p>要海量标注数据、要大量算力、且数据少时极易过拟合。迁移学习靠借用通用特征一次绕过这三坎。</p></details></li>
+        <li><b>为什么能迁移。</b>预训练模型的什么东西是"通用、可迁移"的?<details><summary>参考答案</summary><p>浅/中层学到的通用特征(边缘、纹理、形状),换个图像任务照样有用;只有最深的任务专属分类头需要替换。</p></details></li>
+        <li><b>冻结 vs 微调。</b>两者区别?微调为什么要小学习率?<details><summary>参考答案</summary><p>冻结=特征层不更新、只训新头(数据少时稳);微调=解冻部分层继续训。小学习率是因为预训练权重已很好,大步会破坏学好的特征(灾难性遗忘)。</p></details></li>
+        <li><b>选策略。</b>数据很少但任务和预训练不太像,该怎么做?<details><summary>参考答案</summary><p>冻住浅层(通用边缘纹理仍有用),只微调靠后几层 + 新头;并配好正则化(D10)防过拟合。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">15</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上,Track B 深度学习就全通了(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清现实中为什么很少从零训模型</li>
+          <li><input type="checkbox"> 我理解预训练模型"通用特征可迁移"的道理</li>
+          <li><input type="checkbox"> 我能区分特征复用(冻结)和微调</li>
+          <li><input type="checkbox"> 我知道微调要用很小的学习率、为什么</li>
+          <li><input type="checkbox"> 我能按"数据量×相似度"选迁移策略</li>
+          <li><input type="checkbox"> 我会加载预训练模型、换头、只训头</li>
+          <li><input type="checkbox"> 我看出"预训练+微调"就是大模型微调的同一思想</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">16</span><span>Track B 收官 · 通向 Track C</span></h2>
+      <p>恭喜——<b>Track B 深度学习全通了</b>:训练循环(D07)、会看图的 CNN(D08)、处理顺序的 RNN 与注意力(D09)、把模型训好的手艺(D10)、站在巨人肩上的迁移学习(D11)。现在能读懂、训练、调好、并复用一个深度模型了。</p>
+      <p>更重要的是,已经攒齐了推开<b>大模型内部(Track C)</b>那扇门的所有钥匙:<a href="D09-序列模型RNN到注意力.html">D09</a> 的<b>注意力</b>、<a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>的 <b>Token/Transformer 印象</b>、还有这一章的<b>"预训练 + 微调"</b>范式——它们正是 Track C 要逐一拆到底的东西:<a href="../index.html">Tokenizer(D12)</a>、<a href="../index.html">Embedding(D13)</a>、<a href="../index.html">注意力手算(D14)</a>、<a href="../index.html">Transformer 完整结构(D15)</a>、<a href="../index.html">预训练/RLHF(D16)</a>、<a href="../index.html">推理与部署成本(D17)</a>。这也正是学这门课最想抵达的地方——AI 的底层。地基已经全部打好,推门吧。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="D10-优化器正则化与训练技巧.html"><span class="lb">上一章</span><span class="tt">D10 · 优化器、正则化与训练技巧</span></a>
+        <a href="D12-Tokenizer与词表.html" class="next"><span class="lb">下一 Track</span><span class="tt">Track C · 大模型内部(D12 起)</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D11 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="why" href="#why"><i>7</i>为什么不从零训</a>
+        <a data-toc-target="pretrain" href="#pretrain"><i>8</i>预训练模型</a>
+        <a data-toc-target="freeze" href="#freeze"><i>9</i>冻结与微调</a>
+        <a data-toc-target="strategy" href="#strategy"><i>10</i>怎么选策略</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>11</i>ResNet 迁移代码</a>
+        <a data-toc-target="reflist" href="#reflist"><i>12</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>13</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>14</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>15</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>16</i>收官 · 通向 Track C</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D11" data-kind="chapter" data-title="迁移学习与微调"></script>
+</body>
+</html>

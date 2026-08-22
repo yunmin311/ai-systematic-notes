@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>05 · 机器学习核心概念</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+.crv{fill:none;stroke:var(--acc);stroke-width:2;} .crv-ink{fill:none;stroke:var(--ink);stroke-width:1.6;}
+.details{margin:10px 0 0;}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="04-Pandas表格数据.html">04 Pandas</a><span class="sep">—</span>
+      <a href="05-机器学习核心概念.html" class="current">05 机器学习核心</a><span class="sep">—</span>
+      <a href="06-训练的本质.html">06 训练的本质</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-05.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">基础课程 · Chapter 05</p>
+        <h1>机器学习核心概念</h1>
+        <p class="recap">前四章都在准备<b>数据</b>。这一章第一次讲「学习」本身:机器学习不是写死规则,而是从一堆例子里<b>自己找出规律</b>,再用这规律去预测新的情况。本章不碰数学细节(留到下一章),只把这门学问的地图铺开——有哪几类任务、数据怎么分、什么叫「学好了」。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,外部精读 + 动手约 4~6 小时。这一章是纯概念,不要求编程;但结尾有一个十行的 scikit-learn 例子,把概念落到能跑的代码上。每出现一个新词,当场用白话解释。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>监督 vs 无监督——有标准答案地学,还是没答案自己找结构</li>
+          <li>三大任务——分类(判类别)、回归(算数值)、聚类(自动分堆)</li>
+          <li>三份数据——训练集练、验证集调、测试集考,绝不混用</li>
+          <li>过拟合 vs 欠拟合——背答案 vs 没学会,都不会举一反三</li>
+          <li>评价指标——准确率有陷阱,还要看精确率 / 召回率</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接上一章:</b>前四章把数据读进来、整理成表。<b>通向下一章:</b><a href="06-训练的本质.html">第 6 章 训练的本质</a>才钻进「模型到底怎么学」的数学——损失函数、梯度下降。本章先把地图看清,下一章再深入一个点。</p>
+      </div>
+
+      <!-- ========== 模块 A ========== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>会用数组和表处理数据,但对「机器学习到底在学什么」还很模糊的人。</li>
+        <li>老听到监督学习、过拟合、准确率这些词,想一次把它们放进同一张地图的人。</li>
+        <li>准备动手训练第一个模型,想先把概念和术语打通、少踩坑的人。</li>
+      </ul>
+      <p><b>不适合</b>:已经清楚三大任务、会划分数据集、懂评价指标的人——直接跳到第 6 章。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>只要一样:<a href="04-Pandas表格数据.html">第 4 章</a>——知道数据长什么样(一张表:每行一个样本,每列一个特征)。本章不需要新装库;结尾的代码例子用到 <code>scikit-learn</code>,想跑的话装一下:<code>pip install scikit-learn</code>。数学一点不需要,加减乘除都用不上。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>拿到一个问题,能判断它属于分类、回归还是聚类。</li>
+        <li>说清训练集、验证集、测试集各干什么,为什么不能拿测试集去练。</li>
+        <li>看到一个模型效果好/坏,能想到「是不是过拟合/欠拟合了」。</li>
+        <li>知道「准确率 95%」可能是骗局,会追问精确率和召回率。</li>
+        <li>看懂一段最简单的 scikit-learn 代码:划分数据 → 训练 → 评估。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">机器学习:不写死规则,而是<b>喂给程序一堆「输入 → 答案」的例子,让它自己找出其中的规律</b>,再用这规律去预测没见过的新输入。</p>
+      <p>传统编程是人把规则写死:「如果邮件含『中奖』就判为垃圾」。机器学习反过来:给它一万封标好「垃圾/正常」的邮件,让它自己总结出规律,连人没想到的线索也能抓到。规律藏在数据里,程序负责把它找出来——这就是「学习」。找出来的那套规律,打包成一个能预测的东西,叫<b>模型</b>。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <p>先记住「就这五块」。中间是本章目标,四周是达成它要用的五块地基,下面模块 C 逐块拆。</p>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="机器学习五块地基环绕核心目标">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">从例子里</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">学出会预测的模型</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 监督 / 无监督</text>
+          <rect x="588" y="122" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="670" y="150" text-anchor="middle" class="nl">② 三大任务</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ 三份数据</text>
+          <rect x="144" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="226" y="358" text-anchor="middle" class="nl">④ 过/欠拟合</text>
+          <rect x="8" y="122" width="150" height="46" rx="8" class="d-ink nf"/>
+          <text x="83" y="150" text-anchor="middle" class="nl">⑤ 评价指标</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。把它们组装起来,就能看懂第 12 节那段「划分—训练—评估」的代码在做什么。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 B ========== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>本章每一小节只负责把概念用图讲清。真正把机器学习学扎实,靠<b>一条外部主线</b>——一套结构化课程从头跟完,比零散刷视频扎实得多。下面选好主线,顺着走完即可。</p>
+
+      <div class="callout go">
+        <span class="label">默认主线 · 交互课程</span>
+        <p><b>Google 机器学习速成课(Machine Learning Crash Course,全免费)。</b>为什么是它:Google 给自家工程师做的入门课,结构清楚、有交互可视化(能实时看模型学习),约 15 小时。<b>先看 Framing、Linear/Logistic Regression、Classification、Generalization/Overfitting 几个模块</b>,正好覆盖本章五块。链接:<a href="https://developers.google.com/machine-learning/crash-course" target="_blank" rel="noopener">developers.google.com · ML Crash Course</a></p>
+      </div>
+
+      <p><b>看图学更顺?两条设计背景强烈推荐的可视化资源:</b></p>
+      <ul>
+        <li><b>A Visual Introduction to Machine Learning · R2D3</b> — <a href="http://www.r2d3.us/visual-intro-to-machine-learning-part-1/" target="_blank" rel="noopener">用滚动动画讲决策树怎么从数据里学出规律</a>,是全网公认最漂亮的机器学习入门可视化,专治「过拟合」这种抽象概念。</li>
+        <li><b>StatQuest · Josh Starmer</b> — <a href="https://www.youtube.com/c/joshstarmer" target="_blank" rel="noopener">手绘讲解每一个 ML 概念的 YouTube 频道</a>,r/learnmachinelearning 上「我终于看懂了」的最高频推荐。挑「Machine Learning Fundamentals」播放列表看。</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">再配一件</span>
+        <p><b>想要中文系统课</b> — 吴恩达(Andrew Ng)的<a href="https://www.bilibili.com/video/BV1Bq421A74G/" target="_blank" rel="noopener">机器学习课程(B 站有带中文字幕的版本)</a>,是全球公认的经典入门课。<b>现在先不碰,当以后深挖的主线。</b></p>
+      </div>
+
+      <!-- ========== 模块 C ========== -->
+      <p class="handoff">先分清最大的一个岔路:学的时候,数据到底有没有「标准答案」。</p>
+      <h2 id="sup"><span class="no">7</span><span>监督 vs 无监督</span></h2>
+      <p class="one-liner">监督学习:每个例子都带<b>标准答案(标签)</b>,让模型学「输入 → 答案」的对应。无监督学习:数据<b>没有答案</b>,让模型自己在数据里找结构、分堆。</p>
+      <p>绝大多数常听到的 AI 是<b>监督学习</b>:给一万张标了「猫/狗」的图,学会认猫狗;给标了房价的房子数据,学会估价。答案是人先标好的,模型对照答案纠正自己。<b>无监督学习</b>没有答案:给一堆客户数据,让模型自己把相似的分成几群(聚类),事先并不知道该分几群、每群是什么。一句话:监督=有答案的题海,无监督=没答案的归类。</p>
+
+      <p class="handoff">监督学习按「答案是什么样」又分两种,加上无监督的分堆,一共三大任务。</p>
+      <h2 id="tasks"><span class="no">8</span><span>三大任务:分类 / 回归 / 聚类</span></h2>
+      <p class="one-liner">分类:预测<b>是哪一类</b>(猫还是狗、垃圾还是正常)。回归:预测<b>一个数值</b>(房价、明天气温)。聚类:没有答案,把数据<b>自动分成几堆</b>。</p>
+      <figure>
+        <svg viewBox="0 0 720 210" role="img" aria-label="分类 回归 聚类 三种任务对照">
+          <text x="120" y="26" text-anchor="middle" class="el-acc" font-weight="700">分类(监督)</text>
+          <line x1="30" y1="150" x2="210" y2="150" class="crv-ink"/>
+          <line x1="120" y1="40" x2="120" y2="150" class="d-soft"/>
+          <circle cx="65" cy="120" r="5" class="dot"/><circle cx="80" cy="100" r="5" class="dot"/><circle cx="70" cy="85" r="5" class="dot"/>
+          <circle cx="160" cy="70" r="5" class="dot-acc"/><circle cx="175" cy="95" r="5" class="dot-acc"/><circle cx="150" cy="55" r="5" class="dot-acc"/>
+          <line x1="40" y1="60" x2="200" y2="140" class="d-acc"/>
+          <text x="120" y="172" text-anchor="middle" class="el">画条线把两类分开</text>
+          <text x="360" y="26" text-anchor="middle" class="el-acc" font-weight="700">回归(监督)</text>
+          <line x1="270" y1="150" x2="450" y2="150" class="crv-ink"/>
+          <line x1="360" y1="40" x2="360" y2="150" class="d-soft"/>
+          <circle cx="300" cy="130" r="5" class="dot"/><circle cx="330" cy="115" r="5" class="dot"/><circle cx="360" cy="95" r="5" class="dot"/><circle cx="390" cy="80" r="5" class="dot"/><circle cx="420" cy="60" r="5" class="dot"/>
+          <line x1="285" y1="140" x2="435" y2="55" class="d-acc"/>
+          <text x="360" y="172" text-anchor="middle" class="el">拟合一条线预测数值</text>
+          <text x="600" y="26" text-anchor="middle" class="el-acc" font-weight="700">聚类(无监督)</text>
+          <line x1="510" y1="150" x2="690" y2="150" class="crv-ink"/>
+          <line x1="600" y1="40" x2="600" y2="150" class="d-soft"/>
+          <circle cx="545" cy="115" r="5" class="dot-acc"/><circle cx="560" cy="100" r="5" class="dot-acc"/><circle cx="540" cy="95" r="5" class="dot-acc"/>
+          <circle cx="640" cy="70" r="5" class="dot"/><circle cx="655" cy="90" r="5" class="dot"/><circle cx="665" cy="65" r="5" class="dot"/>
+          <ellipse cx="550" cy="105" rx="28" ry="24" class="d-soft"/><ellipse cx="653" cy="76" rx="28" ry="24" class="d-soft"/>
+          <text x="600" y="172" text-anchor="middle" class="el">没答案,自己圈成几堆</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>三大任务:分类画分界线、回归拟合趋势线、聚类自己圈堆。前两个有答案(监督),聚类没有(无监督)。</figcaption>
+      </figure>
+      <div class="callout go"><span class="label">去精读</span><p>Google 速成课的「Framing」与「Classification」;想要直觉,R2D3 那篇可视化专门在讲「分类模型怎么画出边界」。</p></div>
+
+      <p class="handoff">不管哪种任务,数据都不能一股脑全拿去练——必须分成三份。</p>
+      <h2 id="split"><span class="no">9</span><span>三份数据:训练 / 验证 / 测试</span></h2>
+      <p class="one-liner">把数据分三份:<b>训练集</b>用来学、<b>验证集</b>用来调、<b>测试集</b>只在最后考一次。测试集绝不能参与训练,否则就是「拿考试题当练习题」。</p>
+      <p>为什么非分不可:模型很容易把训练数据「背下来」,在见过的数据上装得很好,一遇到新数据就露馅。要检验它是不是真学会,必须用<b>它没见过</b>的数据考。所以留出测试集,全程锁起来,最后才用一次。训练中要反复调参数、比不同模型,这时用<b>验证集</b>,别动测试集。常见比例是 6:2:2 或 8:1:1。</p>
+      <figure>
+        <svg viewBox="0 0 640 120" role="img" aria-label="数据分成训练验证测试三份">
+          <rect x="20" y="34" width="360" height="52" rx="6" class="d-acc nf-acc"/>
+          <text x="200" y="65" text-anchor="middle" class="nl-acc">训练集 60% · 用来学</text>
+          <rect x="386" y="34" width="120" height="52" rx="6" class="d-ink nf"/>
+          <text x="446" y="65" text-anchor="middle" class="nl">验证 20% · 调</text>
+          <rect x="512" y="34" width="108" height="52" rx="6" class="d-ink nf"/>
+          <text x="566" y="65" text-anchor="middle" class="nl">测试 20% · 考</text>
+          <text x="566" y="104" text-anchor="middle" class="el">全程锁住,只用一次</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>数据分三份。测试集像期末考卷,平时锁起来;拿它训练=作弊,分数再高也是假的。</figcaption>
+      </figure>
+
+      <p class="handoff">分好数据、开始训练后,会遇到两个反方向的毛病:学过头,和没学会。</p>
+      <h2 id="fit2"><span class="no">10</span><span>过拟合 vs 欠拟合</span></h2>
+      <p class="one-liner">欠拟合:模型太简单,<b>连训练数据都没学好</b>。过拟合:模型太复杂,<b>把训练数据连噪声都背下来了</b>,一换新数据就崩。中间那个「刚好」,叫泛化好。</p>
+      <p>类比考试:欠拟合是根本没复习,平时测验就不及格;过拟合是死背了往年真题的每个字,换套新卷子就傻眼;我们要的是真懂了、换题也会,这叫<b>泛化</b>。判断方法:比训练集和测试集的表现——两个都差是欠拟合,训练好、测试差是过拟合,两个都好才是学到位。</p>
+      <figure>
+        <svg viewBox="0 0 720 180" role="img" aria-label="欠拟合 刚好 过拟合 三条曲线对照">
+          <g>
+            <text x="120" y="24" text-anchor="middle" class="el">欠拟合:太简单</text>
+            <line x1="40" y1="150" x2="200" y2="150" class="crv-ink"/>
+            <circle cx="60" cy="130" r="4" class="dot"/><circle cx="90" cy="100" r="4" class="dot"/><circle cx="120" cy="115" r="4" class="dot"/><circle cx="150" cy="70" r="4" class="dot"/><circle cx="180" cy="85" r="4" class="dot"/>
+            <line x1="50" y1="120" x2="195" y2="90" class="crv"/>
+          </g>
+          <g>
+            <text x="360" y="24" text-anchor="middle" class="el-acc" font-weight="700">刚好:泛化好</text>
+            <line x1="280" y1="150" x2="440" y2="150" class="crv-ink"/>
+            <circle cx="300" cy="130" r="4" class="dot"/><circle cx="330" cy="100" r="4" class="dot"/><circle cx="360" cy="115" r="4" class="dot"/><circle cx="390" cy="70" r="4" class="dot"/><circle cx="420" cy="85" r="4" class="dot"/>
+            <path d="M295,128 Q345,90 365,108 Q390,72 425,82" class="crv"/>
+          </g>
+          <g>
+            <text x="600" y="24" text-anchor="middle" class="el">过拟合:太复杂</text>
+            <line x1="520" y1="150" x2="680" y2="150" class="crv-ink"/>
+            <circle cx="540" cy="130" r="4" class="dot"/><circle cx="570" cy="100" r="4" class="dot"/><circle cx="600" cy="115" r="4" class="dot"/><circle cx="630" cy="70" r="4" class="dot"/><circle cx="660" cy="85" r="4" class="dot"/>
+            <path d="M540,130 L570,100 L600,115 L630,70 L660,85" class="crv"/>
+          </g>
+        </svg>
+        <figcaption><span class="fig-num">图 4</span>同一批点:直线欠拟合(没抓住趋势)、平滑曲线刚好、扭曲穿过每点的是过拟合(把噪声也背了)。</figcaption>
+      </figure>
+      <div class="callout warn"><span class="label">效果好不一定是真的好</span><p>只看训练集分数会被骗。<b>永远用没见过的数据(验证/测试集)判断</b>模型好坏;训练分高、测试分低,基本就是过拟合了。</p></div>
+
+      <p class="handoff">最后一块:就算在测试集上,"分数高"也可能是假象——得看对指标。</p>
+      <h2 id="metric"><span class="no">11</span><span>评价指标:准确率的陷阱</span></h2>
+      <p class="one-liner">准确率<span class="en">accuracy</span>=猜对的比例,但在<b>类别不均衡</b>时会骗人。要补上<b>精确率</b>(说是的里有多少真是)和<b>召回率</b>(真是的里抓回来多少)。</p>
+      <p>经典陷阱:一种病 1000 人里只有 10 个真患者,一个模型无脑判「全都没病」,准确率高达 99%——却一个病人都没查出来,毫无用处。所以分类问题不能只看准确率。<b>精确率</b>问:模型报警的里面,有多少是真的?<b>召回率</b>问:真正的病人里,被抓出来多少?查病要高召回(宁可错报也别漏),垃圾邮件要高精确(宁可漏也别把正常邮件误杀)。把这四种情况摆成一张 2×2 表,就是<b>混淆矩阵</b>。</p>
+      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:Google 速成课「Classification: Accuracy, Precision, Recall」。StatQuest 的「Confusion Matrix」「ROC and AUC」两集把这块讲得最直观。<b>往后连:</b>项目 P2 训练第一个模型时,就得用这些指标判断它好不好。</p></div>
+
+      <!-- ========== 模块 D ========== -->
+      <p class="handoff">五块地基到齐了。下面用十行 scikit-learn,把「划分—训练—评估」跑一遍。</p>
+      <h2 id="assemble"><span class="no">12</span><span>实战:十行跑通一个分类</span></h2>
+      <p>用 scikit-learn 自带的鸢尾花数据(150 朵花、4 个特征、3 个品种),走完机器学习的标准五步:准备数据 → 划分 → 训练 → 预测 → 评估。不用懂模型内部,先感受整个流程:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">first_model.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.datasets </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> load_iris</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.model_selection </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> train_test_split</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.tree </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> DecisionTreeClassifier</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">X, y </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> load_iris(return_X_y</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)      </span><span style="color:#8B95A8;font-style:italic"># ① X=特征(4列), y=答案(品种)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># ② 划分:80% 训练,20% 测试(锁起来最后考)</span></span>
+<span class="line"><span style="color:#14181F">X_train, X_test, y_train, y_test </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> train_test_split(</span></span>
+<span class="line"><span style="color:#14181F">    X, y, test_size</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0.2, random_state</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">42)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">model </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> DecisionTreeClassifier()       </span><span style="color:#8B95A8;font-style:italic"># ③ 选一个模型</span></span>
+<span class="line"><span style="color:#14181F">model.fit(X_train, y_train)            </span><span style="color:#8B95A8;font-style:italic"># ④ 训练:只喂训练集</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">acc </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> model.score(X_test, y_test)      </span><span style="color:#8B95A8;font-style:italic"># ⑤ 评估:用没见过的测试集</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"测试集准确率:</span><span style="color:#557089">{</span><span style="color:#14181F">acc</span><span style="color:#14181F;font-weight:bold">:.2%</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)      </span><span style="color:#8B95A8;font-style:italic"># 约 100%(这个数据集很简单)</span></span></code></pre>
+      </div>
+      <p>读一遍:<code>load_iris</code> 拿到<b>特征 X 和答案 y</b>(监督学习);<code>train_test_split</code> 是<b>三份数据</b>里最基本的两分;<code>fit</code> 只喂<b>训练集</b>——这是纪律;<code>score</code> 用<b>测试集</b>算准确率。这就是所有监督学习代码的骨架,后面换再复杂的模型也是这五步。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战</span>
+        <h3>改改看</h3>
+        <p>①把 <code>test_size</code> 改成 0.5,准确率会怎么变?想想为什么(训练数据变少了)。②把模型换成 <code>from sklearn.neighbors import KNeighborsClassifier</code> 再跑,比一比。③故意让模型<b>过拟合</b>:同时打印训练集分数 <code>model.score(X_train, y_train)</code> 和测试集分数,观察它俩的差距。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。均于 2026-08-14 核实在线;打不开就记住名字搜一下。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://developers.google.com/machine-learning/crash-course" target="_blank" rel="noopener">Google · 机器学习速成课</a></span><span class="spine">默认主线</span><span class="tags">官方课程 · 可切中文 · 3–4h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">Google 出的交互式机器学习入门课,概念 + 可玩的演示。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章讲清核心概念的脉络;它让亲手拖参数把这些概念坐实。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Framing / Regression / Classification / Overfitting 几章。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「监督/无监督」「过拟合」「评价指标」几节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="http://www.r2d3.us/visual-intro-to-machine-learning-part-1/" target="_blank" rel="noopener">R2D3 · 机器学习可视化入门</a></span><span class="tags">可视化 · 可切中文 · 20min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">用一路滚动的动画讲"机器怎么从数据里学"的经典可视化。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">设计师会爱这个——它把训练/过拟合讲成看得见的画面,极美。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Part 1 整篇滚一遍。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「过拟合」「训练/验证/测试」节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/c/joshstarmer" target="_blank" rel="noopener">StatQuest(Josh Starmer)</a></span><span class="tags">视频 · 英文(可开字幕) · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">把每个机器学习概念单独讲透的频道(后面 D 系列的主线之一)。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">某个概念卡住时,来这找那一集,几分钟讲明白。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">ML Fundamentals 播放列表,挑着看。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">全章的"卡住就查"字典。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.bilibili.com/video/BV1Bq421A74G/" target="_blank" rel="noopener">吴恩达 · 机器学习(中文字幕)</a></span><span class="tags">系统课 · 中文字幕 · 长 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">最经典的机器学习系统课。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想在本课程之外系统补一遍时的中文首选(别和本课并行主修)。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">前几章(监督学习、代价函数、梯度下降)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">整个基础阶段的深度补充(以后)。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个新手误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>机器学习就是很高级的 if-else</td><td>规则不是人写的,是模型从数据里自己找的;连人没想到的线索也能用上。</td></tr>
+          <tr><td>数据越多、模型越复杂就越好</td><td>模型太复杂会过拟合(背噪声)。「刚好」比「最复杂」好,泛化才是目标。</td></tr>
+          <tr><td>用全部数据训练,分数最高</td><td>那是拿考试题当练习。必须留出没见过的测试集,才知道真本事。</td></tr>
+          <tr><td>准确率高就是好模型</td><td>类别不均衡时准确率会骗人;要看精确率、召回率,选对指标。</td></tr>
+          <tr><td>训练集分数高=学会了</td><td>可能只是背下来了。训练高、测试低=过拟合,等于没学会。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>判断任务类型。</b>下面各属于分类/回归/聚类:①预测明天气温;②判断评论是好评还是差评;③把用户按行为自动分群。<details><summary>参考答案</summary><p>①回归(数值)②分类(类别)③聚类(无答案分堆)。</p></details></li>
+        <li><b>为什么要留测试集?</b>用一句话说清「不留测试集」会带来什么问题。<details><summary>参考答案</summary><p>模型可能只是背下了训练数据;不用没见过的数据考,就分不清它是真学会还是死记硬背。</p></details></li>
+        <li><b>诊断。</b>一个模型训练集准确率 99%、测试集 65%,是什么问题?怎么办?<details><summary>参考答案</summary><p>过拟合。办法:简化模型、加更多数据、或加正则化;核心是别让它去背噪声。</p></details></li>
+        <li><b>指标陷阱。</b>癌症筛查模型准确率 99%,为什么可能一文不值?该看哪个指标?<details><summary>参考答案</summary><p>患者极少,无脑判「没病」也能 99%。要看召回率——真患者里抓回来多少。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上再进第 6 章(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清机器学习和传统 if-else 编程的根本区别</li>
+          <li><input type="checkbox"> 我能分清监督与无监督、以及分类/回归/聚类三大任务</li>
+          <li><input type="checkbox"> 我知道数据要分训练/验证/测试,且测试集绝不参与训练</li>
+          <li><input type="checkbox"> 我能解释过拟合和欠拟合,并知道用训练/测试对比来判断</li>
+          <li><input type="checkbox"> 我理解「泛化」才是目标,不是训练集分数最高</li>
+          <li><input type="checkbox"> 我知道准确率的陷阱,能说出精确率和召回率各问什么</li>
+          <li><input type="checkbox"> 我看懂了第 12 节「划分→训练→评估」五步代码</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>这一章讲了机器学习「是什么、有哪些类、怎么算学好」,但一直没碰「模型到底怎么学出来」。<a href="06-训练的本质.html">第 6 章 训练的本质</a>钻进这个黑箱:什么是损失函数(用一个数衡量模型错多少)、什么是梯度下降(顺着坡往下挪、一步步把错降到最小)。到那时,「训练」就不再是黑话,而是一个能画出来的过程。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="04-Pandas表格数据.html"><span class="lb">上一章</span><span class="tt">04 · Pandas</span></a>
+        <a href="06-训练的本质.html" class="next"><span class="lb">下一章</span><span class="tt">06 · 训练的本质</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">第 5 章 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="sup" href="#sup"><i>7</i>监督/无监督</a>
+        <a data-toc-target="tasks" href="#tasks"><i>8</i>三大任务</a>
+        <a data-toc-target="split" href="#split"><i>9</i>三份数据</a>
+        <a data-toc-target="fit2" href="#fit2"><i>10</i>过/欠拟合</a>
+        <a data-toc-target="metric" href="#metric"><i>11</i>评价指标</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>实战:十行分类</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="05" data-kind="chapter" data-title="机器学习核心概念"></script>
+</body>
+</html>

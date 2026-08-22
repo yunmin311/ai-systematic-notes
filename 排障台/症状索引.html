@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>排障台 · 症状索引</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="../AI使用/U01-它到底在干什么.html">AI 使用</a><span class="sep">—</span>
+      <span class="current">排障台 · 症状索引</span>
+      <span class="spacer"></span>
+      <a href="../AI使用/U03-指令为什么不生效.html" class="jump">U03 指令不生效</a>
+      <a href="../AI使用/U07-验收AI的产出.html" class="jump">U07 验收</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">配套区 · 排障台 · 不编号 · 随时增补</p>
+        <h1>症状索引</h1>
+        <p class="recap">这不是讲义,是出事之后来查的。<b>按症状找</b>,右侧目录就是全部条目。每条四段:症状 / 底下发生了什么 / 当场怎么办 / 怎么让它别再犯。最后一段最重要——它把一次性的救火变成一条不会再犯的机制。</p>
+      </header>
+
+      <div class="callout">
+        <span class="label">怎么用</span>
+        <p>从右侧目录里找最像的那条症状点进去。找不到就先去 <a href="../AI使用/U01-它到底在干什么.html">U01</a> 的六个怪现象对一遍——多数症状是那六个根因的变体。<b>解决之后,把新的一条补进这里</b>,尤其是「怎么让它别再犯」那一段。</p>
+      </div>
+
+      <h2 id="s-rule"><span class="no">1</span><span>规则复述得出来,就是不照做</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>规则进上下文只提高照做的概率,和「必须照做」之间没有强制环节。复述和照做是两次独立的生成。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>先分清三层:根本没读到(问「现在生效的规则文件路径有哪些」)/ 读到了被稀释(看是第几轮开始违反的)/ 和别的冲突(直接问「这条和当前任务冲突吗」)。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td><b>把规则升到脚本层或拦截层。</b>能变成一个数的,写成校验脚本、交付前必跑、退出码非 0;不可逆动作直接在工具层拦住。详见 <a href="../AI使用/U03-指令为什么不生效.html">U03</a> 第 3 节的五级阶梯。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-conflict"><span class="no">2</span><span>禁区规则和任务指令打架,它自己解释了一下就过去了</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>冲突不表现为拒绝,表现为「重新理解了一下适用范围」——过程完全合理,结论是违规,而且这个新解释可能被顺手写进计划书当成既定事实。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>把那条新解释单独拎出来,回到原始规则的原文逐字对照。凡是原文里没有的限定词,都是它自己加的。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>把「遇到规则冲突必须停下来问人、不许自己重新解释边界」写成一条硬规矩,并且<b>放进拦截层</b>——不是写进规则文件里指望它自觉。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-done"><span class="no">3</span><span>说「已完成」,一看文件没动</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>「已完成」是生成出来的文字,不是执行回执。回执可能被上下文裁掉、被失败重试盖过、或者压根没调工具——三种情况下这句话都会照常出现。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>不回「好的」,回<b>「把改动过的文件和它们的最后修改时间列出来」</b>。要客观痕迹,不要它的叙述。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>把交付格式固定成:必须带文件清单 + 时间戳 + 校验脚本的<b>输出原文</b>。「测试通过」四个字不算交付。见 <a href="../AI使用/U07-验收AI的产出.html">U07</a> 第 7 节。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-build"><span class="no">4</span><span>实跑测到的是旧构建</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>产物没重新生成,或者生成到了另一个位置。表现有两种:改了却没变化,以及更坏的——没改却「通过」了。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>先核构建号/提交号,确认测的是这一版,再看结果。顺序反了会浪费大量时间去查一个不存在的 bug。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td><b>把版本号或提交号打进产物本身</b>(页面页脚、启动日志、命令 <code>--version</code>),验收第一步核它。比每次都记得重新构建可靠。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-form"><span class="no">5</span><span>校验脚本全绿,内容却是错的</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>脚本验的是形式(格式、结构、分布、链接)。<b>没有任何形式指标能证明内容正确。</b>一份产出可以完美通过全部自检,同时把概念讲错。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>把内容那一半单独排一次:逐条对着上游材料核,找三类问题——和上游矛盾的 / 超出范围的 / 表述本身有错或有歧义的。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>交付时<b>明说脚本验了什么、没验什么</b>;内容核查要记清核了多少条、改了多少条、每类各几条。「看过一遍」不是验收结论。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-bias"><span class="no">6</span><span>批量生成的东西有系统性偏差</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>批量生成会沿着同一个分布中心走,于是偏差是<b>成片</b>的而不是随机的。抽查三处全落在好的那一片,是常事。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>别抽查,做全量统计。想清楚「如果有偏差,它会体现在哪个数上」,然后把那个数算出来(位置分布、长度比、词频、取值集合)。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td><b>上校验脚本,并给一个总闸。</b>总闸要能回答「不看内容能不能蒙对」这类问题,合格线用一个能解释来源的基准(如随机水平)。这条本身就是活案例,见 <a href="../AI使用/U03-指令为什么不生效.html">U03</a> 第 4 节。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-mvp"><span class="no">7</span><span>参考给得很清楚,做出来还是不像</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>「能跑」是它在优化的目标,「像那个参考」不是。中间缺了一次翻译:把视觉/风格拆成能被对照的具体数值。没拆,就只会回到分布中心。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>停下来,先要一份<b>映射表</b>:参考里的项 / 实测值 / 落到哪 / <b>怎么判定</b>。判定那一列写不出来的项,说明还没拆到位。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>定成流程:映射表先行 → 核心样本先做一个 → 人看一眼 → 再铺开 → 每轮跑回归对照。见 <a href="../AI使用/U05-让它照着参考做.html">U05</a>。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-scope"><span class="no">8</span><span>说的是「小改」,做成了大工程</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>模型对范围没有先验,「补全成一个完整方案」是高概率续写,而且做多了不会报错、只会显得更周到——没有反向压力。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>把方案和<b>原话</b>并排:原话里出现的具体名词列一栏,方案里有、原话里没有的另列一栏。第二栏就是超出部分。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>把「动手前对着原话裁范围」定成开工的固定一步,而且<b>超出部分不许自己批准</b>,必须拿去问。见 <a href="../AI使用/U04-派活与成本.html">U04</a> 第 4 节。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-premise"><span class="no">9</span><span>前提搞错了,后面全错但读起来很顺</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>模型内部没有「我不确定」这个能中断生成的信号。概率分布再平坦也总有最大值,生成照样继续。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>回到最开始,让它<b>只用一句话</b>复述前提(材料有几页、每页是什么、目标是什么),对完再往下。别让前提和结论混在一段里。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>把「确认前提」做成独立的一轮,放在任何分析之前。成本是几分钟,错了的代价是整条链。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-git"><span class="no">10</span><span>两个对话在版本控制上打架</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>两个写者同时写同一个<b>可写面</b>。常见的面:工作树、暂存区(全仓库共享)、集成分支、共享配置文件、<b>编号池</b>(两边取到同一个号)。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td><b>按面判,不按身份判。</b>先确认这个面此刻的写者是谁,另一方停手。提交时用显式路径,不要批量暂存。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>维护一份地盘表:有哪些面、各自当前的写者、哪些是共享面必须串行。交接要有明确时刻和明确一句话。见 <a href="../AI使用/U06-多对话协作.html">U06</a>。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-relay"><span class="no">11</span><span>转发给另一个对话之后,信息走样了</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>转述是一次生成,具体约束会被概括掉;而且接收方看不到这边的上下文,块里没写的东西它只能猜。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>回到原话,把被概括掉的具体项补回去,重发一次。别在走样的基础上继续往下推。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>转发块三条硬规矩:<b>不预填未拍板的决定、不代写提出者的原话、块要自足</b>(背景与判据都在块里,不写「按上面说的」)。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-memory"><span class="no">12</span><span>几个对话对同一件事说法不一致</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>各自的上下文是各自攒的,没有共同的正本。三份各自可写的副本,必然长成三个样子,而且各自都很笃定。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>别去「让它们对齐一下」——对齐一次就会漂一次。找出正确的那一份,以它为准。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>建一份<b>只有一个写者</b>的正本规则,其余全部只读。规则要改走那一个写者。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-context"><span class="no">13</span><span>越聊越笨,token 烧得飞快</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>每一轮都要把整个上下文重读一遍——长对话里九成以上的花费买的是「把说过的话再读一遍」。同时,中段的内容注意力权重系统性偏低,早期说过的约束正落在那里。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>问一句「这段内容下一个对话还需要吗」:需要 → 落成文件;只是本次过程 → 压缩;都用不上 → 开新对话。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>开工前排上下文预算:固定区(规则,放开头吃满缓存)/ 材料区(按需取片段,不整本贴)/ 工作区(放末尾),并留三成空白。见 <a href="../AI使用/U02-上下文经济学.html">U02</a>。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-cache"><span class="no">14</span><span>账单突然变贵,内容却没变多</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>提示缓存按<b>前缀</b>匹配。开头只要改一个字,后面全部内容的缓存一次性失效,这一轮按全价重算。常见元凶:每轮在系统提示开头插时间戳、或频繁微调开场白。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>检查最靠前的那段内容最近有没有改动。把会变的东西全部挪到末尾。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>固定顺序:长期不变的规则 → 本次固定材料 → 当前这一轮的问题。写定之后就别再动开头。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-shell"><span class="no">15</span><span>某个终端在这台机上反复崩</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>运行时层面的问题(进程创建失败、动态库初始化失败之类),和要跑的命令本身无关。重试同一个环境不会好转。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td><b>第一次失败就换另一个终端</b>,别做第二次诊断。同一个运行时错误最多花一次工具调用去看。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>把「哪类活默认用哪个终端」写进规则文件,并写清「出现哪些错误字样时立刻换、不许重试」。例外是撞凭据/子进程的操作,换终端也躲不掉,那种才适用原样重试。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-link"><span class="no">16</span><span>给了在线链接,但打不开</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>交付方默认「能生成链接就等于送达」,没有确认接收方的实际环境能不能访问。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>要求改成本机文件,并给<b>绝对路径</b>。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>把「可视化产出一律落成本机文件 + 给绝对路径」写进规则文件,并在交付格式里固定这一项。</td></tr>
+      </tbody></table></div>
+
+      <h2 id="s-hang"><span class="no">17</span><span>它说任务在跑,其实早就停了</span></h2>
+      <div class="tbl-scroll"><table class="tbl"><tbody>
+        <tr><td style="width:9.5em"><b>底下发生了什么</b></td><td>「在跑」同样是一句被生成的话。进程可能已经退出、只剩一个壳,或者卡在某一步没有任何输出。</td></tr>
+        <tr><td><b>当场怎么办</b></td><td>去看客观信号:进程列表、日志文件的最后写入时间、产物的修改时间。三者都不动就是停了。</td></tr>
+        <tr><td><b>怎么让它别再犯</b></td><td>长任务一律要求<b>周期性打点</b>(每 N 步写一行带时间戳的进度),并且监控要同时覆盖失败信号,不能只等成功那一行——只等成功的话,崩了和还在跑长得一模一样。</td></tr>
+      </tbody></table></div>
+
+      <div class="callout go">
+        <span class="label">补一条新的</span>
+        <p>格式固定:一个 <code>h2</code> 写症状(用第三人称陈述,不要写成对话),下面一张两列表,三行分别是<b>底下发生了什么 / 当场怎么办 / 怎么让它别再犯</b>。第三行必须写得出来才算一条完整的处方——写不出来,说明还没找到机制,只是记了一次救火。</p>
+      </div>
+
+      <nav class="chapter-nav">
+        <a href="../AI使用/U07-验收AI的产出.html"><span class="lb">上一页</span><span class="tt">U07 验收 AI 的产出</span></a>
+        <a href="../index.html" class="next"><span class="lb">返回</span><span class="tt">课程首页</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="症状索引">
+      <p class="toc-label">症状 · 索引</p>
+      <div class="toc-group">
+        <span class="tg">规则与指令</span>
+        <a data-toc-target="s-rule" href="#s-rule"><i>1</i>复述得出就是不照做</a>
+        <a data-toc-target="s-conflict" href="#s-conflict"><i>2</i>冲突被自行解释</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">产出与验收</span>
+        <a data-toc-target="s-done" href="#s-done"><i>3</i>说完成没做</a>
+        <a data-toc-target="s-build" href="#s-build"><i>4</i>测到旧构建</a>
+        <a data-toc-target="s-form" href="#s-form"><i>5</i>全绿但内容错</a>
+        <a data-toc-target="s-bias" href="#s-bias"><i>6</i>批量产出有偏差</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">范围与保真</span>
+        <a data-toc-target="s-mvp" href="#s-mvp"><i>7</i>做出来不像参考</a>
+        <a data-toc-target="s-scope" href="#s-scope"><i>8</i>小改变大工程</a>
+        <a data-toc-target="s-premise" href="#s-premise"><i>9</i>前提错了还往下做</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">多对话</span>
+        <a data-toc-target="s-git" href="#s-git"><i>10</i>版本控制打架</a>
+        <a data-toc-target="s-relay" href="#s-relay"><i>11</i>转发走样</a>
+        <a data-toc-target="s-memory" href="#s-memory"><i>12</i>说法不一致</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">成本与环境</span>
+        <a data-toc-target="s-context" href="#s-context"><i>13</i>越聊越笨越贵</a>
+        <a data-toc-target="s-cache" href="#s-cache"><i>14</i>账单突然变贵</a>
+        <a data-toc-target="s-shell" href="#s-shell"><i>15</i>终端反复崩</a>
+        <a data-toc-target="s-link" href="#s-link"><i>16</i>链接打不开</a>
+        <a data-toc-target="s-hang" href="#s-hang"><i>17</i>说在跑其实停了</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+</body>
+</html>

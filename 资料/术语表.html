@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-reshelled="2026-08-21">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>术语表</title>
+<style data-inlined="course.css">
+/* ============================================================
+   人工智能-系统学习 · 公共样式
+   主题「冷靛蓝图」: 冷灰蓝纸面 / 群青主色 / 深青辅色 / 石墨代码块
+   所有页面共用; 修改前先在浏览器里验证对比度。
+   ============================================================ */
+
+:root {
+  --bg: #eef1f6;          /* 页面底色: 冷灰蓝纸面 */
+  --card: #ffffff;        /* 卡片底色 */
+  --ink: #1d2733;         /* 正文字色 */
+  --muted: #55617a;       /* 次要文字 */
+  --line: #d8dee9;        /* 分隔线 */
+  --acc: #2743c7;         /* 主色: 群青 */
+  --acc-dark: #1d33a0;    /* 主色加深(链接/hover) */
+  --acc-soft: #e8ecfb;    /* 主色浅底 */
+  --teal: #0c6e63;        /* 辅色: 深青 */
+  --teal-soft: #e3f0ee;   /* 辅色浅底 */
+  --warn: #9a3412;        /* 警示: 深橙棕 */
+  --warn-soft: #fdeee4;   /* 警示浅底 */
+  --danger: #b42318;      /* 错误红 */
+  --code-bg: #111826;     /* 代码块底 */
+  --code-ink: #dfe6f3;    /* 代码块字 */
+  --inline-code-bg: #e7ebf4;
+  --mono: "Cascadia Code", Consolas, "SFMono-Regular", Menlo, monospace;
+  --sans: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(29, 39, 51, .06), 0 4px 16px rgba(29, 39, 51, .05);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.75;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- 顶部进度条(course.js 驱动) ---------- */
+#readbar {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0;
+  background: linear-gradient(90deg, var(--acc), var(--teal));
+  z-index: 99;
+}
+
+/* ---------- 页头 ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(238, 241, 246, .92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-inner {
+  max-width: 920px; margin: 0 auto; padding: 10px 20px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.topbar a { color: var(--acc-dark); text-decoration: none; font-size: 14px; }
+.topbar a:hover { text-decoration: underline; }
+.topbar .crumb-sep { color: var(--muted); font-size: 13px; }
+.topbar .here { color: var(--muted); font-size: 14px; }
+
+/* ---------- 版心 ---------- */
+.wrap { max-width: 920px; margin: 0 auto; padding: 28px 20px 110px; }
+.wrap-narrow { max-width: 820px; }
+
+/* ---------- 章头 ---------- */
+.hero {
+  background:
+    radial-gradient(circle at 1px 1px, rgba(39, 67, 199, .13) 1px, transparent 0) 0 0 / 22px 22px,
+    linear-gradient(135deg, #ffffff 0%, #f2f5fb 100%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 30px 32px 26px;
+  margin: 18px 0 26px;
+  box-shadow: var(--shadow);
+}
+.hero .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.hero h1 { font-size: 30px; line-height: 1.3; margin: 0 0 8px; letter-spacing: .3px; }
+.hero .lede { color: var(--muted); font-size: 16px; margin: 0; max-width: 640px; }
+
+.chip {
+  display: inline-block; font-family: var(--mono); font-size: 12px;
+  background: var(--acc-soft); color: var(--acc-dark);
+  border: 1px solid #c9d3f2; border-radius: 999px; padding: 2px 11px;
+}
+.chip.teal { background: var(--teal-soft); color: var(--teal); border-color: #bcd9d4; }
+.chip.gray { background: #eceff5; color: var(--muted); border-color: var(--line); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); border-color: #f0cdb4; }
+
+/* ---------- 标题 ---------- */
+h2 {
+  font-size: 22px; margin: 46px 0 14px; padding-top: 8px;
+  display: flex; align-items: baseline; gap: 10px;
+}
+h2 .no {
+  font-family: var(--mono); font-size: 14px; color: var(--acc);
+  border: 1.5px solid var(--acc); border-radius: 8px; padding: 0 8px;
+  flex: none; transform: translateY(-2px);
+}
+h3 { font-size: 17.5px; margin: 28px 0 10px; }
+h4 { font-size: 15.5px; margin: 20px 0 8px; }
+
+p { margin: 10px 0; }
+ul, ol { padding-left: 24px; margin: 10px 0; }
+li { margin: 5px 0; }
+b, strong { font-weight: 650; }
+
+a { color: var(--acc-dark); }
+a:hover { color: var(--acc); }
+
+/* ---------- 卡片与栏目 ---------- */
+.card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 18px 22px; margin: 14px 0;
+  box-shadow: var(--shadow);
+}
+.card > :first-child { margin-top: 0; }
+.card > :last-child { margin-bottom: 0; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 760px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+
+/* ---------- 提示框 ---------- */
+.note {
+  border-left: 4px solid var(--acc); background: var(--acc-soft);
+  border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; font-size: 15px;
+}
+.note.good { border-color: var(--teal); background: var(--teal-soft); }
+.note.warn { border-color: var(--warn); background: var(--warn-soft); }
+.note > :first-child { margin-top: 0; }
+.note > :last-child { margin-bottom: 0; }
+.note .note-t { font-weight: 700; display: block; margin-bottom: 4px; }
+.note.warn .note-t { color: var(--warn); }
+.note.good .note-t { color: var(--teal); }
+.note:not(.good):not(.warn) .note-t { color: var(--acc-dark); }
+
+/* ---------- 术语首现 ---------- */
+.term { font-weight: 650; border-bottom: 2px dotted var(--acc); cursor: help; }
+.term-def {
+  display: block; font-size: 14px; color: var(--muted);
+  background: #f4f6fb; border: 1px dashed #c9d3f2; border-radius: 8px;
+  padding: 8px 12px; margin: 6px 0 10px;
+}
+.term-def::before { content: "白话: "; color: var(--acc-dark); font-weight: 700; }
+
+/* ---------- 3W 块 ---------- */
+.w3 { display: grid; grid-template-columns: 84px 1fr; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 12px 0; background: var(--card); }
+.w3 > dt {
+  background: #f0f3fa; border-bottom: 1px solid var(--line);
+  font-family: var(--mono); font-weight: 700; color: var(--acc-dark);
+  padding: 10px 12px; font-size: 13.5px;
+}
+.w3 > dd { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 15px; }
+.w3 > dt:nth-last-of-type(1), .w3 > dd:last-child { border-bottom: none; }
+@media (max-width: 600px) { .w3 { grid-template-columns: 64px 1fr; } }
+
+/* ---------- 代码 ---------- */
+pre {
+  background: var(--code-bg); color: var(--code-ink);
+  border-radius: 10px; padding: 15px 18px; overflow-x: auto;
+  font-family: var(--mono); font-size: 13.5px; line-height: 1.65;
+  margin: 12px 0; position: relative;
+}
+pre .cm { color: #7e8ba3; }          /* 注释 */
+pre .kw { color: #86b3ff; }          /* 关键词 */
+pre .st { color: #9fd8a4; }          /* 字符串 */
+pre .nb { color: #f2c078; }          /* 数字/内置 */
+pre .hl { background: rgba(39, 67, 199, .35); border-radius: 3px; padding: 0 2px; }
+code:not(pre code) {
+  font-family: var(--mono); font-size: .88em;
+  background: var(--inline-code-bg); color: #253352;
+  border-radius: 5px; padding: 1px 6px;
+}
+.copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  background: #273147; color: #aeb9d0; border: 1px solid #3a4763;
+  border-radius: 7px; font-size: 12px; padding: 3px 10px; cursor: pointer;
+  font-family: var(--sans);
+}
+.copy-btn:hover { background: #32405d; color: #e2e8f4; }
+
+/* 终端输出块 */
+pre.out { background: #f4f6fb; color: #303b52; border: 1px dashed #c4cde0; }
+pre.out::before { content: "预期输出"; display: block; font-size: 11.5px; color: var(--acc-dark); margin-bottom: 6px; font-family: var(--sans); font-weight: 700; }
+
+/* ---------- 表格 ---------- */
+.tbl-scroll { overflow-x: auto; margin: 14px 0; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; background: var(--card); border-radius: 10px; overflow: hidden; }
+th, td { border: 1px solid var(--line); padding: 9px 13px; text-align: left; vertical-align: top; }
+th { background: #f0f3fa; font-weight: 700; white-space: nowrap; }
+
+/* ---------- 步骤列表 ---------- */
+.steps { counter-reset: step; list-style: none; padding-left: 0; }
+.steps > li {
+  counter-increment: step; position: relative;
+  padding: 12px 16px 12px 52px; margin: 10px 0;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+}
+.steps > li::before {
+  content: counter(step); position: absolute; left: 14px; top: 12px;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--acc); color: #fff; font-weight: 700; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.steps > li > :first-child { margin-top: 0; }
+.steps > li > :last-child { margin-bottom: 0; }
+
+/* ---------- 折叠问答 / 提示 ---------- */
+details {
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 0 16px; margin: 10px 0;
+}
+details summary {
+  cursor: pointer; font-weight: 650; padding: 12px 0; list-style: none;
+  display: flex; align-items: center; gap: 8px;
+}
+details summary::before { content: "▸"; color: var(--acc); transition: transform .15s; }
+details[open] summary::before { transform: rotate(90deg); }
+details[open] { padding-bottom: 12px; }
+details.hint summary { color: var(--teal); }
+details.answer summary { color: var(--acc-dark); }
+
+/* ---------- 自查清单 ---------- */
+.checklist { list-style: none; padding-left: 0; }
+.checklist li {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--card); border: 1px solid var(--line); border-radius: 9px;
+  padding: 9px 14px; margin: 7px 0; cursor: pointer;
+}
+.checklist input[type="checkbox"] { margin-top: 5px; accent-color: var(--teal); width: 16px; height: 16px; flex: none; }
+.checklist li.done { border-color: #bcd9d4; background: var(--teal-soft); }
+
+/* ---------- SVG 图 ---------- */
+.fig { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 16px 0; overflow-x: auto; }
+.fig svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.fig .figcap { text-align: center; color: var(--muted); font-size: 13.5px; margin: 10px 0 0; }
+
+/* ---------- 目录 ---------- */
+.toc { columns: 2; column-gap: 28px; }
+.toc a { display: block; padding: 3px 0; text-decoration: none; font-size: 14.5px; break-inside: avoid; }
+.toc a:hover { text-decoration: underline; }
+.toc .toc-group { font-family: var(--mono); font-size: 12px; color: var(--muted); margin: 8px 0 2px; break-inside: avoid; }
+@media (max-width: 700px) { .toc { columns: 1; } }
+
+/* ---------- 按钮 ---------- */
+.btn {
+  display: inline-block; background: var(--acc); color: #fff !important;
+  border: none; border-radius: 9px; padding: 9px 20px; font-size: 14.5px;
+  cursor: pointer; text-decoration: none; font-family: var(--sans);
+}
+.btn:hover { background: var(--acc-dark); }
+.btn.ghost { background: transparent; color: var(--acc-dark) !important; border: 1.5px solid var(--acc); }
+.btn.ghost:hover { background: var(--acc-soft); }
+.btn.teal { background: var(--teal); }
+.btn.sm { padding: 5px 14px; font-size: 13px; }
+
+/* ---------- 模拟器 / 实验控件 ---------- */
+.sim {
+  border: 1.5px solid #c9d3f2; border-radius: var(--radius);
+  background: linear-gradient(180deg, #fbfcff, #f3f6fd);
+  padding: 18px 20px; margin: 16px 0;
+}
+.sim-tag {
+  display: inline-block; font-family: var(--mono); font-size: 11.5px;
+  border-radius: 5px; padding: 2px 8px; margin-bottom: 10px; font-weight: 700;
+}
+.sim-tag.mock { background: var(--warn-soft); color: var(--warn); border: 1px solid #f0cdb4; }
+.sim-tag.real { background: var(--teal-soft); color: var(--teal); border: 1px solid #bcd9d4; }
+.sim label { font-size: 14px; color: var(--muted); }
+.sim input[type="range"] { width: 100%; accent-color: var(--acc); }
+.sim svg { max-width: 100%; height: auto; }
+.sim .readout { font-family: var(--mono); font-size: 14px; color: var(--acc-dark); }
+
+/* ---------- 页脚 ---------- */
+.pagefoot {
+  margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--line);
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  color: var(--muted); font-size: 14px;
+}
+.pagefoot a { text-decoration: none; }
+
+/* ---------- 首页专用 ---------- */
+.stage-band {
+  font-family: var(--mono); font-size: 13px; letter-spacing: 1px;
+  color: var(--acc-dark); margin: 40px 0 6px;
+}
+.course-list { list-style: none; padding: 0; margin: 10px 0; }
+.course-list li {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 11px 16px; margin: 8px 0;
+}
+.course-list .no { font-family: var(--mono); color: var(--muted); font-size: 13px; width: 30px; flex: none; }
+.course-list a { text-decoration: none; font-weight: 600; }
+.course-list .desc { color: var(--muted); font-size: 13.5px; flex: 1; }
+.course-list .st { flex: none; font-size: 12px; font-family: var(--mono); border-radius: 999px; padding: 2px 10px; }
+.st.ok { background: var(--teal-soft); color: var(--teal); border: 1px solid #bcd9d4; }
+.st.wip { background: var(--acc-soft); color: var(--acc-dark); border: 1px solid #c9d3f2; }
+.st.plan { background: #eceff5; color: var(--muted); border: 1px solid var(--line); }
+.course-list li.locked { opacity: .62; }
+.course-list li.locked .title { font-weight: 600; color: var(--ink); }
+@media (max-width: 640px) {
+  .course-list li { flex-wrap: wrap; }
+  .course-list .desc { flex-basis: 100%; order: 3; }
+}
+
+/* ---------- 返回顶部 ---------- */
+#totop {
+  position: fixed; right: 22px; bottom: 26px; z-index: 40;
+  background: var(--card); border: 1px solid var(--line); border-radius: 50%;
+  width: 42px; height: 42px; font-size: 18px; cursor: pointer; color: var(--acc-dark);
+  box-shadow: var(--shadow); display: none;
+}
+#totop.show { display: block; }
+
+/* ---------- 打印 ---------- */
+@media print {
+  .topbar, #totop, #readbar, .copy-btn { display: none !important; }
+  body { background: #fff !important; background-image: none !important; }
+}
+
+/* ===== 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)===== */
+:root{ --card: #f6f8fc; }                          /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color: #e6eaf1;
+  background-image: url("paper-linen-v3.jpg");
+  background-repeat: repeat;
+  background-size: 230px 230px;
+}
+.reslist{ margin:16px 0 6px; display:flex; flex-direction:column; gap:14px; }
+.res{ border:1px solid var(--line); border-radius:8px; background:var(--card); padding:13px 16px 11px; }
+.res.spine-card{ border-color:var(--acc); border-left-width:3px; }
+.res .rh{ display:flex; align-items:baseline; gap:9px; flex-wrap:wrap; margin-bottom:8px; }
+.res .rt2{ font-weight:600; font-size:15px; }
+.res .rt2 a{ color:var(--acc-dark); text-decoration:none; }
+.res .rt2 a:hover{ text-decoration:underline; }
+.res .spine{ font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:var(--acc); border:1px solid var(--acc); border-radius:3px; padding:1px 7px; }
+.res .tags{ font-family:var(--mono); font-size:11px; letter-spacing:.02em; color:var(--muted); margin-left:auto; }
+.res .rrow{ display:grid; grid-template-columns:78px 1fr; gap:10px; font-size:13px; line-height:1.62; padding:5px 0; border-top:1px solid var(--line); }
+.res .rk{ color:var(--muted); font-weight:600; }
+.res .rv b{ color:var(--ink); font-weight:600; }
+@media(max-width:520px){ .res .rrow{ grid-template-columns:1fr; gap:1px; } .res .tags{ margin-left:0; } }
+
+</style>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style>
+.gl { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin: 10px 0; }
+.gl .en { font-family: var(--mono); font-size: 12.5px; color: var(--muted); margin-left: 8px; }
+.gl .src { font-size: 12px; color: var(--muted); float: right; }
+.gl p { margin: 6px 0 0; font-size: 14.5px; }
+</style>
+<style data-reshell-fix>
+/* 改造收尾:旧页面的外壳类在两栏版式里让位 */
+.wrap,.wrap-narrow{max-width:none;margin:0;padding:0;}
+.topbar,#readbar,#totop{display:none!important;}
+.hero{border:0;padding:0;margin:0;}
+.pagefoot{margin-top:34px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span><span class="current">术语表</span>
+      <span class="spacer"></span>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">资料 · 随章节持续增补</p>
+        <h1>术语表</h1>
+        <p class="recap">所有在课程里正式出现过的术语,按章节归档。每条 = 标准名 + 英文 + 一句白话。
+    忘了某个词的意思,先来这里,再决定要不要回讲义重读。</p>
+      </header>
+
+
+  <h2 id="sec1"><span class="no">1</span><span>第 1 章 · 人工智能全景与学习环境</span></h2>
+
+  <div class="gl"><b>人工智能</b><span class="en">Artificial Intelligence, AI</span><span class="src">§10 概念一</span>
+    <p>让计算机完成过去认为需要人类智能的任务。是目标/总称,不是一种具体技术。</p></div>
+  <div class="gl"><b>机器学习</b><span class="en">Machine Learning, ML</span><span class="src">§10 概念二</span>
+    <p>不由人写规则,而是给程序看大量例子,让它自己找出输入和输出之间规律的方法。</p></div>
+  <div class="gl"><b>深度学习</b><span class="en">Deep Learning, DL</span><span class="src">§10 概念三</span>
+    <p>机器学习的子类:模型专指层数很多的神经网络,能自己从原始数据里逐层提炼特征。</p></div>
+  <div class="gl"><b>神经网络</b><span class="en">Neural Network</span><span class="src">§10 概念三</span>
+    <p>把大量简单的「乘加计算单元」一层层叠起来构成的模型。「深度」指层数多。</p></div>
+  <div class="gl"><b>生成式 AI</b><span class="en">Generative AI</span><span class="src">§10 概念四</span>
+    <p>输出不是「选类别」而是「产出内容」(文字/图像/音频)的深度学习模型。</p></div>
+  <div class="gl"><b>大语言模型</b><span class="en">Large Language Model, LLM</span><span class="src">§10 概念四</span>
+    <p>生成式 AI 里专管文字的:反复预测「下一个词」,逐词把回答续写出来。GPT、Claude 都是。</p></div>
+  <div class="gl"><b>模型</b><span class="en">model</span><span class="src">§10 概念二</span>
+    <p>一个内部含有若干可调数值的数学函数:输入进去、输出出来,数值调好后输出接近正确答案。</p></div>
+  <div class="gl"><b>参数</b><span class="en">parameter</span><span class="src">§10 概念二</span>
+    <p>模型内部那些可调整的数值,由训练自动确定。本章模型 1 个参数,GPT 上千亿个。</p></div>
+  <div class="gl"><b>训练</b><span class="en">training</span><span class="src">§10 概念二</span>
+    <p>用数据自动调参数的过程:预测 → 量差距 → 朝差距变小的方向调,反复循环。</p></div>
+  <div class="gl"><b>推理</b><span class="en">inference</span><span class="src">§11</span>
+    <p>用训练好的模型做预测,参数不再变动。每次问 ChatGPT 都是一次推理。</p></div>
+  <div class="gl"><b>损失函数</b><span class="en">loss function</span><span class="src">§12.2</span>
+    <p>给「当前参数的预测有多离谱」打分:越差分越高;训练目标就是把它压到最小。</p></div>
+  <div class="gl"><b>均方误差</b><span class="en">Mean Squared Error, MSE</span><span class="src">§12.2</span>
+    <p>最常用的损失之一:所有样本「误差的平方」的平均值。</p></div>
+  <div class="gl"><b>梯度下降</b><span class="en">gradient descent</span><span class="src">§13(体感版,第 6 章正式讲)</span>
+    <p>找损失最低点的方法:每一步朝「损失变小的方向」挪一点参数,反复走。</p></div>
+  <div class="gl"><b>Token(词块)</b><span class="en">token</span><span class="src">§11</span>
+    <p>模型处理文字的最小单位,通常是一个词或半个词,切完后用编号表示。</p></div>
+  <div class="gl"><b>幻觉</b><span class="en">hallucination</span><span class="src">§15(D10 详讲)</span>
+    <p>大模型一本正经生成不真实内容的现象——因为它按概率生成,不检索事实库。</p></div>
+  <div class="gl"><b>过拟合</b><span class="en">overfitting</span><span class="src">§15(第 6 章详讲)</span>
+    <p>模型把训练数据死记硬背得很好,对没见过的新数据反而表现差。</p></div>
+  <div class="gl"><b>终端 / 命令行</b><span class="en">terminal / command line</span><span class="src">§8</span>
+    <p>用文字跟电脑对话的窗口:输入命令,它执行并打印结果。</p></div>
+  <div class="gl"><b>虚拟环境</b><span class="en">virtual environment, venv</span><span class="src">§8</span>
+    <p>与系统隔离的独立 Python 运行环境:装的库只属于这个项目,删掉文件夹即彻底卸载。</p></div>
+  <div class="gl"><b>标量</b><span class="en">scalar</span><span class="src">§12.2</span>
+    <p>就是一个单独的数(区别于列表/数组/矩阵)。</p></div>
+  <div class="gl"><b>外推</b><span class="en">extrapolation</span><span class="src">§18 练习 2(第 5 章详讲)</span>
+    <p>让模型预测「训练数据范围之外」的输入。模型敢答,但可信度另说。</p></div>
+
+  <h2 id="sec2"><span class="no">2</span><span>第 2 章 · Python 基础</span></h2>
+  <div class="gl"><b>变量</b><span class="en">variable</span><span class="src">第 2 章</span>
+    <p>给一个值起的名字,后面用名字就能取到值;可以随时重新赋成别的值。</p></div>
+  <div class="gl"><b>列表 / 字典</b><span class="en">list / dict</span><span class="src">第 2 章</span>
+    <p>列表按顺序装一串值(用位置取);字典按「键→值」装(用名字取)。两种最常用的容器。</p></div>
+  <div class="gl"><b>循环</b><span class="en">loop</span><span class="src">第 2 章</span>
+    <p>让同一段代码对一批数据反复执行,如 for 逐个遍历列表。训练循环就是它的放大版。</p></div>
+  <div class="gl"><b>函数</b><span class="en">function</span><span class="src">第 2 章</span>
+    <p>一段起了名、可反复调用的代码:给它输入(参数),它算完返回输出。</p></div>
+  <div class="gl"><b>报错 / 回溯</b><span class="en">exception / traceback</span><span class="src">第 2 章</span>
+    <p>程序出错时打印的信息;最后一行说错在哪、是什么错。读懂它是 debug 的第一步。</p></div>
+
+  <h2 id="sec3"><span class="no">3</span><span>第 3 章 · NumPy 数组与形状</span></h2>
+  <div class="gl"><b>数组</b><span class="en">ndarray</span><span class="src">第 3 章</span>
+    <p>NumPy 里装同类型数字的多维网格,是一切张量运算的基本容器。</p></div>
+  <div class="gl"><b>形状</b><span class="en">shape</span><span class="src">第 3 章</span>
+    <p>数组每个维度的长度,如 (3, 2) = 3 行 2 列。形状对不上是最常见的报错来源。</p></div>
+  <div class="gl"><b>轴</b><span class="en">axis</span><span class="src">第 3 章</span>
+    <p>数组的维度方向:二维里 axis=0 沿行(往下),axis=1 沿列(往右)。求和/求平均要指定轴。</p></div>
+  <div class="gl"><b>向量化</b><span class="en">vectorization</span><span class="src">第 3 章</span>
+    <p>不写 for 循环,直接对整个数组做运算——又快又短,是 NumPy 的核心用法。</p></div>
+  <div class="gl"><b>广播</b><span class="en">broadcasting</span><span class="src">第 3 章</span>
+    <p>形状不同的数组做运算时,NumPy 自动把小的「撑开」对齐再逐元素算的规则。</p></div>
+
+  <h2 id="sec4"><span class="no">4</span><span>第 4 章 · Pandas 表格数据</span></h2>
+  <div class="gl"><b>Series / DataFrame</b><span class="en">Series / DataFrame</span><span class="src">第 4 章</span>
+    <p>Series = 带标签的一列;DataFrame = 一整张表(多列 Series 拼起来),Pandas 的两个主角。</p></div>
+  <div class="gl"><b>缺失值</b><span class="en">NaN / missing value</span><span class="src">第 4 章</span>
+    <p>表里空着的格子(记作 NaN)。喂模型前必须处理:填补或删除,否则计算会出错或被污染。</p></div>
+  <div class="gl"><b>选取</b><span class="en">loc / iloc</span><span class="src">第 4 章</span>
+    <p>从表里取子集:loc 按标签名取,iloc 按整数位置取。</p></div>
+  <div class="gl"><b>分组聚合</b><span class="en">groupby</span><span class="src">第 4 章</span>
+    <p>先按某列把行分堆,再对每堆算统计(求和/平均/计数)——「按类别汇总」的标准操作。</p></div>
+
+  <h2 id="sec5"><span class="no">5</span><span>第 5 章 · 机器学习核心概念</span></h2>
+  <div class="gl"><b>监督学习</b><span class="en">supervised learning</span><span class="src">第 5 章</span>
+    <p>训练数据带「正确答案」(标签),让模型学输入到答案的映射。分类和回归都属于它。</p></div>
+  <div class="gl"><b>无监督学习</b><span class="en">unsupervised learning</span><span class="src">第 5 章</span>
+    <p>数据没有答案,让模型自己找结构,如聚类分堆、降维。</p></div>
+  <div class="gl"><b>特征 / 标签</b><span class="en">feature / label</span><span class="src">第 5 章</span>
+    <p>特征 = 喂给模型的输入列(x);标签 = 想让它预测的答案列(y)。</p></div>
+  <div class="gl"><b>分类 / 回归</b><span class="en">classification / regression</span><span class="src">第 5 章</span>
+    <p>预测「哪一类」(离散,如垃圾邮件与否)= 分类;预测「多少」(连续,如房价)= 回归。</p></div>
+  <div class="gl"><b>训练集 / 验证集 / 测试集</b><span class="en">train / validation / test set</span><span class="src">第 5 章</span>
+    <p>数据切三份:训练学参数、验证调超参、测试只在最后估真实水平。混用会自欺。</p></div>
+  <div class="gl"><b>泛化</b><span class="en">generalization</span><span class="src">第 5 章</span>
+    <p>模型在「没见过的新数据」上也表现好的能力,是机器学习真正追求的目标。</p></div>
+
+  <h2 id="sec6"><span class="no">6</span><span>第 6 章 · 训练的本质</span></h2>
+  <div class="gl"><b>学习率</b><span class="en">learning rate</span><span class="src">第 6 章</span>
+    <p>每一步朝损失变小方向挪多远的步长。太大越过谷底震荡,太小学得极慢。</p></div>
+  <div class="gl"><b>训练循环</b><span class="en">training loop</span><span class="src">第 6 章</span>
+    <p>反复跑:前向预测 → 算损失 → 反向求梯度 → 更新参数。深度学习的心脏。</p></div>
+  <div class="gl"><b>批量 / 小批量</b><span class="en">batch / mini-batch</span><span class="src">第 6 章</span>
+    <p>一次拿多少条数据算一步更新。小批量在速度和稳定之间折中,是主流做法。</p></div>
+  <div class="gl"><b>梯度下降</b><span class="en">gradient descent</span><span class="src">§13 / 第 6 章 / D01</span>
+    <p>找损失最低点的方法:每步朝「坡度最陡的下坡方向」挪一点参数。另见第 1 章、D01。</p></div>
+
+  <h2 id="sec7"><span class="no">7</span><span>第 7 章 · 神经网络入门</span></h2>
+  <div class="gl"><b>神经元</b><span class="en">neuron</span><span class="src">第 7 章</span>
+    <p>网络的基本单元:把若干输入各乘一个权重、加起来、加偏置,再过激活函数。</p></div>
+  <div class="gl"><b>权重 / 偏置</b><span class="en">weight / bias</span><span class="src">第 7 章</span>
+    <p>神经元里可训练的参数:权重决定各输入的重要性,偏置整体平移。训练就是在调它们。</p></div>
+  <div class="gl"><b>激活函数</b><span class="en">activation function</span><span class="src">第 7 章</span>
+    <p>加在神经元输出上的非线性函数(如 ReLU),没有它多层网络会塌缩成一层。</p></div>
+  <div class="gl"><b>前向传播</b><span class="en">forward propagation</span><span class="src">第 7 章</span>
+    <p>数据从输入层逐层「乘加 + 激活」算到输出层,得到预测。</p></div>
+  <div class="gl"><b>反向传播</b><span class="en">backpropagation</span><span class="src">第 7 章</span>
+    <p>把输出的误差从后往前逐层传,算出每个参数该怎么改——训练神经网络的关键算法。</p></div>
+
+  <h2 id="sec8"><span class="no">8</span><span>第 8 章 · 大语言模型鸟瞰</span></h2>
+  <div class="gl"><b>词向量 / 嵌入</b><span class="en">embedding</span><span class="src">第 8 章 / A03 / D13</span>
+    <p>把 Token(或一段文字)表示成一长串数字,含义相近的向量距离也近。检索和理解的基础。</p></div>
+  <div class="gl"><b>注意力</b><span class="en">attention</span><span class="src">第 8 章(D14 手算)</span>
+    <p>让模型在处理某个词时,按相关度「看」前文里的其他词。Transformer 的核心机制。</p></div>
+  <div class="gl"><b>Transformer</b><span class="en">Transformer</span><span class="src">第 8 章(D15 拆结构)</span>
+    <p>由注意力 + 前馈层堆叠成的网络结构,现代所有大语言模型的骨架。</p></div>
+  <div class="gl"><b>上下文窗口</b><span class="en">context window</span><span class="src">第 8 章 / A01</span>
+    <p>模型一次能读入的最大 Token 数。超了就要截断或检索,是 RAG 和长文档处理的根本约束。</p></div>
+
+  <h2 id="sec9"><span class="no">9</span><span>应用工程 · A01–A07</span></h2>
+  <div class="gl"><b>提示词</b><span class="en">prompt</span><span class="src">A01</span>
+    <p>发给模型的全部文字(任务说明 + 上下文 + 例子)。把任务讲清、给对例子,输出就稳。</p></div>
+  <div class="gl"><b>少样本示例</b><span class="en">few-shot</span><span class="src">A01</span>
+    <p>在提示词里给几个「输入→期望输出」的范例,让模型照着格式和风格答。</p></div>
+  <div class="gl"><b>结构化输出</b><span class="en">structured output</span><span class="src">A02</span>
+    <p>让模型稳定吐出程序能直接解析的格式(通常是 JSON),把「聊天」变成「驱动程序」。</p></div>
+  <div class="gl"><b>函数调用 / 工具调用</b><span class="en">function calling / tool use</span><span class="src">A02</span>
+    <p>模型不直接答,而是按约定格式请求「调用某个工具」,程序执行后把结果喂回去。Agent 的地基。</p></div>
+  <div class="gl"><b>RAG 检索增强生成</b><span class="en">Retrieval-Augmented Generation</span><span class="src">A03</span>
+    <p>回答前先从资料库检索相关片段拼进上下文,让模型「带着资料答」——少编、可更新、能给出处。</p></div>
+  <div class="gl"><b>切块</b><span class="en">chunking</span><span class="src">A03</span>
+    <p>把长文档切成小段再做向量化,方便按需检索。切多大、怎么切直接影响检索质量。</p></div>
+  <div class="gl"><b>向量检索</b><span class="en">vector search</span><span class="src">A03</span>
+    <p>把问题也变成向量,在库里找「距离最近」的几段文本——按语义找,而非按关键词。</p></div>
+  <div class="gl"><b>Agent(智能体)</b><span class="en">agent</span><span class="src">A04</span>
+    <p>能自己决定「下一步调哪个工具」的程序:模型—工具—状态反复循环,直到把任务办完。</p></div>
+  <div class="gl"><b>ReAct</b><span class="en">Reason + Act</span><span class="src">A04</span>
+    <p>Agent 的经典范式:交替「想一步(推理)」和「做一步(调工具)」,拿到结果再想下一步。</p></div>
+  <div class="gl"><b>工作流 vs Agent</b><span class="en">workflow vs agent</span><span class="src">A04</span>
+    <p>步骤固定、路线已知用工作流(可控);步骤要模型临场决定才用 Agent(灵活但难控)。</p></div>
+  <div class="gl"><b>harness(底层框架)</b><span class="en">harness</span><span class="src">A05</span>
+    <p>包在模型外面、真正驱动一次 agent 运行的框架:拼上下文、调工具、跑循环、兜底。日常用的 Claude Code 就是一个 harness。</p></div>
+  <div class="gl"><b>agent loop</b><span class="en">agent loop</span><span class="src">A05</span>
+    <p>harness 的主循环:发上下文给模型 → 模型要调工具 → 执行 → 结果拼回上下文 → 再发,直到完成或触顶。</p></div>
+  <div class="gl"><b>MCP</b><span class="en">Model Context Protocol</span><span class="src">A05</span>
+    <p>一套让模型统一发现和调用外部工具/数据源的开放协议,免得每个工具各写一套接法。</p></div>
+  <div class="gl"><b>多 Agent 编排</b><span class="en">multi-agent orchestration</span><span class="src">A05</span>
+    <p>把大任务拆给多个各有分工的 agent 并行/接力完成,再由一个协调者汇总。</p></div>
+  <div class="gl"><b>评测集</b><span class="en">eval set</span><span class="src">A06</span>
+    <p>一批「输入 + 期望结果」的固定样例,每次改动后重跑,用来客观判断应用有没有变好。</p></div>
+  <div class="gl"><b>模型当裁判</b><span class="en">LLM-as-judge</span><span class="src">A06</span>
+    <p>用另一个模型按评分标准给输出打分,替代人工逐条评判——快,但要防它自己的偏差。</p></div>
+  <div class="gl"><b>提示注入</b><span class="en">prompt injection</span><span class="src">A06</span>
+    <p>攻击者把恶意指令藏进模型会读到的内容里,诱导它无视原任务。RAG/Agent 的头号安全风险。</p></div>
+  <div class="gl"><b>后端代理</b><span class="en">backend proxy</span><span class="src">A07</span>
+    <p>前端不直接连模型 API,而是先经过自己的后端——密钥不外泄、能限流缓存记日志的唯一关口。</p></div>
+  <div class="gl"><b>流式输出</b><span class="en">streaming</span><span class="src">A07</span>
+    <p>模型边生成边一段段返回,用户立刻看到字往外蹦,而不是干等整段答案。</p></div>
+  <div class="gl"><b>限流 / 缓存</b><span class="en">rate limiting / caching</span><span class="src">A07</span>
+    <p>限流挡住短时间内过多请求(防超支/滥用);缓存把重复问题的答案存下来直接复用(省钱省时)。</p></div>
+
+  <h2 id="sec10"><span class="no">10</span><span>深度课程 · 经典机器学习 D01–D06</span></h2>
+  <div class="gl"><b>线性回归</b><span class="en">linear regression</span><span class="src">D01</span>
+    <p>用一条直线(ŷ = w·x + b)拟合数据,预测连续值。模型-损失-训练三件套最干净的示范。</p></div>
+  <div class="gl"><b>逻辑回归</b><span class="en">logistic regression</span><span class="src">D02</span>
+    <p>线性回归 + Sigmoid + 交叉熵,输出「属于某类的概率」——最基础的分类模型。</p></div>
+  <div class="gl"><b>Sigmoid</b><span class="en">sigmoid</span><span class="src">D02</span>
+    <p>把任意实数压进 0~1 的 S 形函数,常用来把分数变成「一个类的概率」。</p></div>
+  <div class="gl"><b>Softmax</b><span class="en">softmax</span><span class="src">D02</span>
+    <p>把一组分数变成「和为 1 的概率分布」,用于多分类;也是 LLM 预测下一词的最后一步。</p></div>
+  <div class="gl"><b>交叉熵</b><span class="en">cross-entropy</span><span class="src">D02</span>
+    <p>分类任务最常用的损失:衡量预测的概率分布和真实标签差多远,越准越小。</p></div>
+  <div class="gl"><b>决策边界</b><span class="en">decision boundary</span><span class="src">D02</span>
+    <p>特征空间里把不同类别分开的那条线/面。模型学的其实就是这条边界怎么画。</p></div>
+  <div class="gl"><b>决策树</b><span class="en">decision tree</span><span class="src">D03</span>
+    <p>用一连串「是/否」问题层层切分数据来做预测的模型,直观但容易过拟合。</p></div>
+  <div class="gl"><b>随机森林</b><span class="en">random forest</span><span class="src">D03</span>
+    <p>训练很多棵不同的树,让它们投票取平均(bagging)——比单棵稳得多。</p></div>
+  <div class="gl"><b>梯度提升</b><span class="en">gradient boosting</span><span class="src">D03</span>
+    <p>一棵接一棵地训练,每棵专门纠正前面的残差(boosting)。XGBoost/LightGBM 是表格数据之王。</p></div>
+  <div class="gl"><b>集成学习</b><span class="en">ensemble</span><span class="src">D03</span>
+    <p>把多个弱模型组合成一个强模型:并联投票=bagging,串联纠错=boosting。</p></div>
+  <div class="gl"><b>聚类</b><span class="en">clustering</span><span class="src">D04</span>
+    <p>无监督地把相似样本自动分成若干堆,如 K-Means。事先不知道有哪些类。</p></div>
+  <div class="gl"><b>K-Means</b><span class="en">K-Means</span><span class="src">D04</span>
+    <p>最常用的聚类算法:反复「就近归堆 → 重算堆中心」,直到稳定。需要事先定 K(几堆)。</p></div>
+  <div class="gl"><b>降维</b><span class="en">dimensionality reduction</span><span class="src">D04</span>
+    <p>把很多特征压成少数几个,保留主要信息,便于可视化和去噪。</p></div>
+  <div class="gl"><b>PCA / t-SNE</b><span class="en">PCA / t-SNE</span><span class="src">D04</span>
+    <p>两种降维:PCA 找方差最大的几个方向(线性、快);t-SNE 专为「把高维数据画到二维看分布」。</p></div>
+  <div class="gl"><b>混淆矩阵</b><span class="en">confusion matrix</span><span class="src">D05</span>
+    <p>一张表列出「真/假 × 阳/阴」四种情况的数量,是所有分类指标的来源。</p></div>
+  <div class="gl"><b>精确率 / 召回率</b><span class="en">precision / recall</span><span class="src">D05</span>
+    <p>精确率=报阳里真阳的比例(准不准);召回率=真阳里被抓到的比例(全不全)。常此消彼长。</p></div>
+  <div class="gl"><b>F1 分数</b><span class="en">F1 score</span><span class="src">D05</span>
+    <p>精确率和召回率的调和平均,一个数兼顾两者,类别不平衡时比准确率靠谱。</p></div>
+  <div class="gl"><b>ROC / AUC</b><span class="en">ROC / AUC</span><span class="src">D05</span>
+    <p>ROC 曲线在不同阈值下权衡真阳率与假阳率;AUC 是曲线下面积(0.5=瞎猜,1=完美)。</p></div>
+  <div class="gl"><b>交叉验证</b><span class="en">cross-validation</span><span class="src">D05</span>
+    <p>把数据轮流切成 K 份、每份都当一次测试集,取平均分——比单次划分更可信地估水平。</p></div>
+  <div class="gl"><b>超参数</b><span class="en">hyperparameter</span><span class="src">D05</span>
+    <p>不是训练学出来、而是事先设定的旋钮(学习率、树深、K 值),用验证集或网格搜索来调。</p></div>
+  <div class="gl"><b>数据泄露</b><span class="en">data leakage</span><span class="src">D05 / D06</span>
+    <p>测试集的信息偷偷混进了训练,导致离线分数虚高、上线暴跌。防它是评估的头号纪律。</p></div>
+  <div class="gl"><b>特征工程</b><span class="en">feature engineering</span><span class="src">D06</span>
+    <p>喂模型前对原始数据的加工:补缺失、编码、缩放、构造新特征——常比换模型更能提分。</p></div>
+  <div class="gl"><b>独热编码</b><span class="en">one-hot encoding</span><span class="src">D06</span>
+    <p>把类别(红/黄/蓝)变成一组只有 0/1 的列,让模型能处理非数字的特征。</p></div>
+  <div class="gl"><b>特征缩放</b><span class="en">feature scaling</span><span class="src">D06</span>
+    <p>把不同量纲的特征拉到相近范围(标准化/归一化),否则大数值特征会压过小数值的。</p></div>
+  <div class="gl"><b>流水线</b><span class="en">Pipeline</span><span class="src">D06</span>
+    <p>把预处理和模型串成一条链,只在训练集上「学」变换规则再套到测试集——从流程上杜绝数据泄露。</p></div>
+
+  <h2 id="sec11"><span class="no">11</span><span>深度课程 · 深度学习 D07–D11</span></h2>
+  <div class="gl"><b>框架</b><span class="en">framework(PyTorch)</span><span class="src">D07</span>
+    <p>把「张量运算 + 自动求导 + 数据加载 + 训练循环」标准化的工具库,让人只管搭网络、不用手推导数。</p></div>
+  <div class="gl"><b>张量</b><span class="en">tensor</span><span class="src">D07</span>
+    <p>PyTorch 版的多维数组:用法像 NumPy,但能搬上 GPU、且会记录运算以支持自动求导。</p></div>
+  <div class="gl"><b>自动求导</b><span class="en">autograd</span><span class="src">D07</span>
+    <p>框架在前向时记下计算图,调用 <code>loss.backward()</code> 就自动算出所有参数的梯度——反向传播的自动化版本。</p></div>
+  <div class="gl"><b>训练循环五步</b><span class="en">training loop</span><span class="src">D07</span>
+    <p>前向 → 算损失 → 梯度清零 → 反向 → 更新。深度学习所有模型都在这个循环里训,换模型不换循环。</p></div>
+  <div class="gl"><b>数据加载器</b><span class="en">DataLoader</span><span class="src">D07</span>
+    <p>把数据集切成小批量、每轮打乱、按需喂给训练循环的工具。</p></div>
+  <div class="gl"><b>卷积</b><span class="en">convolution</span><span class="src">D08</span>
+    <p>用一个小窗口(卷积核)滑过整张图,每处把窗口内像素与核的权重相乘求和,得到特征图。同一套权重扫全图。</p></div>
+  <div class="gl"><b>参数共享</b><span class="en">parameter sharing</span><span class="src">D08</span>
+    <p>卷积核在图像每个位置用同一套权重,把参数量从百万级压到几十个,是 CNN 又省又好的关键。</p></div>
+  <div class="gl"><b>池化</b><span class="en">pooling</span><span class="src">D08</span>
+    <p>下采样:把特征图按小块只留一个代表值(常取最大)。缩小尺寸、保留最强响应、并带来对小位移的稳健。无可训练参数。</p></div>
+  <div class="gl"><b>感受野</b><span class="en">receptive field</span><span class="src">D08</span>
+    <p>一个神经元能「看到」的原图范围。越深的层感受野越大,所以浅层看边缘、深层看整体。</p></div>
+  <div class="gl"><b>循环神经网络</b><span class="en">RNN</span><span class="src">D09</span>
+    <p>处理序列的老办法:维护一个隐状态(记忆),每读一个词就用「当前词 + 旧记忆」更新它,像传接力棒。</p></div>
+  <div class="gl"><b>长短期记忆网络</b><span class="en">LSTM</span><span class="src">D09</span>
+    <p>RNN 的改良版,用几道「门」决定记什么忘什么,能记得更久;但只是缓解长依赖问题,没有根治。</p></div>
+  <div class="gl"><b>优化器</b><span class="en">optimizer</span><span class="src">D10</span>
+    <p>决定「拿到梯度后参数具体怎么挪」的算法。Adam = 动量 + 自适应学习率,默认首选。</p></div>
+  <div class="gl"><b>正则化</b><span class="en">regularization</span><span class="src">D10</span>
+    <p>一切「给模型加约束/干扰,逼它别死记硬背」的手段:Dropout、权重衰减、早停、数据增强。</p></div>
+  <div class="gl"><b>Dropout</b><span class="en">dropout</span><span class="src">D10</span>
+    <p>训练时每步随机「关掉」一部分神经元,逼网络别依赖个别单元;测试时全部打开(靠 model.eval() 切换)。</p></div>
+  <div class="gl"><b>批归一化</b><span class="en">BatchNorm</span><span class="src">D10</span>
+    <p>在网络中间把每层输入拉回「均值 0、方差 1」,让训练更快更稳——D06 的特征缩放搬进了网络内部。</p></div>
+  <div class="gl"><b>学习率调度</b><span class="en">lr scheduler</span><span class="src">D10</span>
+    <p>训练过程中动态调学习率:先小步热身、中途大步、后期减小精修。</p></div>
+  <div class="gl"><b>迁移学习</b><span class="en">transfer learning</span><span class="src">D11</span>
+    <p>不从零训练,而是拿别人在海量数据上训好的模型当起点,借用它已学会的通用特征。</p></div>
+  <div class="gl"><b>预训练模型 / 基座</b><span class="en">pretrained / base model</span><span class="src">D11 / D16</span>
+    <p>别人已在大数据集上训练好并公开权重的模型。图像界如 ResNet,文本界即大语言模型的基座。</p></div>
+  <div class="gl"><b>冻结</b><span class="en">freeze</span><span class="src">D11</span>
+    <p>把某些层标记为不参与梯度更新,只训练新加的部分。数据少时最稳。</p></div>
+  <div class="gl"><b>微调</b><span class="en">fine-tuning</span><span class="src">D11 / D16</span>
+    <p>解冻部分或全部层,用<b>很小的学习率</b>在自己的数据上继续训练,让通用特征朝任务微调一点。</p></div>
+
+  <h2 id="sec12"><span class="no">12</span><span>深度课程 · 大模型内部 D12–D17</span></h2>
+  <div class="gl"><b>分词器</b><span class="en">Tokenizer</span><span class="src">D12</span>
+    <p>一本「文字↔编号」的对照词典 + 一套切分规则,把字符串翻译成模型唯一能处理的整数序列。训练前定死,之后不能换。</p></div>
+  <div class="gl"><b>子词</b><span class="en">subword</span><span class="src">D12</span>
+    <p>介于字符和整词之间的切分粒度:常见词整块保留、罕见词拆成常见片段。词表可控且永不遇生词,是今天的主流。</p></div>
+  <div class="gl"><b>BPE 字节对编码</b><span class="en">Byte Pair Encoding</span><span class="src">D12</span>
+    <p>最主流的子词算法:先全拆成字符,反复把「最常相邻的一对」合并成新块,直到词表达到设定大小。</p></div>
+  <div class="gl"><b>词表</b><span class="en">vocabulary</span><span class="src">D12</span>
+    <p>所有 Token 与编号的对照表,现代模型常几万到二十几万条。它既是模型的入口也是出口。</p></div>
+  <div class="gl"><b>嵌入矩阵</b><span class="en">embedding matrix</span><span class="src">D13</span>
+    <p>模型第一层的可训练查找表:行数 = 词表大小,列数 = 向量维度。查 Token 编号就是取出对应那一行。</p></div>
+  <div class="gl"><b>余弦相似度</b><span class="en">cosine similarity</span><span class="src">D13</span>
+    <p>比两个向量的方向夹角(不比长度),取值 −1~1。RAG 的向量检索算的就是它。</p></div>
+  <div class="gl"><b>位置编码</b><span class="en">positional encoding</span><span class="src">D13</span>
+    <p>把「排第几」也编码成向量加到词向量上。因为注意力同时看所有词、天生不分先后,顺序要另外喂进去。</p></div>
+  <div class="gl"><b>Q / K / V</b><span class="en">Query / Key / Value</span><span class="src">D14</span>
+    <p>同一个词向量乘三个不同可训练矩阵得到的三种角色:Q=我在找什么、K=我是什么、V=我能提供什么信息。</p></div>
+  <div class="gl"><b>自注意力</b><span class="en">self-attention</span><span class="src">D14</span>
+    <p>句子里每个词都当一次查询方,对全句做一遍「打分 → 缩放 → softmax → 加权求和」,得到参考全句后的新表示。</p></div>
+  <div class="gl"><b>多头注意力</b><span class="en">multi-head attention</span><span class="src">D14</span>
+    <p>同时用多套 Q/K/V 从不同角度看全句(一头盯主谓、一头盯指代…),最后拼接融合。</p></div>
+  <div class="gl"><b>因果掩码</b><span class="en">causal mask</span><span class="src">D14</span>
+    <p>在 softmax 前把「未来位置」的分数设为负无穷,保证预测第 t 个词时不偷看后文。生成式模型逐词输出的原因。</p></div>
+  <div class="gl"><b>前馈层</b><span class="en">feed-forward network, FFN</span><span class="src">D15</span>
+    <p>对每个位置各自独立做的两层小网络(放大 → 非线性 → 压回)。提供真正的非线性表达力,也是参数大头。</p></div>
+  <div class="gl"><b>残差连接</b><span class="en">residual connection</span><span class="src">D15</span>
+    <p>把子层输入原样加到输出上(x + 子层(x))。给梯度一条高速公路,让网络能堆到几十上百层。</p></div>
+  <div class="gl"><b>层归一化</b><span class="en">LayerNorm</span><span class="src">D15</span>
+    <p>把每个位置的向量拉回规整分布,稳定训练。按每个样本自己归一,不跨批,适合长度不一的文本。</p></div>
+  <div class="gl"><b>Transformer 块</b><span class="en">Transformer block</span><span class="src">D15</span>
+    <p>多头注意力 → 残差归一 → 前馈 → 残差归一。进出形状相同,所以能堆 N 层。堆起来就是 GPT 骨架。</p></div>
+  <div class="gl"><b>只用解码器架构</b><span class="en">decoder-only</span><span class="src">D15</span>
+    <p>带因果掩码、专做「续写下一个词」的结构。今天所有主流大语言模型都是这一类。</p></div>
+  <div class="gl"><b>预训练</b><span class="en">pretraining</span><span class="src">D16</span>
+    <p>在海量文本上用「预测下一个词」训练,顺带学到语法、事实与推理。产物是只会续写的基座模型。千万美元级。</p></div>
+  <div class="gl"><b>指令微调</b><span class="en">SFT, Supervised Fine-Tuning</span><span class="src">D16</span>
+    <p>用几万条「指令 → 理想回答」的示范继续训练,把「续写」变成「照指令做事」。改的是行为方式,不是知识。</p></div>
+  <div class="gl"><b>对齐 / RLHF</b><span class="en">alignment / RLHF</span><span class="src">D16</span>
+    <p>用人类对回答的排序偏好训练奖励模型,再用强化学习让模型倾向高分回答。教的是「分寸」,也是安全与价值观注入的主要环节。</p></div>
+  <div class="gl"><b>DPO 直接偏好优化</b><span class="en">Direct Preference Optimization</span><span class="src">D16</span>
+    <p>RLHF 的简化版:跳过奖励模型,直接用偏好数据一步优化,更简单也更稳。</p></div>
+  <div class="gl"><b>LoRA 低秩适配</b><span class="en">LoRA</span><span class="src">D16</span>
+    <p>冻住原权重,只在每层旁插入两个小矩阵学「改动量」,可训练参数常不到 1%,一张消费级显卡就能微调大模型。</p></div>
+  <div class="gl"><b>自回归生成</b><span class="en">autoregressive</span><span class="src">D17</span>
+    <p>每跑一遍网络只产出一个 Token,拼回输入再跑。所以回答逐字蹦出、无法并行、越长越慢。</p></div>
+  <div class="gl"><b>预填充 / 解码</b><span class="en">prefill / decode</span><span class="src">D17</span>
+    <p>推理的两阶段:预填充一次并行读完提示词(吃算力);解码逐个生成(每步都要读一遍全部权重,吃显存带宽)。</p></div>
+  <div class="gl"><b>KV cache</b><span class="en">KV cache</span><span class="src">D17</span>
+    <p>把已算过的 K/V 缓存复用,避免每步重算前文,计算量从平方降到线性。代价是缓存占显存并随上下文长度线性膨胀。</p></div>
+  <div class="gl"><b>量化</b><span class="en">quantization</span><span class="src">D17</span>
+    <p>把权重从 16 位压成 8 位甚至 4 位存储。显存近似按比例下降、生成更快,精度略损。7B 模型 4-bit 约需 3.5 GB。</p></div>
+
+  <div class="note">
+    <span class="note-t">维护规则</span>
+    每发布一章,新增术语按同样格式追加一个小节;同一个词后续章节有更深定义时,在旧条目后加「另见第 X 章」而不是覆盖。
+    <br>覆盖进度:<b>全部 39 章已收录</b>——基础 01–08、深度课程 D01–D17(三条 Track 全覆盖)、应用工程 A01–A07。共约 140 条。
+  </div>
+
+  <div class="pagefoot">
+    <a href="../index.html">← 课程首页</a>
+    <a href="官方文档导航.html">官方文档导航 →</a>
+  </div>
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本页目录">
+      <p class="toc-label">术语表 · 目录</p>
+      <div class="toc-group">
+        <a data-toc-target="sec1" href="#sec1"><i>1</i>第 1 章 · 人工智能全景与学习环境</a>
+        <a data-toc-target="sec2" href="#sec2"><i>2</i>第 2 章 · Python 基础</a>
+        <a data-toc-target="sec3" href="#sec3"><i>3</i>第 3 章 · NumPy 数组与形状</a>
+        <a data-toc-target="sec4" href="#sec4"><i>4</i>第 4 章 · Pandas 表格数据</a>
+        <a data-toc-target="sec5" href="#sec5"><i>5</i>第 5 章 · 机器学习核心概念</a>
+        <a data-toc-target="sec6" href="#sec6"><i>6</i>第 6 章 · 训练的本质</a>
+        <a data-toc-target="sec7" href="#sec7"><i>7</i>第 7 章 · 神经网络入门</a>
+        <a data-toc-target="sec8" href="#sec8"><i>8</i>第 8 章 · 大语言模型鸟瞰</a>
+        <a data-toc-target="sec9" href="#sec9"><i>9</i>应用工程 · A01–A07</a>
+        <a data-toc-target="sec10" href="#sec10"><i>10</i>深度课程 · 经典机器学习 D01–D06</a>
+        <a data-toc-target="sec11" href="#sec11"><i>11</i>深度课程 · 深度学习 D07–D11</a>
+        <a data-toc-target="sec12" href="#sec12"><i>12</i>深度课程 · 大模型内部 D12–D17</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script src="../assets/course.js"></script>
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+</body>
+</html>

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-reshelled="2026-08-21">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>资料 · AI 学习资源库(策展)</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --measure:900px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+.crumb{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);padding:14px 40px 12px;border-bottom:1px solid var(--rule);}
+.crumb a{color:var(--ink-faint);text-decoration:none;}
+.crumb a:hover{color:var(--acc);}
+.wrap{max-width:var(--measure);margin:0 auto;padding:34px 40px 80px;}
+@media(max-width:640px){.wrap{padding:24px 20px 60px;}.crumb{padding:14px 20px 12px;}}
+h1{font-weight:700;font-size:var(--fs-h1);line-height:1.15;margin:0 0 14px;letter-spacing:-.01em;}
+@media(max-width:640px){h1{font-size:26px;}}
+.lede{font-size:var(--fs-body);color:var(--ink-soft);margin:0 0 26px;max-width:720px;line-height:1.75;}
+.how{border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:0 0 30px -18px;font-size:var(--fs-body);}
+.how .lb{font-family:var(--sans);font-size:var(--fs-small);font-weight:600;color:var(--ink-faint);display:block;margin-bottom:4px;}
+.how p{margin:4px 0;}
+h2{font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:40px 0 4px;padding-top:18px;border-top:1px solid var(--rule);display:flex;align-items:baseline;gap:12px;}
+h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);}
+.sec-note{color:var(--ink-soft);font-size:var(--fs-small);margin:2px 0 6px;}
+.rlist{list-style:none;padding:0;margin:8px 0 0;}
+.rlist li{padding:13px 0;border-bottom:1px solid var(--rule);}
+.rlist .rt{font-weight:600;font-size:var(--fs-body);}
+.rlist .rt a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;}
+.rlist .rt a:hover{text-decoration-color:var(--acc);}
+.rlist .rtag{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.04em;color:var(--ink-faint);margin-left:8px;}
+.rlist .rd{color:var(--ink-soft);font-size:var(--fs-small);line-height:1.6;margin:3px 0 0;}
+.rlist .rd b{color:var(--ink);font-weight:600;}
+.foot{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);font-size:var(--fs-small);color:var(--ink-faint);}
+.foot a{color:var(--acc);text-decoration:none;}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调(2026-08-19)*/
+:root{--surface:#f6f8fc;}
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+</style>
+<style data-reshell-fix>
+.wrap{max-width:none;margin:0;padding:0;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="../index.html#support">资料</a><span class="sep">—</span>
+      <span class="current">AI 学习资源库</span>
+      <span class="spacer"></span>
+      <a href="术语表.html" class="jump">术语表</a>
+      <a href="官方文档导航.html" class="jump">官方文档</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">资料 · 外链策展总库</p>
+        <h1>AI 学习资源库 · 策展</h1>
+        <p class="recap">这不是链接堆,是一份<b>筛过的清单</b>:全网公认最好的免费资源,按「怎么用」分层。每章的「外链策展」都从这里取料;也能直接拿它当地图,自己挑一条主线走。</p>
+      </header>
+
+
+  
+  
+
+  <div class="how">
+    <span class="lb">怎么用这份清单</span>
+    <p><b>先看②可视化建直觉 → 选③里一条系统课从头跟 → ④免费书当字典深挖 → ⑤官方文档动手查 → ⑥论文留到以后。</b>不要贪多:一条主线走完,胜过十个网站各看两页。</p>
+    <p style="color:var(--ink-soft);font-size:var(--fs-small)">所有链接于 2026-08-16 核实在线;死了就记住名字搜一下。会过时的(具体模型/跑分)只住在链接里,换掉链接即可。</p>
+  </div>
+
+  <!-- ② 可视化 -->
+  <h2 id="visual"><span class="no">1</span><span>可视化 · 交互(设计背景先看这些)</span></h2>
+  <p class="sec-note">抽象概念先靠图和动画建立直觉,再去啃系统课。这一档最适合设计背景。</p>
+  <ul class="rlist">
+    <li><span class="rt"><a href="https://www.3blue1brown.com/topics/neural-networks" target="_blank" rel="noopener">3Blue1Brown · 深度学习系列</a></span><span class="rtag">视频 · 入门 · 天花板</span><p class="rd">神经网络、梯度下降、反向传播、GPT、注意力,全用动画讲。<b>本课程 06/07/08 的默认主线</b>,几乎必看。B 站有中文字幕。</p></li>
+    <li><span class="rt"><a href="https://www.youtube.com/c/joshstarmer" target="_blank" rel="noopener">StatQuest(Josh Starmer)</a></span><span class="rtag">视频 · 单概念讲透</span><p class="rd">手绘讲每一个机器学习/统计概念,「我终于看懂了」的最高频推荐。挑「Machine Learning Fundamentals」列表。</p></li>
+    <li><span class="rt"><a href="http://www.r2d3.us/visual-intro-to-machine-learning-part-1/" target="_blank" rel="noopener">R2D3 · 机器学习可视化入门</a></span><span class="rtag">交互 · 入门</span><p class="rd">用滚动动画讲决策树怎么从数据学出规律,全网最美的 ML 入门可视化,专治「过拟合」这种抽象词。</p></li>
+    <li><span class="rt"><a href="https://jalammar.github.io/" target="_blank" rel="noopener">Jay Alammar · Illustrated 系列</a></span><span class="rtag">图解 · 进阶</span><p class="rd">The Illustrated Transformer / GPT-2,MIT、Cornell 课程都在用的图解经典。看懂 Transformer 结构靠它。</p></li>
+    <li><span class="rt"><a href="https://distill.pub/" target="_blank" rel="noopener">Distill.pub</a></span><span class="rtag">交互 · 进阶</span><p class="rd">用可交互图讲机器学习研究(t-SNE、特征可视化、动量等)。做得极精,适合想真懂一个点时深读。</p></li>
+    <li><span class="rt"><a href="https://setosa.io/ev/" target="_blank" rel="noopener">Setosa · Explained Visually</a></span><span class="rtag">交互 · 入门</span><p class="rd">PCA、马尔可夫链、图像卷积核……每个都能拖着玩,把硬概念变得可摸。</p></li>
+    <li><span class="rt"><a href="https://seeing-theory.brown.edu/" target="_blank" rel="noopener">Seeing Theory(布朗大学)</a></span><span class="rtag">交互 · 概率统计</span><p class="rd">概率与统计的可视化入门,机器学习的数学底子。想补统计直觉看它。</p></li>
+    <li><span class="rt"><a href="https://playground.tensorflow.org/" target="_blank" rel="noopener">TensorFlow Playground</a></span><span class="rtag">交互 · 动手</span><p class="rd">浏览器里拖一个神经网络实时训练,加层、改激活,看决策边界变化。玩十分钟胜过读半天。</p></li>
+    <li><span class="rt"><a href="https://github.com/Machine-Learning-Tokyo/Interactive_Tools" target="_blank" rel="noopener">ML-Tokyo · 交互工具合集</a></span><span class="rtag">聚合 · 索引</span><p class="rd">一大批 ML/DL/数学交互工具的清单,上面几个不够时来这里翻。</p></li>
+  </ul>
+
+  <!-- ③ 系统课程 -->
+  <h2 id="course"><span class="no">2</span><span>系统课程(选一条主线从头跟)</span></h2>
+  <p class="sec-note">建完直觉,挑一条从头到尾跟完。别混着跳。</p>
+  <ul class="rlist">
+    <li><span class="rt"><a href="https://karpathy.ai/zero-to-hero.html" target="_blank" rel="noopener">Andrej Karpathy · Neural Networks: Zero to Hero</a></span><span class="rtag">视频+代码 · 进阶 · 极力推荐</span><p class="rd">从零手写:自动求导 → 语言模型 → 分词器 → 一个能跑的 GPT,每行都讲。<b>现代 AI 教育里最受推崇的免费资源</b>,深度课程 D 段的主心骨。<a href="https://github.com/karpathy/nn-zero-to-hero" target="_blank" rel="noopener">配套代码</a>。</p></li>
+    <li><span class="rt"><a href="https://course.fast.ai/" target="_blank" rel="noopener">fast.ai · Practical Deep Learning</a></span><span class="rtag">视频+notebook · 入门~进阶</span><p class="rd">「先做出来、再讲原理」的免费实战课,数学要求低,几节课就能训出能跑的模型。</p></li>
+    <li><span class="rt"><a href="https://developers.google.com/machine-learning/crash-course" target="_blank" rel="noopener">Google · 机器学习速成课</a></span><span class="rtag">交互课程 · 入门</span><p class="rd">结构清楚、有交互可视化,约 15 小时;本课程 05/06 的主线。</p></li>
+    <li><span class="rt"><a href="https://www.bilibili.com/video/BV1Bq421A74G/" target="_blank" rel="noopener">吴恩达 · 机器学习(中文字幕)</a></span><span class="rtag">视频 · 入门 · 中文</span><p class="rd">全球公认的经典入门课,系统、稳。想要中文系统主线选它。</p></li>
+    <li><span class="rt"><a href="https://huggingface.co/learn/llm-course" target="_blank" rel="noopener">Hugging Face · LLM 课程</a></span><span class="rtag">课程+代码 · 进阶</span><p class="rd">Transformers 端到端:架构、分词器、微调、LoRA/RLHF,由造这些库的人写。做大模型应用绕不开。</p></li>
+    <li><span class="rt"><a href="https://cs231n.github.io/" target="_blank" rel="noopener">Stanford CS231n(计算机视觉)</a> · <a href="https://web.stanford.edu/class/cs224n/" target="_blank" rel="noopener">CS224n(NLP)</a></span><span class="rtag">大学课 · 进阶</span><p class="rd">深度学习在视觉/语言两条线的经典高校课,讲义公开。想系统深挖某一支时用。</p></li>
+  </ul>
+
+  <!-- ④ 免费书 -->
+  <h2 id="book"><span class="no">3</span><span>免费书(当字典 / 系统深挖)</span></h2>
+  <p class="sec-note">不必通读;卡住时查、想深挖时读。全部免费在线。</p>
+  <ul class="rlist">
+    <li><span class="rt"><a href="https://d2l.ai/" target="_blank" rel="noopener">Dive into Deep Learning(d2l.ai)</a></span><span class="rtag">书+可跑代码 · 进阶</span><p class="rd">整本书就是可运行的 Jupyter notebook,每个概念从代码搭起,500+ 高校在用。现代最全的免费深度学习书。</p></li>
+    <li><span class="rt"><a href="https://udlbook.github.io/udlbook/" target="_blank" rel="noopener">Understanding Deep Learning(Simon Prince)</a></span><span class="rtag">书 · 理论 · 图多</span><p class="rd">图极好、讲理论清楚的免费 PDF。想真正理解「为什么这么设计」时读。</p></li>
+    <li><span class="rt"><a href="http://neuralnetworksanddeeplearning.com/" target="_blank" rel="noopener">Neural Networks and Deep Learning(Nielsen)</a></span><span class="rtag">书 · 入门直觉</span><p class="rd">经典入门小书,把神经网络的直觉讲得很透。配合第 7 章看。</p></li>
+    <li><span class="rt"><a href="https://fleuret.org/francois/lbdl.html" target="_blank" rel="noopener">The Little Book of Deep Learning(Fleuret)</a></span><span class="rtag">书 · 精简 · 手机可读</span><p class="rd">一本掌上大小的深度学习浓缩册,通勤翻。</p></li>
+    <li><span class="rt"><a href="https://mml-book.github.io/" target="_blank" rel="noopener">Mathematics for Machine Learning(mml-book)</a></span><span class="rtag">书 · 数学地基</span><p class="rd">机器学习需要的线代/微积分/概率,免费 PDF。数学卡壳时补这本,不必啃完。</p></li>
+    <li><span class="rt"><a href="https://jakevdp.github.io/PythonDataScienceHandbook/" target="_blank" rel="noopener">Python Data Science Handbook(VanderPlas)</a></span><span class="rtag">书+notebook · 数据工具</span><p class="rd">NumPy / Pandas / Matplotlib / scikit-learn 的权威手册,免费 notebook。第 3、4 章的加深与字典。</p></li>
+  </ul>
+
+  <!-- ⑤ 官方文档 -->
+  <h2 id="docs"><span class="no">4</span><span>官方文档(动手时查)</span></h2>
+  <p class="sec-note">写代码卡住,先查官方,别先搜二手博客。</p>
+  <ul class="rlist">
+    <li><span class="rt"><a href="https://numpy.org/doc/stable/" target="_blank" rel="noopener">NumPy</a> · <a href="https://pandas.pydata.org/docs/" target="_blank" rel="noopener">Pandas</a> · <a href="https://scikit-learn.org/stable/" target="_blank" rel="noopener">scikit-learn</a></span><span class="rtag">文档 · 数据/经典ML</span><p class="rd">数组、表格、经典机器学习三件套的官方文档与用户指南,都有很好的入门教程。</p></li>
+    <li><span class="rt"><a href="https://pytorch.org/tutorials/" target="_blank" rel="noopener">PyTorch Tutorials</a></span><span class="rtag">文档 · 深度学习</span><p class="rd">官方教程,从张量到完整训练循环。深度课程 D07 起动手时的主参考。</p></li>
+    <li><span class="rt"><a href="https://huggingface.co/docs" target="_blank" rel="noopener">Hugging Face 文档</a></span><span class="rtag">文档 · 大模型</span><p class="rd">Transformers / Datasets / Tokenizers 等库的文档;调用和微调开源模型的入口。</p></li>
+    <li><span class="rt"><a href="https://github.com/Financial-Times/chart-doctor/tree/main/visual-vocabulary" target="_blank" rel="noopener">FT · Visual Vocabulary(图表词汇)</a></span><span class="rtag">参考 · 数据可视化</span><p class="rd">《金融时报》的「什么场景用什么图」速查,做数据可视化(D06/项目)时的设计参考——正好强项。</p></li>
+  </ul>
+
+  <!-- ⑤·5 应用工程 -->
+  <h2 id="apps"><span class="no">5</span><span>做出能用的 AI 应用 · 应用工程 ★</span></h2>
+  <p class="sec-note">这一层直接对应索引 Stage 3——把 AI 真正用起来、把 agent 搭好治好。<b>想推进治理体系、看懂 harness/底层框架,重点看这一节</b>(尤其 MCP、Agent 设计、ReAct)。</p>
+  <ul class="rlist">
+    <li><span class="rt"><a href="https://huyenchip.com/" target="_blank" rel="noopener">Chip Huyen · AI Engineering(书 + 免费资源)</a></span><span class="rtag">书 · 综合 · 应用工程主线</span><p class="rd">用现成大模型搭应用的系统方法论:prompt、RAG、微调、agent、评估、成本全覆盖,2025 最热的应用工程书。<a href="https://github.com/chiphuyen/aie-book" target="_blank" rel="noopener">GitHub 有免费配套资源清单</a>。<b>整个 Stage 3 的总主线。</b></p></li>
+    <li><span class="rt"><a href="https://fullstackdeeplearning.com/llm-bootcamp/" target="_blank" rel="noopener">Full Stack · LLM Bootcamp(免费)</a></span><span class="rtag">视频 · 端到端 · 免费</span><p class="rd">从 prompt 到搭应用到上线(LLMOps)的免费训练营讲座,专讲「做出能用、能上线的 LLM 应用」。</p></li>
+    <li><span class="rt"><a href="https://www.promptingguide.ai/" target="_blank" rel="noopener">Prompt Engineering Guide(DAIR)</a></span><span class="rtag">指南 · Prompt/上下文</span><p class="rd">最全的 prompt、上下文工程、RAG、Agent 技法合集,300 万人学过。配 A01。另可看 <a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener">Anthropic 官方 prompt 指南</a>。</p></li>
+    <li><span class="rt"><a href="https://modelcontextprotocol.io/" target="_blank" rel="noopener">Model Context Protocol(MCP)</a></span><span class="rtag">协议 · 工具 · harness ★</span><p class="rd">把工具和数据源标准化地接到模型的开放协议——<b>agent harness 的关键拼图,和治理/底层框架方向直接相关</b>。配 A02/A05。</p></li>
+    <li><span class="rt"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Anthropic · Building Effective Agents</a></span><span class="rtag">必读 · Agent 设计 ★</span><p class="rd">分清「工作流」和「agent」、给出一套可复用的 agent 设计模式,<b>做 agent 前几乎必读的一篇</b>。配 A04/A05。</p></li>
+    <li><span class="rt"><a href="https://huggingface.co/learn/agents-course" target="_blank" rel="noopener">Hugging Face · AI Agents 课程(免费带证书)</a></span><span class="rtag">课程 · Agent · 免费</span><p class="rd">从零到会搭 agent 的实战课,覆盖 smolagents / LangGraph / LlamaIndex 三个框架。想动手做 agent 从这条走。</p></li>
+    <li><span class="rt"><a href="https://arxiv.org/abs/2210.03629" target="_blank" rel="noopener">ReAct:Reasoning + Acting(论文/范式)</a></span><span class="rtag">范式 · agent loop 底层</span><p class="rd">「想一步 → 做一步 → 看结果 → 再想」交替的 agent 基本范式,理解 agent loop 底层逻辑的钥匙。配 A05;想看更前沿的框架用 <a href="https://langchain-ai.github.io/langgraph/" target="_blank" rel="noopener">LangGraph</a>。</p></li>
+    <li><span class="rt"><a href="https://docs.llamaindex.ai/" target="_blank" rel="noopener">LlamaIndex(RAG 框架)</a></span><span class="rtag">框架 · RAG</span><p class="rd">几十行搭一个「喂自己文档 → 检索 → 问答」的 RAG 应用。配 A03 / 项目 P5;另有 <a href="https://python.langchain.com/docs/introduction/" target="_blank" rel="noopener">LangChain</a>。</p></li>
+    <li><span class="rt"><a href="https://cookbook.openai.com/" target="_blank" rel="noopener">OpenAI Cookbook</a></span><span class="rtag">代码配方 · 实战</span><p class="rd">调 API 的实用配方:embedding 检索、函数调用、结构化输出、流式。动手时直接抄改。</p></li>
+    <li><span class="rt"><a href="https://www.evidentlyai.com/llm-guide/llm-evaluation" target="_blank" rel="noopener">LLM 评估指南(Evidently)</a></span><span class="rtag">指南 · 评估/可观测</span><p class="rd">怎么判断 AI 应用「真的变好了」:evals、指标、回归测试、可观测。配 A06——没有评估的应用等于盲开。</p></li>
+  </ul>
+
+  <!-- ⑥ 深度学习与大模型内部 -->
+  <h2 id="inside"><span class="no">6</span><span>钻进模型内部 · 深度学习与大模型(Track B / C)</span></h2>
+  <p class="sec-note">这一层对应深度课程 <b>Track B(D07–D11)</b>与 <b>Track C(D12–D17)</b>——从训练循环、CNN,一直到注意力手算、Transformer 结构、预训练与推理成本。每条都注明配哪一章。</p>
+  <ul class="rlist">
+    <li><span class="rt"><a href="https://pytorch.org/tutorials/beginner/basics/intro.html" target="_blank" rel="noopener">PyTorch · Learn the Basics</a></span><span class="rtag">官方教程 · Track B 主线</span><p class="rd">六步入门:张量 → 数据集 → 建模型 → 自动求导 → 优化循环,顺序几乎就是 D07 的骨架。<b>跟完就能自己写训练脚本</b>。配 D07。</p></li>
+    <li><span class="rt"><a href="https://www.youtube.com/watch?v=kCc8FmEb1nY" target="_blank" rel="noopener">Karpathy · Let's build GPT from scratch</a></span><span class="rtag">视频 · 从零写 GPT ★</span><p class="rd">两小时从空白文件写出一个能训练的 GPT,业内公认最好的实战课之一。配 D14/D15——看懂结构后跟着敲一遍,理解会上一个台阶。另有<a href="https://www.youtube.com/watch?v=zduSFxRajkE" target="_blank" rel="noopener">同作者的 Tokenizer 专题</a>(配 D12)。</p></li>
+    <li><span class="rt"><a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">The Illustrated Transformer</a></span><span class="rtag">图解 · 注意力/结构 ★</span><p class="rd">逐图拆解自注意力、多头、编解码结构,全网引用最多的图解长文。配 D09/D14/D15;同作者的 <a href="https://jalammar.github.io/illustrated-word2vec/" target="_blank" rel="noopener">Illustrated Word2vec</a> 配 D13。</p></li>
+    <li><span class="rt"><a href="https://zh.d2l.ai/" target="_blank" rel="noopener">动手学深度学习(d2l,中文免费)</a></span><span class="rtag">教材 · 中文 · 按需查</span><p class="rd">中文免费教材,CNN、RNN、注意力都有图有代码。<b>别通读,按章查</b>:卷积配 D08、循环网络配 D09、注意力配 D14。</p></li>
+    <li><span class="rt"><a href="https://cs231n.github.io/" target="_blank" rel="noopener">斯坦福 CS231n 笔记</a></span><span class="rtag">讲义 · 深读 · 英文</span><p class="rd">CNN 与训练技巧的经典讲义。<a href="https://cs231n.github.io/convolutional-networks/" target="_blank" rel="noopener">ConvNets</a> 配 D08、<a href="https://cs231n.github.io/neural-networks-3/" target="_blank" rel="noopener">Training</a> 配 D10、<a href="https://cs231n.github.io/transfer-learning/" target="_blank" rel="noopener">Transfer Learning</a> 配 D11。</p></li>
+    <li><span class="rt"><a href="https://www.3blue1brown.com/topics/neural-networks" target="_blank" rel="noopener">3Blue1Brown · 神经网络系列</a></span><span class="rtag">视频 · 有中文字幕 · 建直觉</span><p class="rd">顶级数学动画:梯度下降、反向传播、以及近年新增的<b>注意力与 Transformer</b> 几集。配 06/07 章与 D14——先看它建画面感,再读文字最省力。</p></li>
+    <li><span class="rt"><a href="https://huggingface.co/learn/nlp-course/chapter6/1" target="_blank" rel="noopener">Hugging Face · Tokenizers 课</a></span><span class="rtag">课程 · 可切中文 · 分词</span><p class="rd">三种切分粒度、BPE 算法、怎么训练自己的 tokenizer。配 D12;动手配 <a href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener">在线分词器</a>,把自己的提示词切一遍看真实 Token 数。</p></li>
+    <li><span class="rt"><a href="https://www.youtube.com/watch?v=bZQun8Y4L2A" target="_blank" rel="noopener">Karpathy · State of GPT</a></span><span class="rtag">演讲 · 三阶段流水线 ★</span><p class="rd">把「预训练 → 指令微调 → 奖励模型 → RLHF」整条生产链讲清的经典演讲。配 D16;细节补 <a href="https://huggingface.co/blog/rlhf" target="_blank" rel="noopener">HF 的 RLHF 图解</a>。</p></li>
+    <li><span class="rt"><a href="https://huggingface.co/docs/transformers/llm_tutorial_optimization" target="_blank" rel="noopener">HF · LLM 推理优化指南</a></span><span class="rtag">文档 · 推理/KV cache/量化</span><p class="rd">推理瓶颈、KV cache、量化、注意力优化的系统说明。配 D17;要自建服务再看 <a href="https://docs.vllm.ai/" target="_blank" rel="noopener">vLLM</a>(PagedAttention)。</p></li>
+    <li><span class="rt"><a href="https://huggingface.co/docs/peft/conceptual_guides/lora" target="_blank" rel="noopener">HF PEFT · LoRA 指南</a></span><span class="rtag">文档 · 微调 · 个人可做</span><p class="rd">只训不到 1% 的参数就能微调大模型,一张消费级显卡够用。配 D16 第 11–12 节;真要动手时按它调 r / alpha / target_modules。</p></li>
+    <li><span class="rt"><a href="https://nlp.seas.harvard.edu/annotated-transformer/" target="_blank" rel="noopener">The Annotated Transformer(哈佛)</a></span><span class="rtag">代码精读 · 论文↔实现</span><p class="rd">把原论文逐段配上可运行 PyTorch 代码。配 D15——想把「读懂结构图」升级成「读懂实现」时用它。</p></li>
+  </ul>
+
+  <!-- ⑦ 论文 -->
+  <h2 id="papers"><span class="no">7</span><span>奠基论文(桥 · 以后再啃)</span></h2>
+  <p class="sec-note">现在<b>不用啃数学</b>:先看摘要 + 那张结构图,建立「哦原来是它」的印象;等深度课程对应章再逐符号读。这些是不变的地基。</p>
+  <ul class="rlist">
+    <li><span class="rt"><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need(2017)</a></span><span class="rtag">论文 · Transformer</span><p class="rd">提出 Transformer,今天所有大模型的地基。<b>先看摘要 + 第 3 节结构图</b>;配 08 章与 D14/D15 读。</p></li>
+    <li><span class="rt"><a href="https://arxiv.org/abs/1512.03385" target="_blank" rel="noopener">Deep Residual Learning · ResNet(2015)</a></span><span class="rtag">论文 · 深度视觉</span><p class="rd">残差连接让网络能堆到上百层,现代计算机视觉的基石。配 D08(CNN)读。</p></li>
+    <li><span class="rt"><a href="https://proceedings.neurips.cc/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html" target="_blank" rel="noopener">ImageNet / AlexNet(2012)</a></span><span class="rtag">论文 · 深度学习起点</span><p class="rd">点燃这轮深度学习热潮的那篇。当历史与直觉读,看它为什么是转折点。</p></li>
+    <li><span class="rt"><a href="https://arxiv.org/abs/1810.04805" target="_blank" rel="noopener">BERT(2018)</a></span><span class="rtag">论文 · 预训练</span><p class="rd">「预训练 + 微调」范式的代表作。配 D16(预训练/微调)读。</p></li>
+    <li><span class="rt"><a href="https://arxiv.org/abs/2005.14165" target="_blank" rel="noopener">GPT-3 · Language Models are Few-Shot Learners(2020)</a></span><span class="rtag">论文 · 大模型涌现</span><p class="rd">规模带来「少样本/零样本」能力的转折,理解今天 LLM 的路标。</p></li>
+    <li><span class="rt"><a href="https://arxiv.org/abs/1412.6980" target="_blank" rel="noopener">Adam 优化器(2014)</a></span><span class="rtag">论文 · 训练</span><p class="rd">今天最常用的优化器。配 06(梯度下降)/ D10(优化器)读,理解「怎么把步子迈得又快又稳」。</p></li>
+    <li><span class="rt"><a href="https://arxiv.org/abs/1301.3781" target="_blank" rel="noopener">Word2Vec(2013)</a></span><span class="rtag">论文 · 词向量</span><p class="rd">「把词变成向量、意思近则向量近」的起点,Embedding 的开山之作。配 08 章 / D13(向量检索)读。</p></li>
+    <li><span class="rt"><a href="https://arxiv.org/abs/2201.11903" target="_blank" rel="noopener">Chain-of-Thought(2022)</a></span><span class="rtag">论文 · 推理</span><p class="rd">「让模型把中间步骤写出来」显著提升推理,分步思考的源头。配 A01 / A04 读。</p></li>
+    <li><span class="rt"><a href="https://arxiv.org/abs/1707.06347" target="_blank" rel="noopener">PPO(2017)</a></span><span class="rtag">论文 · 强化学习 / 对齐</span><p class="rd">RLHF(基于人类反馈的强化学习)最常用的算法,ChatGPT 式对齐的底层。配 D17(对齐)读;更新的路线看 <a href="https://arxiv.org/abs/2305.18290" target="_blank" rel="noopener">DPO(2023)</a>。</p></li>
+    <li><span class="rt"><a href="https://arxiv.org/abs/2006.11239" target="_blank" rel="noopener">DDPM · 扩散模型(2020)</a></span><span class="rtag">论文 · 生成</span><p class="rd">今天文生图(Stable Diffusion 等)的地基:「加噪再一步步去噪」。想看更早的对手看 <a href="https://arxiv.org/abs/1406.2661" target="_blank" rel="noopener">GAN(2014)</a>。</p></li>
+    <li><span class="rt"><a href="https://arxiv.org/abs/2103.00020" target="_blank" rel="noopener">CLIP · 图文对齐(2021)</a></span><span class="rtag">论文 · 多模态</span><p class="rd">用海量图文对把「图」和「文字」放进同一个向量空间,多模态与文生图的地基。当直觉读。</p></li>
+  </ul>
+  <div class="callout" style="border-left:3px solid var(--acc);padding:12px 0 2px 15px;margin:20px 0 6px -18px;">
+    <p style="margin:0 0 4px;font-weight:600;">想要「全清单 + 最前沿」?一个持续更新的论文库</p>
+    <p class="rd" style="margin:0;">上面是<b>不变的地基</b>(精挑,够入门)。想按主题一路追到最前沿(FlashAttention、MoE、扩散变体、推理加速、Agent RL、CUDA kernel……),用这个别人维护、持续更新的清单:<a href="https://github.com/HaiPenglai/Treasure-Questions" target="_blank" rel="noopener">Treasure-Questions · 宝藏论文链接大全</a>。<b>会变的前沿交给它维护、我们只留地基</b>——这正是本课的策展原则:过时了换链接,不改正文。</p>
+  </div>
+
+  <div class="foot">
+    策展于 2026-08-16(2026-08-17 补入词向量/CoT/PPO/扩散/CLIP 五篇地基 + 前沿全清单外链)· 数量克制,精挑 > 罗列;发现更好的会替换。回 <a href="../index.html">课程首页</a>。
+  </div>
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本页目录">
+      <p class="toc-label">资源库 · 目录</p>
+      <div class="toc-group">
+        <a data-toc-target="visual" href="#visual"><i>1</i>可视化 · 交互</a>
+        <a data-toc-target="course" href="#course"><i>2</i>系统课程</a>
+        <a data-toc-target="book" href="#book"><i>3</i>免费书</a>
+        <a data-toc-target="docs" href="#docs"><i>4</i>官方文档</a>
+        <a data-toc-target="apps" href="#apps"><i>5</i>做出能用的 AI 应用 · 应用工程 ★</a>
+        <a data-toc-target="inside" href="#inside"><i>6</i>钻进模型内部 · 深度学习与大模型</a>
+        <a data-toc-target="papers" href="#papers"><i>7</i>奠基论文</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+</body>
+</html>

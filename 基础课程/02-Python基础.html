@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 · Python 基础:为 AI 准备的最小集</title>
+<style>
+/* ============================================================
+   笔记基准线 · v1(单一强调色 + 灰阶,反向抽取自 sdd 参考)
+   强调色=群青蓝,底色=冷灰蓝纸,自足单文件、离线可看
+   ============================================================ */
+:root{
+  --bg:#eef1f6;          /* 冷灰蓝纸 */
+  --surface:#ffffff;     /* 卡片/代码/图 底 */
+  --raise:#f4f6fb;       /* 说明块的浅底 */
+  --bg-edge:#e9edf5;     /* 代码头 */
+  --ink:#14181f;         /* 正墨 */
+  --ink-soft:#55617a;    /* 次要 */
+  --ink-faint:#8b95a8;   /* 更淡 */
+  --rule:#d8dee9;        /* 分隔线/描边 */
+  --acc:#2743c7;         /* 唯一强调色 · 群青蓝 */
+  --acc-soft:rgba(39,67,199,0.06);
+  --code-str:#2f6f52;    /* 代码里字符串的哑绿 */
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  /* 字号阶梯:全站只有这 6 级,不许再出别的数字 */
+  --fs-micro:11px;   /* 一切等宽小标签 / 图注 / 目录 / 面包屑 */
+  --fs-small:13px;   /* 表格 / 代码 / 次要说明 */
+  --fs-body:15px;    /* 正文 */
+  --fs-lead:16px;    /* 一句话定义 / 导语 */
+  --fs-h3:18px;
+  --fs-h2:22px;
+  --fs-h1:30px;
+  /* 一切说明块共用同一套内外距,统一「框」的呼吸 */
+  --pad-block:14px 18px;
+  --gap-block:20px;
+  --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+
+/* ── 边角小标(面包屑/目录/代码头等):等宽、克制,属于「界面」不属于「内容」 ── */
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,
+.toc-sidebar .toc-label,.toc-group .tg{
+  font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;
+  letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+/* ── 内容块的小标签:一律降噪成安静的小灰字,不大写、不上色、不加字距 ── */
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{
+  font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;
+  letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+
+/* 顶部进度条 */
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+
+/* 学习路径面包屑(常驻) */
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);
+  backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);
+  padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+
+/* 页面栅格:正文 + 常驻目录 */
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;
+  max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+
+/* 章首 */
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:24px;}}
+
+/* 骨架面板(与说明块同一套内外距,唯一区别=左线更粗更墨) */
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:5px 0;font-size:var(--fs-body);line-height:1.6;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+
+/* 正文 */
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+/* 行内代码:去边框、固定字号,不再制造「一堆小框」和怪字号 */
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;
+  padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);
+  text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+/* 过渡句:回到朴素段落格式,字号同正文、灰色、左对齐、无符号、不加粗、不用斜体 */
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+/* 列表:文字左对齐到正文边线,标记(—/序号)悬挂到版心外沟槽,不用小圆点 */
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.5em 0;line-height:var(--line);}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+
+/* 标题层级:只靠字号 + 等宽序号 + 顶边线,不靠颜色 */
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;
+  margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;
+  display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:var(--fs-lead);color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+article h2.bare{border-top:none;padding-top:0;margin-top:0;}
+
+/* 一句话定义 */
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;
+  margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+
+/* ── 说明块统一骨架:左线3px + 小标签 + 正文,一切同款;只用左线颜色区分 ── */
+.rationale,.callout,.predict,.challenge{
+  background:none;border-left:3px solid var(--ink-faint);
+  padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+/* 简约:左线一律中性灰,只有真正的「警示」才上强调色;标签永远是灰的 */
+.callout.warn{border-left-color:var(--acc);}
+.callout.warn>.label{color:var(--acc);}
+
+/* 代码块 */
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;
+  background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);
+  cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+/* 代码高亮:只用「墨 + 一档灰」,关键词稍重,不再上蓝/绿两色 */
+pre .cm{color:var(--ink-faint);font-style:italic;}
+pre .kw{color:var(--ink);font-weight:700;}
+pre .st{color:var(--ink-soft);}
+pre .nb{color:var(--ink);}
+pre .out{color:var(--ink-soft);}
+
+/* 表格:细横线、不填色、留足空隙 */
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);
+  text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);
+  padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl-scroll{overflow-x:auto;}
+
+/* 图:每张都套一个外框,内容不再「飘」;散的内容被框收住 */
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}  /* 兜底:图里没写字体的文字也走无衬线,不落回 Arial */
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+/* 图内:代码行 / 说明行(给概念图用,统一到字号阶梯) */
+.fig-code{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink);text-align:center;margin:0 0 16px;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+/* 图3:列表索引格子(一张表就够,不必手绘) */
+.idxgrid{margin:0 auto;border-collapse:collapse;text-align:center;}
+.idxgrid th{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);font-weight:600;text-align:right;padding:6px 14px 6px 0;white-space:nowrap;}
+.idxgrid td{font-family:var(--mono);width:62px;padding:6px 0;font-size:var(--fs-small);color:var(--ink-faint);}
+.idxgrid tr.cells td{border:1px solid var(--rule);padding:12px 0;font-size:var(--fs-lead);font-weight:700;color:var(--ink);}
+/* 图8:报错面板(倒着读,末行是钥匙) */
+.trace{font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;background:var(--raise);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;overflow-x:auto;}
+.trace>span{display:block;white-space:pre-wrap;}
+.trace .dim{color:var(--ink-faint);}
+.trace .dim b{color:var(--ink-soft);font-weight:600;}
+.trace .key{margin-top:8px;padding-left:10px;border-left:2px solid var(--acc);color:var(--ink);font-weight:700;}
+.trace .key em{font-style:normal;color:var(--ink-soft);font-weight:400;margin-left:8px;}
+/* 图的统一画法:墨线 / 强调 / 虚线 三种,标签带白描边光晕 */
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nf-ink{fill:var(--ink);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.nl-inv{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--surface);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-mono{font-family:var(--mono);font-size:12px;fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+
+/* 折叠(答案)——盒子样式已并入统一说明块骨架,这里只管展开三角 */
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);
+  letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;
+  overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+
+/* 练习步骤 */
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;
+  border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;
+  line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+
+/* 自测清单 */
+.self-check{margin:38px 0 20px;border-top:1.5px solid var(--ink);padding-top:22px;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+
+/* 进阶挑战:盒子已并入统一骨架,这里只管内部小标题 */
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+
+/* 单步演示(与代码块/图同属「带边框的白底卡」一类框) */
+.sim{margin:var(--gap-block) 0;padding:16px;background:var(--surface);border:1px solid var(--rule);border-radius:6px;}
+.sim .tag{display:block;margin-bottom:10px;}
+.sim .btn{border:1px solid var(--acc);background:var(--acc);color:#fff;font-family:var(--mono);font-size:var(--fs-small);
+  border-radius:4px;padding:7px 15px;cursor:pointer;}
+.sim .btn.ghost{background:transparent;color:var(--acc);}
+.sim .btn:disabled{opacity:.4;cursor:default;}
+.readout{font-family:var(--mono);color:var(--acc);}
+.sim .simline{font-size:var(--fs-small);color:var(--ink-soft);margin:2px 0 12px;}
+.sim .simline .mono{font-family:var(--mono);color:var(--ink);}
+.sim .cells{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.sim .cell{width:60px;height:54px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:var(--fs-h3);font-weight:700;border:1.5px solid var(--rule);
+  background:var(--surface);color:var(--ink);transition:border-color .15s,background .15s,color .15s;}
+.sim .cell.done{border-color:#c2c9d6;color:var(--ink-faint);}
+.sim .cell.active{border-color:var(--acc);background:var(--acc-soft);color:var(--acc);}
+.sim .total{font-size:var(--fs-body);margin:8px 0;}
+.sim .expr{color:var(--ink-soft);font-size:var(--fs-small);}
+.sim .btnrow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+.sim .msg{font-size:var(--fs-small);color:var(--ink-soft);margin:14px 0 0;line-height:1.6;}
+.sim .msg b{color:var(--acc);}
+
+/* 参考 + 章节导航 */
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.chapter-nav a.disabled{opacity:.55;pointer-events:none;}
+
+/* 常驻目录 */
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;
+  border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+
+@media(prefers-reduced-motion:no-preference){
+  .chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}
+  .schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}
+}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="01-人工智能全景与学习环境.html">01 全景与环境</a><span class="sep">—</span>
+      <a href="02-Python基础.html" class="current">02 Python 基础</a><span class="sep">—</span>
+      <a href="03-NumPy数组与形状.html">03 NumPy</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-02.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">基础课程 · Chapter 02</p>
+        <h1>Python 基础:为 AI 准备的最小集</h1>
+        <p class="recap">第 1 章那 17 行代码,看懂容易、从空白文件写出来难。这一章专治这道坎。Python 语法的系统讲解全网已有大量优秀免费资源,所以本章不重复讲一遍语法,而是<b>先用图立起一副清晰的骨架(核心只有五块)</b>,再配一条<b>统一的外部精读路径</b>顺着读完、动手练熟。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,外部精读 + 动手约 3~5 小时。全程只用到加减乘除和「求平均」,不需要任何数学或编程经验。每出现一个新词,当场用白话解释。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>变量与类型——给数据起名字,数据分几种</li>
+          <li>两个容器:列表(按位置)与字典(按键)</li>
+          <li>两条控制流:if 分情况、for 挨个过</li>
+          <li>函数——把一段活打包复用</li>
+          <li>读报错——出错时怎么自己定位</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接上一章</b>:<a href="01-人工智能全景与学习环境.html#minilab">第 1 章那 17 行</a>看懂却写不出的那部分,本章负责把它默写出来(第 15、18 节)。<b>通向下一章</b>:<a href="03-NumPy数组与形状.html">第 3 章 NumPy</a>把本章的「列表」升级成能算上万个数的数组。</p>
+      </div>
+
+      <!-- ========== 模块 A ========== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>做完第 1 章、能看懂那 17 行代码,却让自己从空白文件写会卡壳的人。</li>
+        <li>零编程基础,或只零散抄过几行、从没系统搞清「变量、列表、循环、函数」的人。</li>
+        <li>设计、产品等非计算机背景,想真正读懂 AI 代码而不只是复制粘贴的人。</li>
+      </ul>
+      <p><b>不适合</b>:已经能用 Python 写几十行程序的人——直接跳到第 3 章 NumPy。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>只要一样:<a href="01-人工智能全景与学习环境.html#env">第 1 章第 8 节</a>建好的 <code>.venv</code> 环境,终端能看到 <code>(.venv)</code> 前缀。没做的先回去做,本章要在里面跑代码。除此之外<b>不需要</b>任何数学或编程经验。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清变量、列表、字典、循环、函数各是什么,各写一小段能跑的代码。</li>
+        <li>看到一个列表或字典,能准确说出「取第几个 / 取哪个键」该怎么写。</li>
+        <li>把重复的活改写成 <code>for</code> 循环,把要复用的活打包成函数。</li>
+        <li>程序报错时,读懂最后一行,定位到哪一行、大概什么毛病。</li>
+        <li>回到第 1 章的 17 行代码,不看原文、从空白文件重写出来。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">对这条学习路而言,Python 是搬运和加工数据的「手」。整门语言几百页,AI 代码里反复出现的核心只有五块:变量、容器、控制流、函数、读报错。</p>
+      <p>本章把这五块的「样子」用图讲清,把「练熟」交给外部好教程。这不是偷懒——是把讲解交给全网最会讲的人,把「为本课程裁剪的骨架和路径」留给自己写。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <p>先记住「就这五块」。中间是本章唯一目的,四周是达成它要用的五块地基,下面模块 C 逐块拆。</p>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="Python 五块地基环绕核心目标" data-mmd="d1-hub">
+<defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+<line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+<line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+<line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+<line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+<line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+<rect x="288" y="182" width="184" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+<text x="380" y="210" text-anchor="middle" class="nl-acc">读懂并改写</text>
+<text x="380" y="230" text-anchor="middle" class="nl-acc">数据代码</text>
+<rect x="298" y="32" width="164" height="46" rx="8" class="d-ink nf"/>
+<text x="380" y="60" text-anchor="middle" class="nl">① 变量与类型</text>
+<rect x="588" y="122" width="164" height="46" rx="8" class="d-ink nf"/>
+<text x="670" y="150" text-anchor="middle" class="nl">② 容器 list/dict</text>
+<rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+<text x="534" y="358" text-anchor="middle" class="nl">③ 控制流 if/for</text>
+<rect x="144" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+<text x="226" y="358" text-anchor="middle" class="nl">④ 函数 def</text>
+<rect x="8" y="122" width="150" height="46" rx="8" class="d-ink nf"/>
+<text x="83" y="150" text-anchor="middle" class="nl">⑤ 读报错</text>
+</svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。学完能把它们组装起来,读懂并改写第 15 节那段真实数据代码。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 B ========== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>本章每一小节都不长,只负责把「这是什么、长什么样」用图讲清。<b>真正把语法练熟,靠一条外部主线教程</b>——从头到尾跟完一套,比东拼西凑十个网站扎实得多。下面选好主线,把它的章节和本章骨架一一对应。<b>顺着这一条走完即可。</b></p>
+
+      <div class="callout go">
+        <span class="label">默认主线 · 文字</span>
+        <p><b>Automate the Boring Stuff with Python(第 3 版,全文免费在线)。</b>为什么是它:零基础最友好、用小任务教语法、按知识共享协议免费。把它当本章的主教材,<b>通读第 1–7 章</b>;本章的图只负责在读之前先建立结构。链接:<a href="https://automatetheboringstuff.com/" target="_blank" rel="noopener">automatetheboringstuff.com</a></p>
+      </div>
+
+      <table class="tbl">
+        <caption>表 1 · 本章骨架 ↔ 主线精读章节对应</caption>
+        <thead><tr><th>本章骨架(先看图,3–5 分钟)</th><th>主线精读(Automate,读这几章)</th></tr></thead>
+        <tbody>
+          <tr><td>第 7 节 · 变量与类型</td><td>Chapter 1 — Python Basics</td></tr>
+          <tr><td>第 10 节 · if 分支</td><td>Chapter 2 — Flow Control</td></tr>
+          <tr><td>第 11 节 · for 循环</td><td>Chapter 2 后半(<code>for</code> Loops)</td></tr>
+          <tr><td>第 12 节 · 函数</td><td>Chapter 3 — Functions</td></tr>
+          <tr><td>第 14 节 · 读报错</td><td>Chapter 5 — Debugging</td></tr>
+          <tr><td>第 8 节 · 列表</td><td>Chapter 6 — Lists</td></tr>
+          <tr><td>第 9 节 · 字典</td><td>Chapter 7 — Dictionaries and Structuring Data</td></tr>
+        </tbody>
+      </table>
+
+      <p><b>不爱读文字?换一条视频主线,一样从头跟完一套(别混着跳):</b></p>
+      <ul>
+        <li><b>英文 · YouTube</b> — <a href="https://www.youtube.com/playlist?list=PL-osiE80TeTskrapNbzXhwoFUiLCjGgY7" target="_blank" rel="noopener">Corey Schafer「Python Programming Beginner Tutorials」</a>。每集只讲一个概念,正好对应本章分节,挑着看也不乱。</li>
+        <li><b>中文 · Bilibili</b> — <a href="https://www.bilibili.com/video/BV1qW4y1a7fU/" target="_blank" rel="noopener">黑马程序员「8 天 Python 从入门到精通」</a>(2500 万播放的经典)。想更偏 AI 方向,看同厂的 <a href="https://www.bilibili.com/video/BV1sHU9BmEne/" target="_blank" rel="noopener">「Python + AI 零基础入门」</a>。</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">再配两件</span>
+        <p><b>卡在某个点</b> — 去 <a href="https://realpython.com/" target="_blank" rel="noopener">Real Python</a> 搜一篇精准查(如 <code>realpython f-string</code>),读完就走,别通读。</p>
+        <p><b>学完本章过桥</b> — <a href="https://www.freecodecamp.org/learn/data-analysis-with-python/" target="_blank" rel="noopener">freeCodeCamp · Data Analysis with Python</a>,通往第 3–4 章(NumPy / Pandas)。<b>现在先不碰。</b></p>
+      </div>
+
+      <!-- ========== 模块 C ========== -->
+      <h2 id="var"><span class="no">7</span><span>变量与类型</span></h2>
+      <p class="one-liner">变量<span class="en">variable</span>:给一份数据起的名字。起了名之后,后面用这个名字就能取到那份数据。</p>
+      <p>最贴切的画面:变量是<b>贴在盒子上的标签</b>。<code>x = 5</code> 不是「x 等于 5」,而是「把标签 <code>x</code> 贴到装着 5 的盒子上」。所以 <code>=</code> 读作「赋值 / 贴标签」,判断相等要用 <code>==</code>。</p>
+      <figure>
+        <svg viewBox="0 0 720 250" role="img" aria-label="变量是贴在盒子上的标签">
+          <defs>
+            <marker id="m-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker>
+          </defs>
+          <text x="30" y="30" class="el" font-weight="700">① 执行 x = 5</text>
+          <rect x="120" y="46" width="80" height="70" rx="8" class="d-ink nf"/>
+          <text x="160" y="92" text-anchor="middle" font-size="24" font-weight="700" fill="#14181f">5</text>
+          <rect x="34" y="66" width="46" height="30" rx="6" class="d-acc nf-acc" stroke-width="1.5"/>
+          <text x="57" y="87" text-anchor="middle" font-size="15" font-weight="700" fill="#2743c7">x</text>
+          <line x1="80" y1="81" x2="116" y2="81" class="d-acc" marker-end="url(#m-acc)"/>
+          <text x="30" y="160" class="el" font-weight="700">② 再执行 x = x + 1</text>
+          <text x="30" y="182" class="el">先算右边 x+1 = 6,造一个新盒子,</text>
+          <text x="30" y="200" class="el">再把标签 x 撕下来贴到新盒子上。</text>
+          <rect x="400" y="150" width="80" height="70" rx="8" class="d-soft"/>
+          <text x="440" y="192" text-anchor="middle" font-size="24" font-weight="700" fill="#8b95a8">5</text>
+          <text x="440" y="238" text-anchor="middle" class="el">旧盒子没人要了</text>
+          <rect x="560" y="150" width="80" height="70" rx="8" class="d-ink nf"/>
+          <text x="600" y="192" text-anchor="middle" font-size="24" font-weight="700" fill="#14181f">6</text>
+          <rect x="577" y="104" width="46" height="30" rx="6" class="d-acc nf-acc" stroke-width="1.5"/>
+          <text x="600" y="125" text-anchor="middle" font-size="15" font-weight="700" fill="#2743c7">x</text>
+          <line x1="600" y1="134" x2="600" y2="148" class="d-acc" marker-end="url(#m-acc)"/>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>赋值 = 贴标签。<code>x = x + 1</code> 不是方程,而是「用旧值算出新值,再把名字指过去」。</figcaption>
+      </figure>
+      <p>每份数据都有<b>类型</b>(type),决定它能做什么运算。AI 代码里最常见这几种:</p>
+      <table class="tbl">
+        <caption>表 2 · 六种最常见的类型</caption>
+        <thead><tr><th>类型</th><th>是什么</th><th>例子</th><th>典型用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>int</code> 整数</td><td>不带小数点的数</td><td><code>3</code>、<code>-7</code></td><td>个数、编号、循环次数</td></tr>
+          <tr><td><code>float</code> 小数</td><td>带小数点的数</td><td><code>4.2</code>、<code>3.14</code></td><td>价格、权重、概率</td></tr>
+          <tr><td><code>str</code> 字符串</td><td>一段文字,用引号包住</td><td><code>"阿岩"</code></td><td>名字、文本、Prompt</td></tr>
+          <tr><td><code>bool</code> 布尔</td><td>只有真 / 假两个值</td><td><code>True</code>、<code>False</code></td><td>条件判断的结果</td></tr>
+          <tr><td><code>list</code> 列表</td><td>一排有序数据(第 8 节)</td><td><code>[88, 92]</code></td><td>一列分数、一批样本</td></tr>
+          <tr><td><code>dict</code> 字典</td><td>键→值对应(第 9 节)</td><td><code>{"名字": "阿岩"}</code></td><td>一条带字段的记录</td></tr>
+        </tbody>
+      </table>
+      <div class="code-block">
+        <div class="chead"><span class="fn">类型与运算</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">name </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089"> "阿岩"</span><span style="color:#8B95A8;font-style:italic">       # str,要有引号</span></span>
+<span class="line"><span style="color:#14181F">price </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 4.2        </span><span style="color:#8B95A8;font-style:italic"># float</span></span>
+<span class="line"><span style="color:#14181F">print(type(price))    </span><span style="color:#8B95A8;font-style:italic"># 看类型 → &#x3C;class 'float'></span></span>
+<span class="line"><span style="color:#14181F">print(name </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#557089"> " 同学"</span><span style="color:#14181F">)   </span><span style="color:#8B95A8;font-style:italic"># 字符串用 + 拼接 → 阿岩 同学</span></span>
+<span class="line"><span style="color:#14181F">print(price </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> 2)        </span><span style="color:#8B95A8;font-style:italic"># 数字做算术 → 8.4</span></span></code></pre>
+      </div>
+      <div class="callout warn">
+        <span class="label">最常见的低级 bug · = 和 ==</span>
+        <p><code>=</code> 是赋值(贴标签),<code>==</code> 才是判断相等(第 10 节)。<code>x = 5</code> 是「让 x 指向 5」,<code>x == 5</code> 是「问:x 是不是 5?」写错这一个字符,是新手第一大坑。</p>
+      </div>
+      <div class="callout go">
+        <span class="label">去精读</span>
+        <p>Automate 第 1 章(Python Basics),或 Corey Schafer 播放列表里 Variables / Strings / Integers and Floats 三集。本节只做「贴标签」这张骨架图。</p>
+      </div>
+
+      <p class="handoff">有了「给单个数据起名」的本事,下一步是把<b>一堆</b>数据装进一个名字——这就是容器。先看最常用的列表。</p>
+      <h2 id="list"><span class="no">8</span><span>容器一 · 列表 list</span></h2>
+      <p class="one-liner">列表<span class="en">list</span>:一排<b>有顺序</b>的数据,用方括号 <code>[]</code> 括起、逗号隔开,靠位置编号取里面的元素。</p>
+      <p>关键规矩:<b>编号从 0 开始</b>,不是 1。第一个是 <code>[0]</code>,也能用负号从末尾倒数,<code>[-1]</code> 是最后一个。</p>
+      <figure>
+        <div class="fig-code">scores = [88, 92, 79, 100]</div>
+        <table class="idxgrid">
+          <tr><th>正索引</th><td>0</td><td>1</td><td>2</td><td>3</td></tr>
+          <tr class="cells"><th>元素</th><td>88</td><td>92</td><td>79</td><td>100</td></tr>
+          <tr><th>负索引</th><td>-4</td><td>-3</td><td>-2</td><td>-1</td></tr>
+        </table>
+        <div class="fig-note">scores[0] → 88　·　scores[-1] → 100　·　len(scores) → 4</div>
+        <figcaption><span class="fig-num">图 3</span>列表是一排从 0 编号的格子。<code>len()</code> 数格子;编号 0 到「长度 - 1」。</figcaption>
+      </figure>
+      <table class="tbl">
+        <caption>表 3 · 列表常用操作</caption>
+        <thead><tr><th>要做的事</th><th>写法</th><th>结果</th></tr></thead>
+        <tbody>
+          <tr><td>取第一个 / 最后一个</td><td><code>scores[0]</code> / <code>scores[-1]</code></td><td><code>88</code> / <code>100</code></td></tr>
+          <tr><td>数一共几个</td><td><code>len(scores)</code></td><td><code>4</code></td></tr>
+          <tr><td>末尾追加</td><td><code>scores.append(60)</code></td><td>变 <code>[88,92,79,100,60]</code></td></tr>
+          <tr><td>取一段(切片)</td><td><code>scores[0:2]</code></td><td><code>[88, 92]</code>(含头不含尾)</td></tr>
+          <tr><td>求和 / 最大</td><td><code>sum(scores)</code> / <code>max(scores)</code></td><td><code>359</code> / <code>100</code></td></tr>
+        </tbody>
+      </table>
+      <div class="code-block">
+        <div class="chead"><span class="fn">列表基本操作</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">scores </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [88, 92, 79]</span></span>
+<span class="line"><span style="color:#14181F">print(scores[0])       </span><span style="color:#8B95A8;font-style:italic"># 第一个 → 88</span></span>
+<span class="line"><span style="color:#14181F">scores.append(100)   </span><span style="color:#8B95A8;font-style:italic"># 末尾加一个</span></span>
+<span class="line"><span style="color:#14181F">print(sum(scores))    </span><span style="color:#8B95A8;font-style:italic"># 全部相加 → 359</span></span></code></pre>
+      </div>
+      <div class="callout warn"><span class="label">越界会报错</span><p>列表只有编号 0–3 时,写 <code>scores[4]</code> 会报 <code>IndexError</code>(下标越界),第 14 节要认的常见报错之一。</p></div>
+      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:Automate 第 6 章(Lists)。<b>往后连:</b><a href="../index.html">第 3 章 NumPy</a> 会把这排「格子」升级成能一次算上万个数的<b>数组</b>——列表是它的地基。</p></div>
+
+      <p class="handoff">列表靠<b>位置</b>找元素;可有时想靠<b>名字</b>找(「这个人的分数是多少」)——那就该换字典。</p>
+      <h2 id="dict"><span class="no">9</span><span>容器二 · 字典 dict</span></h2>
+      <p class="one-liner">字典<span class="en">dict</span>:一组「键 → 值」的对应,用花括号 <code>{}</code> 括起。不靠位置,靠<b>键(key)</b>去取对应的<b>值(value)</b>。</p>
+      <p>列表适合「一串同类的东西」(一排分数),字典适合「一条有多个字段的记录」(一个人的名字、年龄、分数)。取值时,列表用编号 <code>[0]</code>,字典用键 <code>["名字"]</code>。</p>
+      <figure>
+        <svg role="img" aria-label="字典是键到值的对应表" data-mmd="d4" id="mermaid-1786615611168" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 308px;" viewBox="0 0 308 262" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mermaid-1786615611168{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;font-size:14px;fill:#14181f;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-1786615611168 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-1786615611168 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-1786615611168 .error-icon{fill:#ffffff;}#mermaid-1786615611168 .error-text{fill:#000000;stroke:#000000;}#mermaid-1786615611168 .edge-thickness-normal{stroke-width:1px;}#mermaid-1786615611168 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1786615611168 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1786615611168 .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-1786615611168 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1786615611168 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1786615611168 .marker{fill:#8b95a8;stroke:#8b95a8;}#mermaid-1786615611168 .marker.cross{stroke:#8b95a8;}#mermaid-1786615611168 svg{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;font-size:14px;}#mermaid-1786615611168 p{margin:0;}#mermaid-1786615611168 .label{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;color:#14181f;}#mermaid-1786615611168 .cluster-label text{fill:#000000;}#mermaid-1786615611168 .cluster-label span{color:#000000;}#mermaid-1786615611168 .cluster-label span p{background-color:transparent;}#mermaid-1786615611168 .label text,#mermaid-1786615611168 span{fill:#14181f;color:#14181f;}#mermaid-1786615611168 .node rect,#mermaid-1786615611168 .node circle,#mermaid-1786615611168 .node ellipse,#mermaid-1786615611168 .node polygon,#mermaid-1786615611168 .node path{fill:#ffffff;stroke:#14181f;stroke-width:1px;}#mermaid-1786615611168 .rough-node .label text,#mermaid-1786615611168 .node .label text,#mermaid-1786615611168 .image-shape .label,#mermaid-1786615611168 .icon-shape .label{text-anchor:middle;}#mermaid-1786615611168 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1786615611168 .rough-node .label,#mermaid-1786615611168 .node .label,#mermaid-1786615611168 .image-shape .label,#mermaid-1786615611168 .icon-shape .label{text-align:center;}#mermaid-1786615611168 .node.clickable{cursor:pointer;}#mermaid-1786615611168 .root .anchor path{fill:#8b95a8!important;stroke-width:0;stroke:#8b95a8;}#mermaid-1786615611168 .arrowheadPath{fill:#000000;}#mermaid-1786615611168 .edgePath .path{stroke:#8b95a8;stroke-width:1px;}#mermaid-1786615611168 .flowchart-link{stroke:#8b95a8;fill:none;}#mermaid-1786615611168 .edgeLabel{background-color:#ffffff;text-align:center;}#mermaid-1786615611168 .edgeLabel p{background-color:#ffffff;}#mermaid-1786615611168 .edgeLabel rect{opacity:0.5;background-color:#ffffff;fill:#ffffff;}#mermaid-1786615611168 .labelBkg{background-color:rgba(255, 255, 255, 0.5);}#mermaid-1786615611168 .cluster rect{fill:#ffffff;stroke:hsl(0, 0%, 90%);stroke-width:1px;}#mermaid-1786615611168 .cluster text{fill:#000000;}#mermaid-1786615611168 .cluster span{color:#000000;}#mermaid-1786615611168 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;font-size:12px;background:#ffffff;border:1px solid hsl(0, 0%, 90%);border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1786615611168 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#14181f;}#mermaid-1786615611168 rect.text{fill:none;stroke-width:0;}#mermaid-1786615611168 .icon-shape,#mermaid-1786615611168 .image-shape{background-color:#ffffff;text-align:center;}#mermaid-1786615611168 .icon-shape p,#mermaid-1786615611168 .image-shape p{background-color:#ffffff;padding:2px;}#mermaid-1786615611168 .icon-shape .label rect,#mermaid-1786615611168 .image-shape .label rect{opacity:0.5;background-color:#ffffff;fill:#ffffff;}#mermaid-1786615611168 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#mermaid-1786615611168 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#mermaid-1786615611168 .node .neo-node{stroke:#14181f;}#mermaid-1786615611168 [data-look="neo"].node rect,#mermaid-1786615611168 [data-look="neo"].cluster rect,#mermaid-1786615611168 [data-look="neo"].node polygon{stroke:url(#mermaid-1786615611168-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611168 [data-look="neo"].swimlane.cluster rect{filter:none;}#mermaid-1786615611168 [data-look="neo"].node path{stroke:url(#mermaid-1786615611168-gradient);stroke-width:1px;}#mermaid-1786615611168 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611168 [data-look="neo"].node .neo-line path{stroke:#14181f;filter:none;}#mermaid-1786615611168 [data-look="neo"].node circle{stroke:url(#mermaid-1786615611168-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611168 [data-look="neo"].node circle .state-start{fill:#000000;}#mermaid-1786615611168 [data-look="neo"].icon-shape .icon{fill:url(#mermaid-1786615611168-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611168 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#mermaid-1786615611168-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611168 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mermaid-1786615611168_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611168_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611168_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611168_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></polygon></marker><marker id="mermaid-1786615611168_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611168_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611168_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611168_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611168_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611168_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611168_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"></path></marker><marker id="mermaid-1786615611168_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M128,33L132.333,33C136.667,33,145.333,33,153.333,33C161.333,33,168.667,33,172.333,33L176,33" id="mermaid-1786615611168-L_K1_V1_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_K1_V1_0" data-points="W3sieCI6MTI4LCJ5IjozM30seyJ4IjoxNTQsInkiOjMzfSx7IngiOjE4MCwieSI6MzN9XQ==" data-look="classic" marker-end="url(#mermaid-1786615611168_flowchart-v2-pointEnd)"></path><path d="M128,131L132.333,131C136.667,131,145.333,131,156.631,131C167.929,131,181.858,131,188.822,131L195.786,131" id="mermaid-1786615611168-L_K2_V2_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_K2_V2_0" data-points="W3sieCI6MTI4LCJ5IjoxMzF9LHsieCI6MTU0LCJ5IjoxMzF9LHsieCI6MTk5Ljc4NjQ1NzA2MTc2NzU4LCJ5IjoxMzF9XQ==" data-look="classic" marker-end="url(#mermaid-1786615611168_flowchart-v2-pointEnd)"></path><path d="M128,229L132.333,229C136.667,229,145.333,229,153.858,229C162.382,229,170.764,229,174.955,229L179.146,229" id="mermaid-1786615611168-L_K3_V3_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_K3_V3_0" data-points="W3sieCI6MTI4LCJ5IjoyMjl9LHsieCI6MTU0LCJ5IjoyMjl9LHsieCI6MTgzLjE0NTgzMjA2MTc2NzU4LCJ5IjoyMjl9XQ==" data-look="classic" marker-end="url(#mermaid-1786615611168_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_K1_V1_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"></tspan></text></g></g><g><rect class="background" style="stroke: none"></rect></g><g class="edgeLabel"><g class="label" data-id="L_K2_V2_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"></tspan></text></g></g><g><rect class="background" style="stroke: none"></rect></g><g class="edgeLabel"><g class="label" data-id="L_K3_V3_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"></tspan></text></g></g><g><rect class="background" style="stroke: none"></rect></g></g><g class="nodes"><g class="node default  " id="mermaid-1786615611168-flowchart-K1-0" data-look="classic" transform="translate(68, 33)"><rect class="basic label-container" style="" x="-60" y="-25" width="120" height="50"></rect><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">「名字」</tspan></tspan></text></g></g></g><g class="node default  " id="mermaid-1786615611168-flowchart-V1-1" data-look="classic" transform="translate(240, 33)"><rect class="basic label-container" style="" x="-60" y="-25" width="120" height="50"></rect><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">「阿岩」</tspan></tspan></text></g></g></g><g class="node default  " id="mermaid-1786615611168-flowchart-K2-2" data-look="classic" transform="translate(68, 131)"><rect class="basic label-container" style="" x="-60" y="-25" width="120" height="50"></rect><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">「年龄」</tspan></tspan></text></g></g></g><g class="node default  " id="mermaid-1786615611168-flowchart-V2-3" data-look="classic" transform="translate(240, 131)"><rect class="basic label-container" style="" x="-40.213541984558105" y="-25" width="80.42708396911621" height="50"></rect><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">20</tspan></tspan></text></g></g></g><g class="node default  " id="mermaid-1786615611168-flowchart-K3-4" data-look="classic" transform="translate(68, 229)"><rect class="basic label-container" style="" x="-60" y="-25" width="120" height="50"></rect><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">「分数」</tspan></tspan></text></g></g></g><g class="node default  " id="mermaid-1786615611168-flowchart-V3-5" data-look="classic" transform="translate(240, 229)"><rect class="basic label-container" style="" x="-56.85416793823242" y="-25" width="113.70833587646484" height="50"></rect><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">[95,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 85]</tspan></tspan></text></g></g></g></g></g></g><defs><filter id="mermaid-1786615611168-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><defs><filter id="mermaid-1786615611168-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><linearGradient id="mermaid-1786615611168-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#14181f" stop-opacity="1"></stop><stop offset="100%" stop-color="hsl(222.8571428571, 6.6666666667%, 87.0588235294%)" stop-opacity="1"></stop></linearGradient></svg>
+        <figcaption><span class="fig-num">图 4</span>字典 = 键到值的对应表。值可以是任何类型,包括列表。</figcaption>
+      </figure>
+      <div class="code-block">
+        <div class="chead"><span class="fn">字典基本操作</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">student </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> {</span><span style="color:#557089">"名字"</span><span style="color:#14181F">: </span><span style="color:#557089">"阿岩"</span><span style="color:#14181F">, </span><span style="color:#557089">"分数"</span><span style="color:#14181F">: [95, 85]}</span></span>
+<span class="line"><span style="color:#14181F">print(student[</span><span style="color:#557089">"名字"</span><span style="color:#14181F">])       </span><span style="color:#8B95A8;font-style:italic"># 按键取 → 阿岩</span></span>
+<span class="line"><span style="color:#14181F">print(student[</span><span style="color:#557089">"分数"</span><span style="color:#14181F">][0])    </span><span style="color:#8B95A8;font-style:italic"># 值是列表,再取第一个 → 95</span></span>
+<span class="line"><span style="color:#14181F">student[</span><span style="color:#557089">"城市"</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089"> "北京"</span><span style="color:#8B95A8;font-style:italic">       # 加一个新键值对</span></span></code></pre>
+      </div>
+      <p><b>列表 vs 字典,一句话记牢:</b>问「第几个?」用列表(按位置);问「哪一个?」用字典(按键)。<a href="01-人工智能全景与学习环境.html#minilab">第 1 章</a>那份 <code>{"name":..., "scores":[...]}</code> 就是「字典里套列表」——现在能完全读懂它了。</p>
+      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:Automate 第 7 章(Dictionaries)。<b>往后连:</b>调用大模型 API 时,发出去、收回来的都是字典(<code>{"role": "user", "content": "..."}</code>)——第 8 章、D07 会天天见它。</p></div>
+
+      <p class="handoff">变量和两个容器解决了「怎么<b>存</b>数据」;接下来两节解决「怎么让程序<b>自己做判断、自己重复</b>」——先看 if。</p>
+      <h2 id="if"><span class="no">10</span><span>控制流一 · if 分支</span></h2>
+      <p><code>if</code> 让程序<b>分情况</b>走不同的路:条件成立走一条,不成立走另一条。Python 靠<b>缩进</b>(通常 4 个空格)划定「哪几行属于这个 if」——缩进是语法,不是排版,错了直接报错。</p>
+      <figure>
+        <svg role="img" aria-label="if 分支流程图" data-mmd="d5" id="mermaid-1786615611234" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 344.41668701171875px;" viewBox="0.00000762939453125 0 344.41668701171875 373.5" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mermaid-1786615611234{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;font-size:14px;fill:#14181f;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-1786615611234 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-1786615611234 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-1786615611234 .error-icon{fill:#ffffff;}#mermaid-1786615611234 .error-text{fill:#000000;stroke:#000000;}#mermaid-1786615611234 .edge-thickness-normal{stroke-width:1px;}#mermaid-1786615611234 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1786615611234 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1786615611234 .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-1786615611234 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1786615611234 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1786615611234 .marker{fill:#8b95a8;stroke:#8b95a8;}#mermaid-1786615611234 .marker.cross{stroke:#8b95a8;}#mermaid-1786615611234 svg{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;font-size:14px;}#mermaid-1786615611234 p{margin:0;}#mermaid-1786615611234 .label{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;color:#14181f;}#mermaid-1786615611234 .cluster-label text{fill:#000000;}#mermaid-1786615611234 .cluster-label span{color:#000000;}#mermaid-1786615611234 .cluster-label span p{background-color:transparent;}#mermaid-1786615611234 .label text,#mermaid-1786615611234 span{fill:#14181f;color:#14181f;}#mermaid-1786615611234 .node rect,#mermaid-1786615611234 .node circle,#mermaid-1786615611234 .node ellipse,#mermaid-1786615611234 .node polygon,#mermaid-1786615611234 .node path{fill:#ffffff;stroke:#14181f;stroke-width:1px;}#mermaid-1786615611234 .rough-node .label text,#mermaid-1786615611234 .node .label text,#mermaid-1786615611234 .image-shape .label,#mermaid-1786615611234 .icon-shape .label{text-anchor:middle;}#mermaid-1786615611234 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1786615611234 .rough-node .label,#mermaid-1786615611234 .node .label,#mermaid-1786615611234 .image-shape .label,#mermaid-1786615611234 .icon-shape .label{text-align:center;}#mermaid-1786615611234 .node.clickable{cursor:pointer;}#mermaid-1786615611234 .root .anchor path{fill:#8b95a8!important;stroke-width:0;stroke:#8b95a8;}#mermaid-1786615611234 .arrowheadPath{fill:#000000;}#mermaid-1786615611234 .edgePath .path{stroke:#8b95a8;stroke-width:1px;}#mermaid-1786615611234 .flowchart-link{stroke:#8b95a8;fill:none;}#mermaid-1786615611234 .edgeLabel{background-color:#ffffff;text-align:center;}#mermaid-1786615611234 .edgeLabel p{background-color:#ffffff;}#mermaid-1786615611234 .edgeLabel rect{opacity:0.5;background-color:#ffffff;fill:#ffffff;}#mermaid-1786615611234 .labelBkg{background-color:rgba(255, 255, 255, 0.5);}#mermaid-1786615611234 .cluster rect{fill:#ffffff;stroke:hsl(0, 0%, 90%);stroke-width:1px;}#mermaid-1786615611234 .cluster text{fill:#000000;}#mermaid-1786615611234 .cluster span{color:#000000;}#mermaid-1786615611234 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;font-size:12px;background:#ffffff;border:1px solid hsl(0, 0%, 90%);border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1786615611234 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#14181f;}#mermaid-1786615611234 rect.text{fill:none;stroke-width:0;}#mermaid-1786615611234 .icon-shape,#mermaid-1786615611234 .image-shape{background-color:#ffffff;text-align:center;}#mermaid-1786615611234 .icon-shape p,#mermaid-1786615611234 .image-shape p{background-color:#ffffff;padding:2px;}#mermaid-1786615611234 .icon-shape .label rect,#mermaid-1786615611234 .image-shape .label rect{opacity:0.5;background-color:#ffffff;fill:#ffffff;}#mermaid-1786615611234 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#mermaid-1786615611234 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#mermaid-1786615611234 .node .neo-node{stroke:#14181f;}#mermaid-1786615611234 [data-look="neo"].node rect,#mermaid-1786615611234 [data-look="neo"].cluster rect,#mermaid-1786615611234 [data-look="neo"].node polygon{stroke:url(#mermaid-1786615611234-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611234 [data-look="neo"].swimlane.cluster rect{filter:none;}#mermaid-1786615611234 [data-look="neo"].node path{stroke:url(#mermaid-1786615611234-gradient);stroke-width:1px;}#mermaid-1786615611234 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611234 [data-look="neo"].node .neo-line path{stroke:#14181f;filter:none;}#mermaid-1786615611234 [data-look="neo"].node circle{stroke:url(#mermaid-1786615611234-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611234 [data-look="neo"].node circle .state-start{fill:#000000;}#mermaid-1786615611234 [data-look="neo"].icon-shape .icon{fill:url(#mermaid-1786615611234-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611234 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#mermaid-1786615611234-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611234 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mermaid-1786615611234_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611234_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611234_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611234_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></polygon></marker><marker id="mermaid-1786615611234_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611234_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611234_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611234_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611234_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611234_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611234_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"></path></marker><marker id="mermaid-1786615611234_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M168.708,58L168.708,62.333C168.708,66.667,168.708,75.333,168.708,83.333C168.708,91.333,168.708,98.667,168.708,102.333L168.708,106" id="mermaid-1786615611234-L_A_B_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_A_B_0" data-points="W3sieCI6MTY4LjcwODMyODI0NzA3MDMsInkiOjU4fSx7IngiOjE2OC43MDgzMjgyNDcwNzAzLCJ5Ijo4NH0seyJ4IjoxNjguNzA4MzI4MjQ3MDcwMywieSI6MTEwfV0=" data-look="classic" marker-end="url(#mermaid-1786615611234_flowchart-v2-pointEnd)"></path><path d="M137.277,210.069L126.832,221.474C116.386,232.879,95.495,255.69,85.05,272.595C74.604,289.5,74.604,300.5,74.604,306L74.604,311.5" id="mermaid-1786615611234-L_B_C_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_C_0" data-points="W3sieCI6MTM3LjI3NzE5ODQxMjA5NDcsInkiOjIxMC4wNjg4NzAxNjUwMjQzNX0seyJ4Ijo3NC42MDQxNjQxMjM1MzUxNiwieSI6Mjc4LjV9LHsieCI6NzQuNjA0MTY0MTIzNTM1MTYsInkiOjMxNS41fV0=" data-look="classic" marker-end="url(#mermaid-1786615611234_flowchart-v2-pointEnd)"></path><path d="M200.139,210.069L210.585,221.474C221.03,232.879,241.921,255.69,252.367,272.595C262.812,289.5,262.812,300.5,262.812,306L262.812,311.5" id="mermaid-1786615611234-L_B_D_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_D_0" data-points="W3sieCI6MjAwLjEzOTQ1ODA4MjA0NTk2LCJ5IjoyMTAuMDY4ODcwMTY1MDI0MzV9LHsieCI6MjYyLjgxMjQ5MjM3MDYwNTQ3LCJ5IjoyNzguNX0seyJ4IjoyNjIuODEyNDkyMzcwNjA1NDcsInkiOjMxNS41fV0=" data-look="classic" marker-end="url(#mermaid-1786615611234_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_A_B_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"></tspan></text></g></g><g><rect class="background" style="stroke: none"></rect></g><g class="edgeLabel" transform="translate(74.60416412353516, 278.5)"><g class="label" data-id="L_B_C_0" transform="translate(0.30989646911621094, -8.333333313465118)"><g><rect class="background" style="" x="-33.05729293823242" y="-2.6666666865348816" width="65.49479293823242" height="22"></rect><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">成立</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> True</tspan></tspan></text></g></g></g><g class="edgeLabel" transform="translate(262.81249237060547, 278.5)"><g class="label" data-id="L_B_D_0" transform="translate(0.30973052978515625, -8.333333313465118)"><g><rect class="background" style="" x="-42.125" y="-2.6666666865348816" width="83.63053894042969" height="22"></rect><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">不成立</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> False</tspan></tspan></text></g></g></g></g><g class="nodes"><g class="node default  " id="mermaid-1786615611234-flowchart-A-0" data-look="classic" transform="translate(168.7083282470703, 33)"><rect class="basic label-container" style="" x="-67.296875" y="-25" width="134.59375" height="50"></rect><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">score</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> =</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 55</tspan></tspan></text></g></g></g><g class="node default  " id="mermaid-1786615611234-flowchart-B-1" data-look="classic" transform="translate(168.7083282470703, 175.75)"><polygon points="65.75,0 131.5,-65.75 65.75,-131.5 0,-65.75" class="label-container" transform="translate(-65.25, 65.75)"></polygon><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">score</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> ≥</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 60</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> ?</tspan></tspan></text></g></g></g><g class="node default  " id="mermaid-1786615611234-flowchart-C-3" data-look="classic" transform="translate(74.60416412353516, 340.5)"><rect class="basic label-container" style="" x="-66.60416793823242" y="-25" width="133.20833587646484" height="50"></rect><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">print(及格)</tspan></tspan></text></g></g></g><g class="node default  " id="mermaid-1786615611234-flowchart-D-5" data-look="classic" transform="translate(262.81249237060547, 340.5)"><rect class="basic label-container" style="" x="-73.60416793823242" y="-25" width="147.20833587646484" height="50"></rect><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">print(不及格)</tspan></tspan></text></g></g></g></g></g></g><defs><filter id="mermaid-1786615611234-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><defs><filter id="mermaid-1786615611234-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><linearGradient id="mermaid-1786615611234-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#14181f" stop-opacity="1"></stop><stop offset="100%" stop-color="hsl(222.8571428571, 6.6666666667%, 87.0588235294%)" stop-opacity="1"></stop></linearGradient></svg>
+        <figcaption><span class="fig-num">图 5</span>if / else 是一个岔路口:条件为真走一路,为假走另一路。缩进决定哪几行属于这个分支。</figcaption>
+      </figure>
+      <table class="tbl">
+        <caption>表 4 · 比较与逻辑运算符</caption>
+        <thead><tr><th><code>==</code></th><th><code>!=</code></th><th><code>&gt;</code> <code>&gt;=</code></th><th><code>&lt;</code> <code>&lt;=</code></th><th><code>and</code>/<code>or</code>/<code>not</code></th></tr></thead>
+        <tbody><tr><td>相等</td><td>不相等</td><td>大于 / 不小于</td><td>小于 / 不大于</td><td>且 / 或 / 非</td></tr></tbody>
+      </table>
+      <div class="code-block">
+        <div class="chead"><span class="fn">if / elif / else</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">score </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 72</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">if</span><span style="color:#14181F"> score </span><span style="color:#14181F;font-weight:bold">>=</span><span style="color:#14181F"> 90:</span></span>
+<span class="line"><span style="color:#14181F">    print(</span><span style="color:#557089">"优秀"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">elif</span><span style="color:#14181F"> score </span><span style="color:#14181F;font-weight:bold">>=</span><span style="color:#14181F"> 60:   </span><span style="color:#8B95A8;font-style:italic"># 否则如果,可有多个</span></span>
+<span class="line"><span style="color:#14181F">    print(</span><span style="color:#557089">"及格"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">else</span><span style="color:#14181F">:</span></span>
+<span class="line"><span style="color:#14181F">    print(</span><span style="color:#557089">"不及格"</span><span style="color:#14181F">)     </span><span style="color:#8B95A8;font-style:italic"># 输出:及格</span></span></code></pre>
+      </div>
+      <div class="callout go"><span class="label">去精读</span><p>Automate 第 2 章(Flow Control),把 <code>if / elif / else</code>、比较运算符、缩进一次讲全。</p></div>
+
+      <p class="handoff">if 让程序<b>分情况</b>走;for 让它把一件事<b>重复</b>做很多遍——控制流的另一半。</p>
+      <h2 id="for"><span class="no">11</span><span>控制流二 · for 循环</span></h2>
+      <p class="one-liner">for 循环:把一堆东西<b>挨个拿出来</b>,对每一个做同样的事。处理「一列数据」的标准手段,AI 代码里到处是它。</p>
+      <figure>
+        <svg role="img" aria-label="for 循环流程图" data-mmd="d6" id="mermaid-1786615611291" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 675.5626220703125px;" viewBox="0.00000762939453125 0 675.5626220703125 169.21875" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mermaid-1786615611291{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;font-size:14px;fill:#14181f;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-1786615611291 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-1786615611291 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-1786615611291 .error-icon{fill:#ffffff;}#mermaid-1786615611291 .error-text{fill:#000000;stroke:#000000;}#mermaid-1786615611291 .edge-thickness-normal{stroke-width:1px;}#mermaid-1786615611291 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1786615611291 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1786615611291 .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-1786615611291 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1786615611291 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1786615611291 .marker{fill:#8b95a8;stroke:#8b95a8;}#mermaid-1786615611291 .marker.cross{stroke:#8b95a8;}#mermaid-1786615611291 svg{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;font-size:14px;}#mermaid-1786615611291 p{margin:0;}#mermaid-1786615611291 .label{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;color:#14181f;}#mermaid-1786615611291 .cluster-label text{fill:#000000;}#mermaid-1786615611291 .cluster-label span{color:#000000;}#mermaid-1786615611291 .cluster-label span p{background-color:transparent;}#mermaid-1786615611291 .label text,#mermaid-1786615611291 span{fill:#14181f;color:#14181f;}#mermaid-1786615611291 .node rect,#mermaid-1786615611291 .node circle,#mermaid-1786615611291 .node ellipse,#mermaid-1786615611291 .node polygon,#mermaid-1786615611291 .node path{fill:#ffffff;stroke:#14181f;stroke-width:1px;}#mermaid-1786615611291 .rough-node .label text,#mermaid-1786615611291 .node .label text,#mermaid-1786615611291 .image-shape .label,#mermaid-1786615611291 .icon-shape .label{text-anchor:middle;}#mermaid-1786615611291 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1786615611291 .rough-node .label,#mermaid-1786615611291 .node .label,#mermaid-1786615611291 .image-shape .label,#mermaid-1786615611291 .icon-shape .label{text-align:center;}#mermaid-1786615611291 .node.clickable{cursor:pointer;}#mermaid-1786615611291 .root .anchor path{fill:#8b95a8!important;stroke-width:0;stroke:#8b95a8;}#mermaid-1786615611291 .arrowheadPath{fill:#000000;}#mermaid-1786615611291 .edgePath .path{stroke:#8b95a8;stroke-width:1px;}#mermaid-1786615611291 .flowchart-link{stroke:#8b95a8;fill:none;}#mermaid-1786615611291 .edgeLabel{background-color:#ffffff;text-align:center;}#mermaid-1786615611291 .edgeLabel p{background-color:#ffffff;}#mermaid-1786615611291 .edgeLabel rect{opacity:0.5;background-color:#ffffff;fill:#ffffff;}#mermaid-1786615611291 .labelBkg{background-color:rgba(255, 255, 255, 0.5);}#mermaid-1786615611291 .cluster rect{fill:#ffffff;stroke:hsl(0, 0%, 90%);stroke-width:1px;}#mermaid-1786615611291 .cluster text{fill:#000000;}#mermaid-1786615611291 .cluster span{color:#000000;}#mermaid-1786615611291 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;font-size:12px;background:#ffffff;border:1px solid hsl(0, 0%, 90%);border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1786615611291 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#14181f;}#mermaid-1786615611291 rect.text{fill:none;stroke-width:0;}#mermaid-1786615611291 .icon-shape,#mermaid-1786615611291 .image-shape{background-color:#ffffff;text-align:center;}#mermaid-1786615611291 .icon-shape p,#mermaid-1786615611291 .image-shape p{background-color:#ffffff;padding:2px;}#mermaid-1786615611291 .icon-shape .label rect,#mermaid-1786615611291 .image-shape .label rect{opacity:0.5;background-color:#ffffff;fill:#ffffff;}#mermaid-1786615611291 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#mermaid-1786615611291 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#mermaid-1786615611291 .node .neo-node{stroke:#14181f;}#mermaid-1786615611291 [data-look="neo"].node rect,#mermaid-1786615611291 [data-look="neo"].cluster rect,#mermaid-1786615611291 [data-look="neo"].node polygon{stroke:url(#mermaid-1786615611291-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611291 [data-look="neo"].swimlane.cluster rect{filter:none;}#mermaid-1786615611291 [data-look="neo"].node path{stroke:url(#mermaid-1786615611291-gradient);stroke-width:1px;}#mermaid-1786615611291 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611291 [data-look="neo"].node .neo-line path{stroke:#14181f;filter:none;}#mermaid-1786615611291 [data-look="neo"].node circle{stroke:url(#mermaid-1786615611291-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611291 [data-look="neo"].node circle .state-start{fill:#000000;}#mermaid-1786615611291 [data-look="neo"].icon-shape .icon{fill:url(#mermaid-1786615611291-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611291 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#mermaid-1786615611291-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611291 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mermaid-1786615611291_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611291_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611291_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611291_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></polygon></marker><marker id="mermaid-1786615611291_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611291_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611291_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611291_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611291_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611291_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611291_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"></path></marker><marker id="mermaid-1786615611291_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M167.285,72.219L171.535,72.135C175.785,72.052,184.285,71.885,192.201,71.802C200.118,71.719,207.451,71.719,211.118,71.719L214.785,71.719" id="mermaid-1786615611291-L_S_T_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_S_T_0" data-points="W3sieCI6MTY3LjI4NDYyNDg1NjY4MzcsInkiOjcyLjIxODc1fSx7IngiOjE5Mi43ODQ2MjIxOTIzODI4LCJ5Ijo3MS43MTg3NX0seyJ4IjoyMTguNzg0NjIyMTkyMzgyOCwieSI6NzEuNzE4NzV9XQ==" data-look="classic" marker-end="url(#mermaid-1786615611291_flowchart-v2-pointEnd)"></path><path d="M326.955,52.452L338.389,47.496C349.822,42.541,372.689,32.63,391.681,28.403C410.673,24.177,425.79,25.636,433.349,26.365L440.907,27.094" id="mermaid-1786615611291-L_T_B_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_T_B_0" data-points="W3sieCI6MzI2Ljk1NTM2MTMyNDM0NTg2LCJ5Ijo1Mi40NTE5ODkxMzE5NjMwOX0seyJ4IjozOTUuNTU1NDU2MTYxNDk5LCJ5IjoyMi43MTg3NX0seyJ4Ijo0NDQuODg4NzkwMTMwNjE1MjMsInkiOjI3LjQ3Nzk4MDA3NDU3MzgwN31d" data-look="classic" marker-end="url(#mermaid-1786615611291_flowchart-v2-pointEnd)"></path><path d="M444.889,61.433L436.667,63.147C428.444,64.861,412,68.29,396.222,70.004C380.444,71.719,365.333,71.719,357.778,71.719L350.222,71.719" id="mermaid-1786615611291-L_B_T_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_T_0" data-points="W3sieCI6NDQ0Ljg4ODc5MDEzMDYxNTIzLCJ5Ijo2MS40MzI2NzIwOTY4ODg4NjV9LHsieCI6Mzk1LjU1NTQ1NjE2MTQ5OSwieSI6NzEuNzE4NzV9LHsieCI6MzQ2LjIyMjEyMjE5MjM4MjgsInkiOjcxLjcxODc1fV0=" data-look="classic" marker-end="url(#mermaid-1786615611291_flowchart-v2-pointEnd)"></path><path d="M323.075,94.866L335.155,101.758C347.235,108.65,371.395,122.435,394.92,129.327C418.446,136.219,441.336,136.219,452.781,136.219L464.226,136.219" id="mermaid-1786615611291-L_T_E_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_T_E_0" data-points="W3sieCI6MzIzLjA3NDc3NzAxMjcyOTEsInkiOjk0Ljg2NjA5NTE3OTY1Mzc1fSx7IngiOjM5NS41NTU0NTYxNjE0OTksInkiOjEzNi4yMTg3NX0seyJ4Ijo0NjguMjI1NzA0MTkzMTE1MjMsInkiOjEzNi4yMTg3NX1d" data-look="classic" marker-end="url(#mermaid-1786615611291_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_S_T_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"></tspan></text></g></g><g><rect class="background" style="stroke: none"></rect></g><g class="edgeLabel" transform="translate(383.99273, 27.73036)"><g class="label" data-id="L_T_B_0" transform="translate(0.33333349227905273, -8.333333313465118)"><g><rect class="background" style="" x="-9.666666984558105" y="-2.6666666865348816" width="18.666666984558105" height="22"></rect><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">有</tspan></tspan></text></g></g></g><g class="edgeLabel"><g class="label" data-id="L_B_T_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"></tspan></text></g></g><g><rect class="background" style="stroke: none"></rect></g><g class="edgeLabel" transform="translate(395.555456161499, 136.21875)"><g class="label" data-id="L_T_E_0" transform="translate(0.33333396911621094, -8.333333313465118)"><g><rect class="background" style="" x="-23.666667938232422" y="-2.6666666865348816" width="46.66666793823242" height="22"></rect><text y="-10.1" text-anchor="middle" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">取完了</tspan></tspan></text></g></g></g></g><g class="nodes"><g class="node default  " id="mermaid-1786615611291-flowchart-S-0" data-look="classic" transform="translate(87.3923110961914, 71.71875)"><g class="basic label-container outer-path"><path d="M-62.40104675292969 -17 C-37.08630425239774 -17, -11.771561751865796 -17, 62.40104675292969 -17 C62.40104675292969 -17, 62.40104675292969 -17, 62.40104675292969 -17 C62.748643394581734 -16.988853252258036, 63.09624003623378 -16.977706504516075, 63.49024049260181 -16.965071676755716 C63.72870556916826 -16.942067237615564, 63.96717064573472 -16.919062798475412, 64.57495850156629 -16.860430234995185 C64.83756674801704 -16.817973770266395, 65.10017499446778 -16.77551730553761, 65.65074344085302 -16.686505668848113 C65.89373220178166 -16.631045069816, 66.13672096271031 -16.575584470783888, 66.71317467939132 -16.4440126716635 C67.10244336706155 -16.328479768476015, 67.49171205473178 -16.212946865288526, 67.75788645933125 -16.133947699181366 C68.02396390354846 -16.036028740116496, 68.2900413477657 -15.938109781051626, 68.78058583587905 -15.757584874882369 C69.02201693286828 -15.65071049004427, 69.26344802985751 -15.543836105206173, 69.77707031792818 -15.316470754341125 C70.12454993136713 -15.135190862581336, 70.47202954480609 -14.953910970821546, 70.74324513699662 -14.812417970097622 C71.06095498873421 -14.619820390903968, 71.37866484047179 -14.427222811710315, 71.67514007350901 -14.247497783161291 C71.86456639439763 -14.115362181842663, 72.05399271528624 -13.983226580524033, 72.56892577128036 -13.624031571755262 C72.86791488904645 -13.38559570677138, 73.16690400681254 -13.147159841787495, 73.42092947316209 -12.944581292275288 C73.61022215632146 -12.772670685839897, 73.79951483948082 -12.600760079404504, 74.22765011318896 -12.21193895166137 C74.48336719488069 -11.947890070051802, 74.73908427657241 -11.683841188442234, 74.98577270321005 -11.42911513444239 C75.15240416207686 -11.23338034125882, 75.31903562094367 -11.037645548075254, 75.6921819548862 -10.59932663159847 C75.87660767521791 -10.352212967882728, 76.06103339554963 -10.105099304166986, 76.34397508107793 -9.725983222076888 C76.55635337882667 -9.39971312517671, 76.7687316765754 -9.073443028276532, 76.93847372402057 -8.812673661278927 C77.13249829243647 -8.468163392938497, 77.32652286085236 -8.123653124598064, 77.47323496127069 -7.863150934094199 C77.63855507326005 -7.51986018426457, 77.8038751852494 -7.176569434434941, 77.9460613441985 -6.881316833080699 C78.07707072465519 -6.557721130458624, 78.20808010511188 -6.23412542783655, 78.35500992777561 -5.871205925162238 C78.48784649641006 -5.471123345068313, 78.62068306504449 -5.071040764974387, 78.69840025455292 -4.836968972727556 C78.78335460643784 -4.513001209541347, 78.86830895832276 -4.189033446355139, 78.97482126002069 -3.7828558772573464 C79.0248871212845 -3.525778261091201, 79.07495298254831 -3.2687006449250555, 79.18313707097533 -2.713198215567453 C79.23078438679015 -2.3436550431344583, 79.27843170260498 -1.974111870701464, 79.32249167306605 -1.632391440430593 C79.34608474194337 -1.2649103486839561, 79.36967781082069 -0.8974292569373192, 79.39231242834138 -0.5448768187181379 C79.39231242834138 -0.24365959244052515, 79.39231242834138 0.05755763383708756, 79.39231242834138 0.5448768187181336 C79.3751311815728 0.8124886055916216, 79.35794993480421 1.0801003924651096, 79.32249167306605 1.6323914404305815 C79.27493356885287 2.001242705298041, 79.2273754646397 2.3700939701655, 79.18313707097533 2.7131982155674415 C79.12402336603358 3.016734596757403, 79.06490966109182 3.3202709779473643, 78.97482126002069 3.782855877257343 C78.88181523385394 4.137528164097872, 78.7888092076872 4.492200450938402, 78.69840025455292 4.836968972727545 C78.58711633432623 5.172138409765531, 78.47583241409953 5.507307846803516, 78.35500992777561 5.871205925162227 C78.26595408743376 6.091175572584141, 78.17689824709191 6.311145220006056, 77.9460613441985 6.881316833080694 C77.76467765572751 7.257963943179917, 77.58329396725652 7.63461105327914, 77.47323496127069 7.863150934094196 C77.2708612561204 8.22248594014832, 77.0684875509701 8.581820946202445, 76.93847372402057 8.812673661278923 C76.79845227649554 9.027784205700662, 76.65843082897052 9.242894750122403, 76.34397508107794 9.725983222076879 C76.20679583133386 9.909790919447198, 76.06961658158978 10.093598616817516, 75.6921819548862 10.599326631598467 C75.53111089803357 10.788529860180327, 75.37003984118095 10.977733088762188, 74.98577270321006 11.42911513444238 C74.8281160829132 11.591908538748138, 74.67045946261634 11.754701943053895, 74.22765011318896 12.211938951661365 C74.04018576965126 12.38218910842757, 73.85272142611358 12.552439265193776, 73.4209294731621 12.944581292275275 C73.13596862174677 13.171829988152279, 72.85100777033144 13.399078684029282, 72.56892577128036 13.62403157175526 C72.36679476482921 13.76502941174534, 72.16466375837807 13.90602725173542, 71.67514007350903 14.247497783161286 C71.42715406037654 14.397828361649776, 71.17916804724405 14.548158940138265, 70.74324513699663 14.81241797009762 C70.50846388203946 14.934903200424207, 70.27368262708228 15.057388430750795, 69.77707031792818 15.316470754341124 C69.54198457976392 15.420536237055787, 69.30689884159968 15.524601719770448, 68.78058583587905 15.757584874882367 C68.494709764596 15.862789911723967, 68.20883369331294 15.967994948565567, 67.75788645933125 16.133947699181363 C67.4310450439177 16.230952515650504, 67.10420362850417 16.32795733211964, 66.71317467939133 16.444012671663497 C66.37871014477238 16.52035201910521, 66.04424561015342 16.596691366546924, 65.65074344085302 16.68650566884811 C65.22487973041025 16.755356010930097, 64.79901601996748 16.824206353012084, 64.5749585015663 16.86043023499518 C64.24833825857637 16.891938897018107, 63.92171801558643 16.923447559041033, 63.49024049260181 16.965071676755716 C63.091937879897976 16.977844466296126, 62.693635267194146 16.990617255836533, 62.40104675292969 17 C62.40104675292969 17, 62.40104675292969 17, 62.40104675292969 17 C33.21382847840519 17, 4.026610203880701 17, -62.40104675292969 17 C-62.797003208062684 16.98730244716637, -63.19295966319569 16.97460489433274, -63.4902404926018 16.965071676755716 C-63.82565115327728 16.93271501371069, -64.16106181395276 16.900358350665666, -64.57495850156629 16.86043023499518 C-64.91585653536312 16.805316484594645, -65.25675456915995 16.75020273419411, -65.65074344085302 16.68650566884811 C-66.0137130293804 16.60366022886466, -66.37668261790778 16.520814788881207, -66.7131746793913 16.4440126716635 C-67.0998947004907 16.32923619933602, -67.48661472159007 16.214459727008535, -67.75788645933123 16.13394769918137 C-68.16354109199973 15.984663044529043, -68.56919572466823 15.835378389876716, -68.78058583587905 15.757584874882369 C-68.99765790021192 15.661493511216213, -69.21472996454479 15.565402147550055, -69.77707031792818 15.316470754341127 C-70.06385189505826 15.166856989244726, -70.35063347218835 15.017243224148324, -70.74324513699662 14.812417970097624 C-71.07801737400247 14.609477072684644, -71.41278961100831 14.406536175271663, -71.675140073509 14.247497783161299 C-71.96981880757545 14.041942654713349, -72.26449754164189 13.836387526265398, -72.56892577128036 13.624031571755264 C-72.74818829636374 13.481074478377414, -72.9274508214471 13.338117384999562, -73.42092947316209 12.94458129227529 C-73.73936500440261 12.655386568145104, -74.05780053564314 12.366191844014917, -74.22765011318894 12.211938951661377 C-74.44233271786634 11.990261536562329, -74.65701532254373 11.768584121463281, -74.98577270321005 11.429115134442386 C-75.26632809684523 11.09955880502436, -75.54688349048043 10.770002475606333, -75.6921819548862 10.599326631598473 C-75.87789082983448 10.350493657594317, -76.06359970478277 10.10166068359016, -76.34397508107793 9.72598322207689 C-76.54176661688666 9.422122308610586, -76.7395581526954 9.118261395144282, -76.93847372402057 8.812673661278936 C-77.06979033679639 8.579507718046525, -77.2011069495722 8.346341774814116, -77.47323496127069 7.863150934094201 C-77.57457687523274 7.652712281382425, -77.67591878919478 7.44227362867065, -77.9460613441985 6.881316833080701 C-78.05714719912432 6.606932623715022, -78.16823305405015 6.332548414349343, -78.35500992777561 5.87120592516224 C-78.47525825576011 5.509037120242174, -78.5955065837446 5.1468683153221075, -78.69840025455292 4.8369689727275516 C-78.76768610052882 4.572752013345832, -78.83697194650473 4.308535053964113, -78.97482126002069 3.782855877257349 C-79.04426396955732 3.42628224050861, -79.11370667909395 3.0697086037598704, -79.18313707097533 2.713198215567455 C-79.22938118746562 2.3545379800025104, -79.2756253039559 1.9958777444375657, -79.32249167306605 1.6323914404306026 C-79.33778894379014 1.3941241011682988, -79.35308621451422 1.1558567619059947, -79.39231242834138 0.54487681871814 C-79.39231242834138 0.1425465303392145, -79.39231242834138 -0.259783758039711, -79.39231242834138 -0.5448768187181317 C-79.36858321493574 -0.9144784713873586, -79.3448540015301 -1.2840801240565853, -79.32249167306605 -1.6323914404305793 C-79.29115395517283 -1.8754405920781223, -79.2598162372796 -2.1184897437256653, -79.18313707097533 -2.713198215567447 C-79.1136219103536 -3.0701438733256867, -79.04410674973185 -3.427089531083926, -78.97482126002069 -3.782855877257341 C-78.88742368436692 -4.116140711574075, -78.80002610871314 -4.449425545890808, -78.69840025455292 -4.836968972727544 C-78.58877452624965 -5.16714419988919, -78.47914879794638 -5.497319427050836, -78.35500992777563 -5.871205925162218 C-78.26616189956626 -6.090662272599126, -78.17731387135689 -6.310118620036035, -77.9460613441985 -6.881316833080692 C-77.77656881438406 -7.233271697799545, -77.60707628456963 -7.585226562518398, -77.47323496127069 -7.863150934094194 C-77.32638836617271 -8.123891933520845, -77.17954177107472 -8.384632932947495, -76.93847372402057 -8.812673661278929 C-76.73532368895167 -9.124766668567375, -76.53217365388278 -9.43685967585582, -76.34397508107794 -9.725983222076884 C-76.09556097719124 -10.058835490294626, -75.84714687330455 -10.391687758512369, -75.6921819548862 -10.599326631598467 C-75.53652110305343 -10.782174725514626, -75.38086025122065 -10.965022819430784, -74.98577270321006 -11.42911513444238 C-74.77923276914576 -11.642384573607718, -74.57269283508145 -11.855654012773055, -74.22765011318896 -12.21193895166136 C-74.01015284819232 -12.409464213069016, -73.7926555831957 -12.606989474476674, -73.4209294731621 -12.944581292275274 C-73.18806943121149 -13.130280979064933, -72.95520938926086 -13.315980665854594, -72.56892577128036 -13.624031571755259 C-72.37248344524386 -13.761061234547087, -72.17604111920735 -13.898090897338916, -71.67514007350903 -14.247497783161284 C-71.33202844620374 -14.455494067981489, -70.98891681889843 -14.663490352801693, -70.74324513699663 -14.812417970097618 C-70.49140182401368 -14.943804465167487, -70.23955851103072 -15.075190960237355, -69.77707031792818 -15.316470754341124 C-69.51157431702715 -15.433997958280962, -69.24607831612613 -15.5515251622208, -68.78058583587905 -15.757584874882365 C-68.57344220350949 -15.83381564640911, -68.36629857113994 -15.910046417935856, -67.75788645933125 -16.133947699181363 C-67.46326769749761 -16.221389001208145, -67.16864893566398 -16.308830303234927, -66.71317467939133 -16.444012671663494 C-66.4130709112122 -16.512509398390275, -66.11296714303307 -16.581006125117057, -65.65074344085302 -16.68650566884811 C-65.42476327709026 -16.723040389222927, -65.19878311332751 -16.759575109597748, -64.5749585015663 -16.86043023499518 C-64.16203487261066 -16.90026448086721, -63.74911124365502 -16.94009872673924, -63.49024049260181 -16.965071676755716 C-63.255376331712355 -16.972603313260084, -63.020512170822904 -16.980134949764455, -62.401046752929695 -17 C-62.401046752929695 -17, -62.40104675292969 -17, -62.40104675292969 -17" stroke="none" stroke-width="0" fill="#ffffff" style=""></path><path d="M-62.40104675292969 -17 C-33.95998843953595 -17, -5.518930126142209 -17, 62.40104675292969 -17 M-62.40104675292969 -17 C-19.07418395254704 -17, 24.25267884783561 -17, 62.40104675292969 -17 M62.40104675292969 -17 C62.40104675292969 -17, 62.40104675292969 -17, 62.40104675292969 -17 M62.40104675292969 -17 C62.40104675292969 -17, 62.40104675292969 -17, 62.40104675292969 -17 M62.40104675292969 -17 C62.75775236618261 -16.988561145268335, 63.114457979435535 -16.97712229053667, 63.49024049260181 -16.965071676755716 M62.40104675292969 -17 C62.67388532455846 -16.991250598055927, 62.94672389618723 -16.982501196111855, 63.49024049260181 -16.965071676755716 M63.49024049260181 -16.965071676755716 C63.88721498008074 -16.926776025380295, 64.28418946755967 -16.888480374004875, 64.57495850156629 -16.860430234995185 M63.49024049260181 -16.965071676755716 C63.75987881489174 -16.939059992091934, 64.02951713718167 -16.913048307428152, 64.57495850156629 -16.860430234995185 M64.57495850156629 -16.860430234995185 C64.80609172101612 -16.823062408539425, 65.03722494046596 -16.78569458208366, 65.65074344085302 -16.686505668848113 M64.57495850156629 -16.860430234995185 C64.92148845558393 -16.804405959409543, 65.26801840960158 -16.7483816838239, 65.65074344085302 -16.686505668848113 M65.65074344085302 -16.686505668848113 C65.96654795469956 -16.614425349379687, 66.2823524685461 -16.54234502991126, 66.71317467939132 -16.4440126716635 M65.65074344085302 -16.686505668848113 C65.95469448154643 -16.617130827275748, 66.25864552223983 -16.547755985703382, 66.71317467939132 -16.4440126716635 M66.71317467939132 -16.4440126716635 C66.93571823559711 -16.37796291233659, 67.15826179180289 -16.311913153009673, 67.75788645933125 -16.133947699181366 M66.71317467939132 -16.4440126716635 C67.01665993236068 -16.353939841608796, 67.32014518533003 -16.26386701155409, 67.75788645933125 -16.133947699181366 M67.75788645933125 -16.133947699181366 C68.03220680686255 -16.03299527550035, 68.30652715439385 -15.932042851819338, 68.78058583587905 -15.757584874882369 M67.75788645933125 -16.133947699181366 C68.16006996846625 -15.98594045007608, 68.56225347760126 -15.837933200970793, 68.78058583587905 -15.757584874882369 M68.78058583587905 -15.757584874882369 C69.02733747002078 -15.648355246074987, 69.2740891041625 -15.539125617267606, 69.77707031792818 -15.316470754341125 M68.78058583587905 -15.757584874882369 C69.07772720511592 -15.62604920510675, 69.37486857435279 -15.49451353533113, 69.77707031792818 -15.316470754341125 M69.77707031792818 -15.316470754341125 C70.03999944979414 -15.179300794660799, 70.3029285816601 -15.042130834980473, 70.74324513699662 -14.812417970097622 M69.77707031792818 -15.316470754341125 C70.01957372501214 -15.18995688219627, 70.26207713209608 -15.063443010051415, 70.74324513699662 -14.812417970097622 M70.74324513699662 -14.812417970097622 C70.96629538162556 -14.677203601014831, 71.18934562625448 -14.541989231932039, 71.67514007350901 -14.247497783161291 M70.74324513699662 -14.812417970097622 C71.0591781614159 -14.620897514066124, 71.37511118583517 -14.429377058034625, 71.67514007350901 -14.247497783161291 M71.67514007350901 -14.247497783161291 C71.94689025809326 -14.057936618271214, 72.2186404426775 -13.868375453381134, 72.56892577128036 -13.624031571755262 M71.67514007350901 -14.247497783161291 C71.9283467559816 -14.07087176260904, 72.18155343845419 -13.894245742056786, 72.56892577128036 -13.624031571755262 M72.56892577128036 -13.624031571755262 C72.77436000719636 -13.460203235446862, 72.97979424311237 -13.296374899138462, 73.42092947316209 -12.944581292275288 M72.56892577128036 -13.624031571755262 C72.85649620543762 -13.394701803085486, 73.14406663959488 -13.165372034415709, 73.42092947316209 -12.944581292275288 M73.42092947316209 -12.944581292275288 C73.65490331764646 -12.732092437323272, 73.88887716213083 -12.519603582371259, 74.22765011318896 -12.21193895166137 M73.42092947316209 -12.944581292275288 C73.68580295061578 -12.704030208220026, 73.95067642806947 -12.463479124164765, 74.22765011318896 -12.21193895166137 M74.22765011318896 -12.21193895166137 C74.44611090846546 -11.986360244573529, 74.66457170374196 -11.76078153748569, 74.98577270321005 -11.42911513444239 M74.22765011318896 -12.21193895166137 C74.40257886922372 -12.03131064913752, 74.57750762525846 -11.85068234661367, 74.98577270321005 -11.42911513444239 M74.98577270321005 -11.42911513444239 C75.25741734802543 -11.110025877624077, 75.52906199284081 -10.790936620805764, 75.6921819548862 -10.59932663159847 M74.98577270321005 -11.42911513444239 C75.14864041058107 -11.237801457929312, 75.31150811795207 -11.046487781416232, 75.6921819548862 -10.59932663159847 M75.6921819548862 -10.59932663159847 C75.89631202625107 -10.325810932601609, 76.10044209761594 -10.052295233604745, 76.34397508107793 -9.725983222076888 M75.6921819548862 -10.59932663159847 C75.93585604147998 -10.272825554728756, 76.17953012807378 -9.94632447785904, 76.34397508107793 -9.725983222076888 M76.34397508107793 -9.725983222076888 C76.54765911065336 -9.413069855828821, 76.75134314022877 -9.100156489580755, 76.93847372402057 -8.812673661278927 M76.34397508107793 -9.725983222076888 C76.53206678568746 -9.437023854101936, 76.720158490297 -9.148064486126984, 76.93847372402057 -8.812673661278927 M76.93847372402057 -8.812673661278927 C77.14269029064737 -8.450066468063307, 77.34690685727416 -8.087459274847685, 77.47323496127069 -7.863150934094199 M76.93847372402057 -8.812673661278927 C77.06722199986802 -8.584068060335134, 77.19597027571548 -8.355462459391344, 77.47323496127069 -7.863150934094199 M77.47323496127069 -7.863150934094199 C77.58701629379414 -7.626881562578758, 77.70079762631758 -7.390612191063316, 77.9460613441985 -6.881316833080699 M77.47323496127069 -7.863150934094199 C77.643635153339 -7.5093112892842955, 77.81403534540733 -7.1554716444743915, 77.9460613441985 -6.881316833080699 M77.9460613441985 -6.881316833080699 C78.07738606219279 -6.556942240644102, 78.20871078018708 -6.232567648207505, 78.35500992777561 -5.871205925162238 M77.9460613441985 -6.881316833080699 C78.08029604451235 -6.5497545280541045, 78.2145307448262 -6.218192223027511, 78.35500992777561 -5.871205925162238 M78.35500992777561 -5.871205925162238 C78.46073853543999 -5.552768204443112, 78.56646714310436 -5.234330483723986, 78.69840025455292 -4.836968972727556 M78.35500992777561 -5.871205925162238 C78.43223284843174 -5.63862279194752, 78.50945576908785 -5.4060396587328015, 78.69840025455292 -4.836968972727556 M78.69840025455292 -4.836968972727556 C78.75468111563085 -4.622345657157926, 78.81096197670878 -4.407722341588294, 78.97482126002069 -3.7828558772573464 M78.69840025455292 -4.836968972727556 C78.77768661916645 -4.534615701528395, 78.85697298377997 -4.232262430329234, 78.97482126002069 -3.7828558772573464 M78.97482126002069 -3.7828558772573464 C79.05321717294073 -3.3803094333950034, 79.13161308586076 -2.9777629895326605, 79.18313707097533 -2.713198215567453 M78.97482126002069 -3.7828558772573464 C79.05570585124404 -3.367530596289841, 79.1365904424674 -2.952205315322336, 79.18313707097533 -2.713198215567453 M79.18313707097533 -2.713198215567453 C79.2314218816067 -2.338710759224905, 79.27970669223807 -1.9642233028823568, 79.32249167306605 -1.632391440430593 M79.18313707097533 -2.713198215567453 C79.22748682030758 -2.3692303175951945, 79.27183656963982 -2.025262419622936, 79.32249167306605 -1.632391440430593 M79.32249167306605 -1.632391440430593 C79.34177710922978 -1.3320052052567894, 79.3610625453935 -1.0316189700829859, 79.39231242834138 -0.5448768187181379 M79.32249167306605 -1.632391440430593 C79.3433711442955 -1.3071768224260998, 79.36425061552495 -0.9819622044216066, 79.39231242834138 -0.5448768187181379 M79.39231242834138 -0.5448768187181379 C79.39231242834138 -0.11641072297584326, 79.39231242834138 0.31205537276645134, 79.39231242834138 0.5448768187181336 M79.39231242834138 -0.5448768187181379 C79.39231242834138 -0.2533624473428324, 79.39231242834138 0.03815192403247303, 79.39231242834138 0.5448768187181336 M79.39231242834138 0.5448768187181336 C79.3729140033338 0.8470229463380324, 79.35351557832622 1.1491690739579312, 79.32249167306605 1.6323914404305815 M79.39231242834138 0.5448768187181336 C79.36867949864747 0.9129787748583637, 79.34504656895355 1.2810807309985937, 79.32249167306605 1.6323914404305815 M79.32249167306605 1.6323914404305815 C79.288554277883 1.8956031757736875, 79.25461688269993 2.1588149111167936, 79.18313707097533 2.7131982155674415 M79.32249167306605 1.6323914404305815 C79.29185003021618 1.870041971497369, 79.26120838736632 2.1076925025641566, 79.18313707097533 2.7131982155674415 M79.18313707097533 2.7131982155674415 C79.13420668830719 2.964445389128371, 79.08527630563903 3.2156925626893003, 78.97482126002069 3.782855877257343 M79.18313707097533 2.7131982155674415 C79.12547508611097 3.009280320981125, 79.06781310124661 3.3053624263948094, 78.97482126002069 3.782855877257343 M78.97482126002069 3.782855877257343 C78.90936724809553 4.032460392676179, 78.84391323617038 4.282064908095015, 78.69840025455292 4.836968972727545 M78.97482126002069 3.782855877257343 C78.90128297284693 4.063289237946174, 78.82774468567317 4.343722598635004, 78.69840025455292 4.836968972727545 M78.69840025455292 4.836968972727545 C78.59442775886448 5.150117563973599, 78.49045526317605 5.463266155219652, 78.35500992777561 5.871205925162227 M78.69840025455292 4.836968972727545 C78.56226904040034 5.246974500191658, 78.42613782624775 5.65698002765577, 78.35500992777561 5.871205925162227 M78.35500992777561 5.871205925162227 C78.26157573505479 6.101990187609864, 78.16814154233398 6.332774450057502, 77.9460613441985 6.881316833080694 M78.35500992777561 5.871205925162227 C78.22546886902715 6.191174844776898, 78.09592781027871 6.511143764391571, 77.9460613441985 6.881316833080694 M77.9460613441985 6.881316833080694 C77.78824534032789 7.209025141839565, 77.63042933645727 7.536733450598436, 77.47323496127069 7.863150934094196 M77.9460613441985 6.881316833080694 C77.7681719498039 7.250707966764369, 77.5902825554093 7.620099100448044, 77.47323496127069 7.863150934094196 M77.47323496127069 7.863150934094196 C77.32710790959659 8.12261431131007, 77.18098085792249 8.382077688525943, 76.93847372402057 8.812673661278923 M77.47323496127069 7.863150934094196 C77.30709575660379 8.158147915399033, 77.14095655193687 8.45314489670387, 76.93847372402057 8.812673661278923 M76.93847372402057 8.812673661278923 C76.81393937187204 9.003991868334952, 76.68940501972352 9.195310075390982, 76.34397508107794 9.725983222076879 M76.93847372402057 8.812673661278923 C76.81116853612062 9.008248616122716, 76.68386334822068 9.203823570966508, 76.34397508107794 9.725983222076879 M76.34397508107794 9.725983222076879 C76.0983210544113 10.055137238267966, 75.85266702774464 10.384291254459052, 75.6921819548862 10.599326631598467 M76.34397508107794 9.725983222076879 C76.13336517904708 10.008181303841447, 75.92275527701622 10.290379385606013, 75.6921819548862 10.599326631598467 M75.6921819548862 10.599326631598467 C75.42869802626242 10.90882984682022, 75.16521409763864 11.218333062041973, 74.98577270321006 11.42911513444238 M75.6921819548862 10.599326631598467 C75.4856728389794 10.841903989844177, 75.27916372307259 11.084481348089884, 74.98577270321006 11.42911513444238 M74.98577270321006 11.42911513444238 C74.6878212144373 11.736774508872408, 74.38986972566455 12.044433883302435, 74.22765011318896 12.211938951661365 M74.98577270321006 11.42911513444238 C74.69918382436371 11.725041681235767, 74.41259494551737 12.020968228029155, 74.22765011318896 12.211938951661365 M74.22765011318896 12.211938951661365 C74.00794524715478 12.411469097921401, 73.7882403811206 12.610999244181437, 73.4209294731621 12.944581292275275 M74.22765011318896 12.211938951661365 C74.01488119283712 12.405170055567762, 73.80211227248529 12.598401159474157, 73.4209294731621 12.944581292275275 M73.4209294731621 12.944581292275275 C73.15886925658421 13.153567341280905, 72.89680904000632 13.362553390286532, 72.56892577128036 13.62403157175526 M73.4209294731621 12.944581292275275 C73.23671057388228 13.091490962180147, 73.05249167460245 13.23840063208502, 72.56892577128036 13.62403157175526 M72.56892577128036 13.62403157175526 C72.27160493548774 13.83142971599265, 71.97428409969513 14.03882786023004, 71.67514007350903 14.247497783161286 M72.56892577128036 13.62403157175526 C72.24538905694583 13.849716777996399, 71.9218523426113 14.075401984237537, 71.67514007350903 14.247497783161286 M71.67514007350903 14.247497783161286 C71.42540706381216 14.398887401233594, 71.17567405411529 14.550277019305902, 70.74324513699663 14.81241797009762 M71.67514007350903 14.247497783161286 C71.4819910194329 14.364585874812073, 71.28884196535675 14.481673966462859, 70.74324513699663 14.81241797009762 M70.74324513699663 14.81241797009762 C70.44010839117779 14.970564216222963, 70.13697164535893 15.128710462348305, 69.77707031792818 15.316470754341124 M70.74324513699663 14.81241797009762 C70.52199655194222 14.92784321520402, 70.30074796688783 15.04326846031042, 69.77707031792818 15.316470754341124 M69.77707031792818 15.316470754341124 C69.47654998972175 15.449502189019308, 69.17602966151533 15.582533623697493, 68.78058583587905 15.757584874882367 M69.77707031792818 15.316470754341124 C69.4989884952492 15.43956932823693, 69.22090667257021 15.562667902132734, 68.78058583587905 15.757584874882367 M68.78058583587905 15.757584874882367 C68.51572964107349 15.855054402874641, 68.25087344626792 15.952523930866915, 67.75788645933125 16.133947699181363 M68.78058583587905 15.757584874882367 C68.37348484314019 15.907401803410592, 67.96638385040133 16.057218731938818, 67.75788645933125 16.133947699181363 M67.75788645933125 16.133947699181363 C67.47398934432334 16.21820687270934, 67.19009222931544 16.302466046237324, 66.71317467939133 16.444012671663497 M67.75788645933125 16.133947699181363 C67.44217894859273 16.227648031186014, 67.1264714378542 16.32134836319067, 66.71317467939133 16.444012671663497 M66.71317467939133 16.444012671663497 C66.40146143391199 16.51515918582513, 66.08974818843265 16.586305699986767, 65.65074344085302 16.68650566884811 M66.71317467939133 16.444012671663497 C66.3786454686831 16.520366781000536, 66.04411625797489 16.596720890337576, 65.65074344085302 16.68650566884811 M65.65074344085302 16.68650566884811 C65.40547760913655 16.726158346455097, 65.16021177742009 16.76581102406208, 64.5749585015663 16.86043023499518 M65.65074344085302 16.68650566884811 C65.2756456299934 16.747148573980922, 64.9005478191338 16.807791479113735, 64.5749585015663 16.86043023499518 M64.5749585015663 16.86043023499518 C64.35557562401864 16.881593837345694, 64.13619274647098 16.902757439696202, 63.49024049260181 16.965071676755716 M64.5749585015663 16.86043023499518 C64.2159082521042 16.89506738073969, 63.85685800264209 16.929704526484194, 63.49024049260181 16.965071676755716 M63.49024049260181 16.965071676755716 C63.16966161882592 16.975352017268786, 62.84908274505003 16.985632357781853, 62.40104675292969 17 M63.49024049260181 16.965071676755716 C63.18562701326682 16.97484003814382, 62.88101353393183 16.984608399531925, 62.40104675292969 17 M62.40104675292969 17 C62.40104675292969 17, 62.40104675292969 17, 62.40104675292969 17 M62.40104675292969 17 C62.40104675292969 17, 62.40104675292969 17, 62.40104675292969 17 M62.40104675292969 17 C29.869176736804576 17, -2.6626932793205356 17, -62.40104675292969 17 M62.40104675292969 17 C14.716757383832324 17, -32.96753198526504 17, -62.40104675292969 17 M-62.40104675292969 17 C-62.80600542331099 16.987013763645106, -63.2109640936923 16.97402752729021, -63.4902404926018 16.965071676755716 M-62.40104675292969 17 C-62.72086650362093 16.989744003086713, -63.04068625431218 16.979488006173423, -63.4902404926018 16.965071676755716 M-63.4902404926018 16.965071676755716 C-63.80573342592352 16.934636452913935, -64.12122635924524 16.904201229072154, -64.57495850156629 16.86043023499518 M-63.4902404926018 16.965071676755716 C-63.879416668343964 16.927528319134698, -64.26859284408613 16.889984961513683, -64.57495850156629 16.86043023499518 M-64.57495850156629 16.86043023499518 C-64.91076949592998 16.806138917679615, -65.24658049029368 16.751847600364048, -65.65074344085302 16.68650566884811 M-64.57495850156629 16.86043023499518 C-64.84900741235938 16.816124132379198, -65.12305632315248 16.771818029763214, -65.65074344085302 16.68650566884811 M-65.65074344085302 16.68650566884811 C-65.89783255294283 16.630109191420754, -66.14492166503265 16.573712713993395, -66.7131746793913 16.4440126716635 M-65.65074344085302 16.68650566884811 C-66.0303197510916 16.599869853003064, -66.40989606133017 16.513234037158018, -66.7131746793913 16.4440126716635 M-66.7131746793913 16.4440126716635 C-66.9259650777287 16.380857598396553, -67.13875547606611 16.317702525129608, -67.75788645933123 16.13394769918137 M-66.7131746793913 16.4440126716635 C-66.97697254346095 16.365718850310877, -67.24077040753059 16.287425028958253, -67.75788645933123 16.13394769918137 M-67.75788645933123 16.13394769918137 C-68.13945732412836 15.993526093733621, -68.52102818892547 15.853104488285872, -68.78058583587905 15.757584874882369 M-67.75788645933123 16.13394769918137 C-67.97039105150971 16.055744044888776, -68.18289564368817 15.977540390596182, -68.78058583587905 15.757584874882369 M-68.78058583587905 15.757584874882369 C-69.00238838986832 15.659399463770315, -69.22419094385758 15.561214052658263, -69.77707031792818 15.316470754341127 M-68.78058583587905 15.757584874882369 C-69.15820895452019 15.590422322051753, -69.53583207316133 15.423259769221138, -69.77707031792818 15.316470754341127 M-69.77707031792818 15.316470754341127 C-69.98052964976209 15.210326151245297, -70.183988981596 15.104181548149468, -70.74324513699662 14.812417970097624 M-69.77707031792818 15.316470754341127 C-70.11171799729797 15.141885274365968, -70.44636567666778 14.96729979439081, -70.74324513699662 14.812417970097624 M-70.74324513699662 14.812417970097624 C-71.04558047371896 14.629140512256894, -71.34791581044128 14.445863054416165, -71.675140073509 14.247497783161299 M-70.74324513699662 14.812417970097624 C-71.10736563308306 14.591685985560474, -71.47148612916949 14.370954001023325, -71.675140073509 14.247497783161299 M-71.675140073509 14.247497783161299 C-71.8804988388978 14.104248398263751, -72.08585760428659 13.960999013366203, -72.56892577128036 13.624031571755264 M-71.675140073509 14.247497783161299 C-71.91429280354738 14.080675191441347, -72.15344553358578 13.913852599721396, -72.56892577128036 13.624031571755264 M-72.56892577128036 13.624031571755264 C-72.75630014501606 13.47460549494254, -72.94367451875175 13.325179418129819, -73.42092947316209 12.94458129227529 M-72.56892577128036 13.624031571755264 C-72.80617548725326 13.434831236746973, -73.04342520322615 13.245630901738682, -73.42092947316209 12.94458129227529 M-73.42092947316209 12.94458129227529 C-73.61259957536177 12.770511576770547, -73.80426967756144 12.596441861265806, -74.22765011318894 12.211938951661377 M-73.42092947316209 12.94458129227529 C-73.64028949420577 12.745364325111524, -73.85964951524946 12.54614735794776, -74.22765011318894 12.211938951661377 M-74.22765011318894 12.211938951661377 C-74.46633130233256 11.965481027780525, -74.70501249147618 11.719023103899671, -74.98577270321005 11.429115134442386 M-74.22765011318894 12.211938951661377 C-74.4224038896402 12.010839687893052, -74.61715766609144 11.809740424124724, -74.98577270321005 11.429115134442386 M-74.98577270321005 11.429115134442386 C-75.229837147918 11.14242315002809, -75.47390159262598 10.855731165613795, -75.6921819548862 10.599326631598473 M-74.98577270321005 11.429115134442386 C-75.24234816204475 11.127727000937952, -75.49892362087945 10.826338867433517, -75.6921819548862 10.599326631598473 M-75.6921819548862 10.599326631598473 C-75.86625696512426 10.366081976439139, -76.04033197536232 10.132837321279803, -76.34397508107793 9.72598322207689 M-75.6921819548862 10.599326631598473 C-75.9279688249785 10.283393706300537, -76.16375569507082 9.9674607810026, -76.34397508107793 9.72598322207689 M-76.34397508107793 9.72598322207689 C-76.48945963020984 9.502479886538785, -76.63494417934176 9.27897655100068, -76.93847372402057 8.812673661278936 M-76.34397508107793 9.72598322207689 C-76.48631361191977 9.50731301545654, -76.62865214276161 9.288642808836192, -76.93847372402057 8.812673661278936 M-76.93847372402057 8.812673661278936 C-77.10578944612857 8.515587654122127, -77.27310516823657 8.218501646965318, -77.47323496127069 7.863150934094201 M-76.93847372402057 8.812673661278936 C-77.08155457059928 8.55861912967163, -77.224635417178 8.304564598064326, -77.47323496127069 7.863150934094201 M-77.47323496127069 7.863150934094201 C-77.59669773896697 7.606777834527639, -77.72016051666323 7.350404734961076, -77.9460613441985 6.881316833080701 M-77.47323496127069 7.863150934094201 C-77.64998801805656 7.496119429768788, -77.82674107484242 7.129087925443374, -77.9460613441985 6.881316833080701 M-77.9460613441985 6.881316833080701 C-78.0580822999827 6.604622906515868, -78.1701032557669 6.327928979951034, -78.35500992777561 5.87120592516224 M-77.9460613441985 6.881316833080701 C-78.08341028912145 6.542062283659819, -78.2207592340444 6.202807734238935, -78.35500992777561 5.87120592516224 M-78.35500992777561 5.87120592516224 C-78.47626724398523 5.505998208468522, -78.59752456019486 5.140790491774805, -78.69840025455292 4.8369689727275516 M-78.35500992777561 5.87120592516224 C-78.46581949137686 5.537465174701628, -78.57662905497811 5.203724424241017, -78.69840025455292 4.8369689727275516 M-78.69840025455292 4.8369689727275516 C-78.799599280352 4.451053227420462, -78.90079830615106 4.065137482113373, -78.97482126002069 3.782855877257349 M-78.69840025455292 4.8369689727275516 C-78.77073008293603 4.5611439891568475, -78.84305991131913 4.2853190055861425, -78.97482126002069 3.782855877257349 M-78.97482126002069 3.782855877257349 C-79.05058702116021 3.3938147069051707, -79.12635278229973 3.004773536552993, -79.18313707097533 2.713198215567455 M-78.97482126002069 3.782855877257349 C-79.05518263630141 3.3702171944387596, -79.13554401258212 2.95757851162017, -79.18313707097533 2.713198215567455 M-79.18313707097533 2.713198215567455 C-79.22846069357168 2.361677148871888, -79.273784316168 2.0101560821763207, -79.32249167306605 1.6323914404306026 M-79.18313707097533 2.713198215567455 C-79.23279956374654 2.328025728602405, -79.28246205651776 1.9428532416373545, -79.32249167306605 1.6323914404306026 M-79.32249167306605 1.6323914404306026 C-79.35032793235094 1.1988192330444796, -79.37816419163582 0.7652470256583566, -79.39231242834138 0.54487681871814 M-79.32249167306605 1.6323914404306026 C-79.33852749425137 1.3826205815874262, -79.35456331543669 1.1328497227442498, -79.39231242834138 0.54487681871814 M-79.39231242834138 0.54487681871814 C-79.39231242834138 0.15087248491023897, -79.39231242834138 -0.24313184889766204, -79.39231242834138 -0.5448768187181317 M-79.39231242834138 0.54487681871814 C-79.39231242834138 0.12993401587586723, -79.39231242834138 -0.2850087869664055, -79.39231242834138 -0.5448768187181317 M-79.39231242834138 -0.5448768187181317 C-79.37215944277743 -0.8587758360737567, -79.35200645721349 -1.1726748534293818, -79.32249167306605 -1.6323914404305793 M-79.39231242834138 -0.5448768187181317 C-79.37026690091142 -0.888253703269213, -79.34822137348146 -1.2316305878202944, -79.32249167306605 -1.6323914404305793 M-79.32249167306605 -1.6323914404305793 C-79.27783502160189 -1.9787396107334134, -79.23317837013771 -2.3250877810362476, -79.18313707097533 -2.713198215567447 M-79.32249167306605 -1.6323914404305793 C-79.27094852759502 -2.032149898358581, -79.219405382124 -2.4319083562865824, -79.18313707097533 -2.713198215567447 M-79.18313707097533 -2.713198215567447 C-79.1341381725 -2.964797203317441, -79.08513927402467 -3.216396191067435, -78.97482126002069 -3.782855877257341 M-79.18313707097533 -2.713198215567447 C-79.13150652944064 -2.9783101342293095, -79.07987598790594 -3.2434220528911717, -78.97482126002069 -3.782855877257341 M-78.97482126002069 -3.782855877257341 C-78.88521335819424 -4.124569643231949, -78.79560545636777 -4.4662834092065555, -78.69840025455292 -4.836968972727544 M-78.97482126002069 -3.782855877257341 C-78.904422350707 -4.051317429550766, -78.8340234413933 -4.31977898184419, -78.69840025455292 -4.836968972727544 M-78.69840025455292 -4.836968972727544 C-78.58707156550405 -5.172273246325026, -78.47574287645516 -5.507577519922508, -78.35500992777563 -5.871205925162218 M-78.69840025455292 -4.836968972727544 C-78.62501296972256 -5.057999781960643, -78.5516256848922 -5.279030591193741, -78.35500992777563 -5.871205925162218 M-78.35500992777563 -5.871205925162218 C-78.20888298509152 -6.232142298764202, -78.0627560424074 -6.593078672366186, -77.9460613441985 -6.881316833080692 M-78.35500992777563 -5.871205925162218 C-78.24615771621886 -6.140072992221774, -78.13730550466208 -6.408940059281331, -77.9460613441985 -6.881316833080692 M-77.9460613441985 -6.881316833080692 C-77.82532517779724 -7.132028065953038, -77.70458901139597 -7.382739298825382, -77.47323496127069 -7.863150934094194 M-77.9460613441985 -6.881316833080692 C-77.8117615147462 -7.160193302494406, -77.6774616852939 -7.43906977190812, -77.47323496127069 -7.863150934094194 M-77.47323496127069 -7.863150934094194 C-77.27872849971733 -8.208516852497155, -77.08422203816399 -8.553882770900115, -76.93847372402057 -8.812673661278929 M-77.47323496127069 -7.863150934094194 C-77.35830311470832 -8.067224065777138, -77.24337126814595 -8.27129719746008, -76.93847372402057 -8.812673661278929 M-76.93847372402057 -8.812673661278929 C-76.72065845919371 -9.147296399641181, -76.50284319436686 -9.481919138003434, -76.34397508107794 -9.725983222076884 M-76.93847372402057 -8.812673661278929 C-76.76395478666177 -9.080781613958434, -76.58943584930297 -9.348889566637938, -76.34397508107794 -9.725983222076884 M-76.34397508107794 -9.725983222076884 C-76.21203585223117 -9.902769768820532, -76.0800966233844 -10.079556315564181, -75.6921819548862 -10.599326631598467 M-76.34397508107794 -9.725983222076884 C-76.08602392140365 -10.071614276206342, -75.82807276172937 -10.417245330335799, -75.6921819548862 -10.599326631598467 M-75.6921819548862 -10.599326631598467 C-75.422044930717 -10.916644951419721, -75.15190790654782 -11.233963271240974, -74.98577270321006 -11.42911513444238 M-75.6921819548862 -10.599326631598467 C-75.44399576514085 -10.8908602522676, -75.19580957539553 -11.182393872936734, -74.98577270321006 -11.42911513444238 M-74.98577270321006 -11.42911513444238 C-74.8199061761508 -11.600385941526195, -74.65403964909154 -11.771656748610008, -74.22765011318896 -12.21193895166136 M-74.98577270321006 -11.42911513444238 C-74.71589249905004 -11.707788602814436, -74.44601229489001 -11.98646207118649, -74.22765011318896 -12.21193895166136 M-74.22765011318896 -12.21193895166136 C-74.05643546135614 -12.367431568364475, -73.88522080952333 -12.522924185067591, -73.4209294731621 -12.944581292275274 M-74.22765011318896 -12.21193895166136 C-74.01890526397058 -12.401515500635442, -73.81016041475219 -12.591092049609523, -73.4209294731621 -12.944581292275274 M-73.4209294731621 -12.944581292275274 C-73.20051929608343 -13.120352543134377, -72.98010911900475 -13.29612379399348, -72.56892577128036 -13.624031571755259 M-73.4209294731621 -12.944581292275274 C-73.21518520234115 -13.108656873170005, -73.00944093152017 -13.272732454064736, -72.56892577128036 -13.624031571755259 M-72.56892577128036 -13.624031571755259 C-72.29147609764757 -13.817568453478698, -72.01402642401479 -14.011105335202139, -71.67514007350903 -14.247497783161284 M-72.56892577128036 -13.624031571755259 C-72.3622774248735 -13.76818051254595, -72.15562907846663 -13.912329453336643, -71.67514007350903 -14.247497783161284 M-71.67514007350903 -14.247497783161284 C-71.40972989337135 -14.40839099408409, -71.14431971323367 -14.569284205006896, -70.74324513699663 -14.812417970097618 M-71.67514007350903 -14.247497783161284 C-71.37723281124376 -14.42809091624389, -71.07932554897847 -14.608684049326499, -70.74324513699663 -14.812417970097618 M-70.74324513699663 -14.812417970097618 C-70.47378229890495 -14.952996560130863, -70.20431946081327 -15.09357515016411, -69.77707031792818 -15.316470754341124 M-70.74324513699663 -14.812417970097618 C-70.48959571247845 -14.944746712398544, -70.23594628796026 -15.07707545469947, -69.77707031792818 -15.316470754341124 M-69.77707031792818 -15.316470754341124 C-69.49868837752751 -15.439702181449636, -69.22030643712685 -15.56293360855815, -68.78058583587905 -15.757584874882365 M-69.77707031792818 -15.316470754341124 C-69.52743591945591 -15.426976497403468, -69.27780152098366 -15.53748224046581, -68.78058583587905 -15.757584874882365 M-68.78058583587905 -15.757584874882365 C-68.51863931775998 -15.853983614957256, -68.25669279964089 -15.950382355032147, -67.75788645933125 -16.133947699181363 M-68.78058583587905 -15.757584874882365 C-68.3882806629972 -15.90195680493215, -67.99597549011536 -16.046328734981934, -67.75788645933125 -16.133947699181363 M-67.75788645933125 -16.133947699181363 C-67.35806492371333 -16.25261263224669, -66.95824338809543 -16.37127756531202, -66.71317467939133 -16.444012671663494 M-67.75788645933125 -16.133947699181363 C-67.3640692479657 -16.25083058032593, -66.97025203660017 -16.367713461470494, -66.71317467939133 -16.444012671663494 M-66.71317467939133 -16.444012671663494 C-66.47314361657915 -16.498798195401307, -66.23311255376697 -16.553583719139116, -65.65074344085302 -16.68650566884811 M-66.71317467939133 -16.444012671663494 C-66.29938879025354 -16.53845660065392, -65.88560290111577 -16.632900529644342, -65.65074344085302 -16.68650566884811 M-65.65074344085302 -16.68650566884811 C-65.34330630260848 -16.73620972114887, -65.03586916436393 -16.785913773449636, -64.5749585015663 -16.86043023499518 M-65.65074344085302 -16.68650566884811 C-65.38414304607655 -16.72960755315863, -65.11754265130008 -16.77270943746915, -64.5749585015663 -16.86043023499518 M-64.5749585015663 -16.86043023499518 C-64.20005106265783 -16.896597104734518, -63.82514362374937 -16.932763974473854, -63.49024049260181 -16.965071676755716 M-64.5749585015663 -16.86043023499518 C-64.16898446083368 -16.899594062449438, -63.76301042010106 -16.938757889903698, -63.49024049260181 -16.965071676755716 M-63.49024049260181 -16.965071676755716 C-63.07135319098788 -16.978504577203804, -62.65246588937394 -16.991937477651895, -62.401046752929695 -17 M-63.49024049260181 -16.965071676755716 C-63.132208468414206 -16.976553066904355, -62.77417644422661 -16.988034457052994, -62.401046752929695 -17 M-62.401046752929695 -17 C-62.401046752929695 -17, -62.40104675292969 -17, -62.40104675292969 -17 M-62.401046752929695 -17 C-62.401046752929695 -17, -62.40104675292969 -17, -62.40104675292969 -17" stroke="#14181f" stroke-width="1.3" fill="none" stroke-dasharray="0 0" style=""></path></g><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">scores</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> =</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> [88,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 92,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 79]</tspan></tspan></text></g></g></g><g class="node default  " id="mermaid-1786615611291-flowchart-T-1" data-look="classic" transform="translate(282.5033721923828, 71.71875)"><polygon points="63.71875,0 127.4375,-63.71875 63.71875,-127.4375 0,-63.71875" class="label-container" transform="translate(-63.21875, 63.71875)"></polygon><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">还有下一个?</tspan></tspan></text></g></g></g><g class="node default  " id="mermaid-1786615611291-flowchart-B-3" data-look="classic" transform="translate(556.2257041931152, 38.21875)"><rect class="basic label-container" style="" x="-111.3369140625" y="-25" width="222.673828125" height="50"></rect><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">取出</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> s，total</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> =</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> total</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> +</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> s</tspan></tspan></text></g></g></g><g class="node default  " id="mermaid-1786615611291-flowchart-E-7" data-look="classic" transform="translate(556.2257041931152, 136.21875)"><rect class="basic label-container" style="" x="-88" y="-25" width="176" height="50"></rect><g class="label" style="" transform="translate(0, -9)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">循环结束，算平均</tspan></tspan></text></g></g></g></g></g></g><defs><filter id="mermaid-1786615611291-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><defs><filter id="mermaid-1786615611291-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><linearGradient id="mermaid-1786615611291-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#14181f" stop-opacity="1"></stop><stop offset="100%" stop-color="hsl(222.8571428571, 6.6666666667%, 87.0588235294%)" stop-opacity="1"></stop></linearGradient></svg>
+        <figcaption><span class="fig-num">图 6</span>for 循环:取一个 → 执行循环体 → 回去取下一个,直到取完。第 1 章的搜索、求平均循环都是这个形状。</figcaption>
+      </figure>
+      <div class="code-block">
+        <div class="chead"><span class="fn">for 循环 + 累加器</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">scores </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [88, 92, 79]</span></span>
+<span class="line"><span style="color:#14181F">total </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 0</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> s </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> scores:      </span><span style="color:#8B95A8;font-style:italic"># s 依次是 88、92、79</span></span>
+<span class="line"><span style="color:#14181F">    total </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> total </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> s </span><span style="color:#8B95A8;font-style:italic"># 每轮累加进 total</span></span>
+<span class="line"><span style="color:#14181F">print(total </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> len(scores))  </span><span style="color:#8B95A8;font-style:italic"># 平均 → 86.33...</span></span></code></pre>
+      </div>
+      <p>三个常配 <code>for</code> 的小工具:<code>range(5)</code> 生成 0–4(定次数循环);<code>zip(a, b)</code> 把两个列表配对(第 1 章的 <code>zip(weights, prices)</code> 就是它);<code>enumerate(lst)</code> 每轮同时给「编号 + 元素」。</p>
+
+      <h3>亲手单步走一遍</h3>
+      <p>点「下一步」,看 <code>for</code> 每轮取出哪个、<code>total</code> 怎么一点点长起来:</p>
+      <div class="sim" id="loopdemo">
+        <span class="tag">机制模拟 · 循环逻辑真实(浏览器 JS),非 Python 真实运行</span>
+        <p class="simline"><span class="mono">scores = [88, 92, 79]</span>,逐个累加到 <span class="mono">total</span></p>
+        <div id="loopcells" class="cells"></div>
+        <p class="total"><b>total = <span class="readout" id="looptotal">0</span></b> &nbsp;<span class="expr" id="loopexpr"></span></p>
+        <div class="btnrow">
+          <button class="btn" type="button" id="loopstep">▶ 下一步</button>
+          <button class="btn ghost" type="button" id="loopreset">↻ 重来</button>
+        </div>
+        <p class="msg" id="loopmsg">循环体每执行一轮,<code>total</code> 就吃进一个元素;取完三个,循环自然结束。</p>
+      </div>
+      <div class="callout go"><span class="label">去精读</span><p>Automate 第 2 章后半(<code>for</code> Loops);<code>range</code>、<code>zip</code>、<code>enumerate</code> 读那一章顺带就会。</p></div>
+
+      <p class="handoff">会用 for 处理一列数据后,把这段常用的活<b>打包起来、起个名字反复调用</b>——这就是函数。</p>
+      <h2 id="func"><span class="no">12</span><span>函数 def</span></h2>
+      <p class="one-liner">函数<span class="en">function</span>:把一段会反复用的活<b>打包起来、起个名字</b>。以后要用,报名字并递进材料(参数),它算完把结果<b>返回</b>给出。</p>
+      <p>画面:函数是一台<b>进料出料的机器</b>。原料从参数进,机器内部按定义处理,成品从 <code>return</code> 出来。用的人不必知道内部,只管递料、接结果。</p>
+      <figure>
+        <svg role="img" aria-label="函数是进料出料的机器" data-mmd="d7" id="mermaid-1786615611360" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 566.1458740234375px;" viewBox="0.00000762939453125 0.000003814697265625 566.1458740234375 81.40000915527344" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mermaid-1786615611360{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;font-size:14px;fill:#14181f;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#mermaid-1786615611360 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#mermaid-1786615611360 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#mermaid-1786615611360 .error-icon{fill:#ffffff;}#mermaid-1786615611360 .error-text{fill:#000000;stroke:#000000;}#mermaid-1786615611360 .edge-thickness-normal{stroke-width:1px;}#mermaid-1786615611360 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1786615611360 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1786615611360 .edge-thickness-invisible{stroke-width:0;fill:none;}#mermaid-1786615611360 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1786615611360 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1786615611360 .marker{fill:#8b95a8;stroke:#8b95a8;}#mermaid-1786615611360 .marker.cross{stroke:#8b95a8;}#mermaid-1786615611360 svg{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;font-size:14px;}#mermaid-1786615611360 p{margin:0;}#mermaid-1786615611360 .label{font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;color:#14181f;}#mermaid-1786615611360 .cluster-label text{fill:#000000;}#mermaid-1786615611360 .cluster-label span{color:#000000;}#mermaid-1786615611360 .cluster-label span p{background-color:transparent;}#mermaid-1786615611360 .label text,#mermaid-1786615611360 span{fill:#14181f;color:#14181f;}#mermaid-1786615611360 .node rect,#mermaid-1786615611360 .node circle,#mermaid-1786615611360 .node ellipse,#mermaid-1786615611360 .node polygon,#mermaid-1786615611360 .node path{fill:#ffffff;stroke:#14181f;stroke-width:1px;}#mermaid-1786615611360 .rough-node .label text,#mermaid-1786615611360 .node .label text,#mermaid-1786615611360 .image-shape .label,#mermaid-1786615611360 .icon-shape .label{text-anchor:middle;}#mermaid-1786615611360 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1786615611360 .rough-node .label,#mermaid-1786615611360 .node .label,#mermaid-1786615611360 .image-shape .label,#mermaid-1786615611360 .icon-shape .label{text-align:center;}#mermaid-1786615611360 .node.clickable{cursor:pointer;}#mermaid-1786615611360 .root .anchor path{fill:#8b95a8!important;stroke-width:0;stroke:#8b95a8;}#mermaid-1786615611360 .arrowheadPath{fill:#000000;}#mermaid-1786615611360 .edgePath .path{stroke:#8b95a8;stroke-width:1px;}#mermaid-1786615611360 .flowchart-link{stroke:#8b95a8;fill:none;}#mermaid-1786615611360 .edgeLabel{background-color:#ffffff;text-align:center;}#mermaid-1786615611360 .edgeLabel p{background-color:#ffffff;}#mermaid-1786615611360 .edgeLabel rect{opacity:0.5;background-color:#ffffff;fill:#ffffff;}#mermaid-1786615611360 .labelBkg{background-color:rgba(255, 255, 255, 0.5);}#mermaid-1786615611360 .cluster rect{fill:#ffffff;stroke:hsl(0, 0%, 90%);stroke-width:1px;}#mermaid-1786615611360 .cluster text{fill:#000000;}#mermaid-1786615611360 .cluster span{color:#000000;}#mermaid-1786615611360 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:'Microsoft YaHei','Noto Sans SC',sans-serif;font-size:12px;background:#ffffff;border:1px solid hsl(0, 0%, 90%);border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1786615611360 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#14181f;}#mermaid-1786615611360 rect.text{fill:none;stroke-width:0;}#mermaid-1786615611360 .icon-shape,#mermaid-1786615611360 .image-shape{background-color:#ffffff;text-align:center;}#mermaid-1786615611360 .icon-shape p,#mermaid-1786615611360 .image-shape p{background-color:#ffffff;padding:2px;}#mermaid-1786615611360 .icon-shape .label rect,#mermaid-1786615611360 .image-shape .label rect{opacity:0.5;background-color:#ffffff;fill:#ffffff;}#mermaid-1786615611360 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#mermaid-1786615611360 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#mermaid-1786615611360 .node .neo-node{stroke:#14181f;}#mermaid-1786615611360 [data-look="neo"].node rect,#mermaid-1786615611360 [data-look="neo"].cluster rect,#mermaid-1786615611360 [data-look="neo"].node polygon{stroke:url(#mermaid-1786615611360-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611360 [data-look="neo"].swimlane.cluster rect{filter:none;}#mermaid-1786615611360 [data-look="neo"].node path{stroke:url(#mermaid-1786615611360-gradient);stroke-width:1px;}#mermaid-1786615611360 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611360 [data-look="neo"].node .neo-line path{stroke:#14181f;filter:none;}#mermaid-1786615611360 [data-look="neo"].node circle{stroke:url(#mermaid-1786615611360-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611360 [data-look="neo"].node circle .state-start{fill:#000000;}#mermaid-1786615611360 [data-look="neo"].icon-shape .icon{fill:url(#mermaid-1786615611360-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611360 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#mermaid-1786615611360-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#mermaid-1786615611360 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}#mermaid-1786615611360 .box rect{fill:rgb(244, 246, 251)!important;stroke:rgb(39, 67, 199)!important;stroke-width:1.6px!important;color:rgb(20, 24, 31)!important;}#mermaid-1786615611360 .box polygon{fill:rgb(244, 246, 251)!important;stroke:rgb(39, 67, 199)!important;stroke-width:1.6px!important;color:rgb(20, 24, 31)!important;}#mermaid-1786615611360 .box ellipse{fill:rgb(244, 246, 251)!important;stroke:rgb(39, 67, 199)!important;stroke-width:1.6px!important;color:rgb(20, 24, 31)!important;}#mermaid-1786615611360 .box circle{fill:rgb(244, 246, 251)!important;stroke:rgb(39, 67, 199)!important;stroke-width:1.6px!important;color:rgb(20, 24, 31)!important;}#mermaid-1786615611360 .box path{fill:rgb(244, 246, 251)!important;stroke:rgb(39, 67, 199)!important;stroke-width:1.6px!important;color:rgb(20, 24, 31)!important;}#mermaid-1786615611360 .box tspan{fill:rgb(20, 24, 31)!important;}</style><g><marker id="mermaid-1786615611360_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611360_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611360_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611360_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></polygon></marker><marker id="mermaid-1786615611360_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611360_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611360_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611360_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="mermaid-1786615611360_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611360_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="mermaid-1786615611360_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"></path></marker><marker id="mermaid-1786615611360_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M145.646,40.7L149.979,40.7C154.312,40.7,162.979,40.7,170.979,40.7C178.979,40.7,186.312,40.7,189.979,40.7L193.646,40.7" id="mermaid-1786615611360-L_I_F_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_I_F_0" data-points="W3sieCI6MTQ1LjY0NTgyODI0NzA3MDMsInkiOjQwLjcwMDAwMDc2MjkzOTQ1fSx7IngiOjE3MS42NDU4MjgyNDcwNzAzLCJ5Ijo0MC43MDAwMDA3NjI5Mzk0NX0seyJ4IjoxOTcuNjQ1ODI4MjQ3MDcwMywieSI6NDAuNzAwMDAwNzYyOTM5NDV9XQ==" data-look="classic" marker-end="url(#mermaid-1786615611360_flowchart-v2-pointEnd)"></path><path d="M383.115,40.7L387.448,40.7C391.781,40.7,400.448,40.7,408.448,40.7C416.448,40.7,423.781,40.7,427.448,40.7L431.115,40.7" id="mermaid-1786615611360-L_F_O_0" class=" edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_F_O_0" data-points="W3sieCI6MzgzLjExNDU3ODI0NzA3MDMsInkiOjQwLjcwMDAwMDc2MjkzOTQ1fSx7IngiOjQwOS4xMTQ1NzgyNDcwNzAzLCJ5Ijo0MC43MDAwMDA3NjI5Mzk0NX0seyJ4Ijo0MzUuMTE0NTc4MjQ3MDcwMywieSI6NDAuNzAwMDAwNzYyOTM5NDV9XQ==" data-look="classic" marker-end="url(#mermaid-1786615611360_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_I_F_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"></tspan></text></g></g><g><rect class="background" style="stroke: none"></rect></g><g class="edgeLabel"><g class="label" data-id="L_F_O_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"></tspan></text></g></g><g><rect class="background" style="stroke: none"></rect></g></g><g class="nodes"><g class="node default  " id="mermaid-1786615611360-flowchart-I-0" data-look="classic" transform="translate(76.82291412353516, 40.70000076293945)"><rect class="basic label-container" style="" x="-68.82291793823242" y="-32.70000076293945" width="137.64583587646484" height="65.4000015258789"></rect><g class="label" style="" transform="translate(0, -16.700000762939453)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">参数进</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">[88,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 92,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 79]</tspan></tspan></text></g></g></g><g class="node default box " id="mermaid-1786615611360-flowchart-F-1" data-look="classic" transform="translate(290.3802032470703, 40.70000076293945)"><rect class="basic label-container" style="fill:#f4f6fb !important;stroke:#2743c7 !important;stroke-width:1.6px !important" x="-92.734375" y="-32.70000076293945" width="185.46875" height="65.4000015258789"></rect><g class="label" style="color:#14181f !important" transform="translate(0, -16.700000762939453)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style="fill:#14181f !important"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">average(numbers)</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">sum</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> /</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> len</tspan></tspan></text></g></g></g><g class="node default  " id="mermaid-1786615611360-flowchart-O-3" data-look="classic" transform="translate(496.6302032470703, 40.70000076293945)"><rect class="basic label-container" style="" x="-61.515625" y="-32.70000076293945" width="123.03125" height="65.4000015258789"></rect><g class="label" style="" transform="translate(0, -16.700000762939453)"><rect></rect><g><rect class="background" style="stroke: none"></rect><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">return</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> 出</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">86.33</tspan></tspan></text></g></g></g></g></g></g><defs><filter id="mermaid-1786615611360-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><defs><filter id="mermaid-1786615611360-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><linearGradient id="mermaid-1786615611360-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#14181f" stop-opacity="1"></stop><stop offset="100%" stop-color="hsl(222.8571428571, 6.6666666667%, 87.0588235294%)" stop-opacity="1"></stop></linearGradient></svg>
+        <figcaption><span class="fig-num">图 7</span>函数 = 进料出料的机器。<code>def</code> 定义机器,调用时递参数、接返回值。</figcaption>
+      </figure>
+      <div class="code-block">
+        <div class="chead"><span class="fn">定义与调用</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> average(numbers):       </span><span style="color:#8B95A8;font-style:italic"># 定义一台叫 average 的机器,收参数 numbers</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> sum(numbers) </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> len(numbers)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(average([88, 92, 79]))  </span><span style="color:#8B95A8;font-style:italic"># 调用 → 86.33...</span></span>
+<span class="line"><span style="color:#14181F">print(average([100, 60]))       </span><span style="color:#8B95A8;font-style:italic"># 再调一次 → 80.0</span></span></code></pre>
+      </div>
+      <p><b>定义 ≠ 执行:</b>写下 <code>def</code> 那几行,机器只是<b>造好待命</b>,里面代码并不运行;只有<b>调用</b> <code>average([...])</code> 时才执行一次。这正是<a href="01-人工智能全景与学习环境.html#minilab">第 1 章执行链</a>里「先定义、后调用」的意思。</p>
+      <div class="callout go"><span class="label">去精读</span><p>Automate 第 3 章(Functions),或 Corey Schafer 的 Functions 一集。</p></div>
+
+      <p class="handoff">函数把结果<b>返回</b>给出;而要把结果<b>拼进一句话、好好打印出来</b>,靠的是 f-string。</p>
+      <h2 id="fstring"><span class="no">13</span><span>f-string 与打印</span></h2>
+      <p>把变量的值<b>嵌进一句话</b>打印,是最常用的「看看现在算到哪了」。写法:引号前加 <code>f</code>,插值处用 <code>{}</code> 包住。</p>
+      <table class="tbl">
+        <caption>表 5 · f-string 常用写法</caption>
+        <thead><tr><th>写法</th><th>作用</th><th>输出</th></tr></thead>
+        <tbody>
+          <tr><td><code>f"你好 {name}"</code></td><td>插入变量值</td><td><code>你好 阿岩</code></td></tr>
+          <tr><td><code>f"{avg:.1f}"</code> / <code>{avg:.2f}</code></td><td>保留 1 / 2 位小数</td><td><code>86.3</code> / <code>86.33</code></td></tr>
+          <tr><td><code>f"{rate:.0%}"</code></td><td>按百分比</td><td><code>70%</code></td></tr>
+        </tbody>
+      </table>
+      <div class="code-block">
+        <div class="chead"><span class="fn">f-string</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">name, avg </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089"> "阿岩"</span><span style="color:#14181F">, 86.333</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"</span><span style="color:#557089">{</span><span style="color:#14181F">name</span><span style="color:#557089">}</span><span style="color:#557089"> 的平均分是 </span><span style="color:#557089">{</span><span style="color:#14181F">avg</span><span style="color:#14181F;font-weight:bold">:.1f</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)  </span><span style="color:#8B95A8;font-style:italic"># → 阿岩 的平均分是 86.3</span></span></code></pre>
+      </div>
+      <div class="callout go"><span class="label">去精读</span><p>想要更多花样,搜 <a href="https://realpython.com/" target="_blank" rel="noopener">Real Python</a> 的 <code>f-string</code> 一篇,读完就走。</p></div>
+
+      <p class="handoff">前面都是「怎么写对」;可真动手一定会写错——所以最后一块地基,是<b>读懂报错、自己定位</b>。</p>
+      <h2 id="error"><span class="no">14</span><span>读懂报错</span></h2>
+      <p>报错不是「程序坏了」,是程序在<b>指出哪里不对</b>。诀窍一条:<b>从最后一行往上读</b>——最后一行是「错误类型 + 一句说明」,中间指出「第几行出的错」。</p>
+      <figure>
+        <div class="trace">
+          <span class="dim">Traceback (most recent call last):</span>
+          <span class="dim">  File "scratch.py", line 3, in &lt;module&gt;　　<b>← ② 出错在第 3 行</b></span>
+          <span class="dim">    print(scores[5])</span>
+          <span class="key">IndexError: list index out of range<em>← ① 先读这行:类型 + 下标越界了</em></span>
+        </div>
+        <figcaption><span class="fig-num">图 8</span>报错倒着读:最后一行说「什么错」,中间说「第几行错」。看懂这两处,九成问题能自己定位。</figcaption>
+      </figure>
+      <table class="tbl">
+        <caption>表 6 · 六种最常撞见的报错</caption>
+        <thead><tr><th>报错类型</th><th>意思</th><th>常见原因</th></tr></thead>
+        <tbody>
+          <tr><td><code>SyntaxError</code></td><td>语法写错了</td><td>漏冒号 <code>:</code>、括号不配对、把 <code>==</code> 写成 <code>=</code></td></tr>
+          <tr><td><code>IndentationError</code></td><td>缩进不对</td><td>该缩的没缩、或空格数不一致</td></tr>
+          <tr><td><code>NameError</code></td><td>用了没定义的名字</td><td>变量名打错、或没赋值就用</td></tr>
+          <tr><td><code>TypeError</code></td><td>类型不匹配</td><td>字符串和数字相加,如 <code>"3" + 5</code></td></tr>
+          <tr><td><code>IndexError</code> / <code>KeyError</code></td><td>越界 / 没这个键</td><td>列表取 <code>[5]</code> / 字典取不存在的键</td></tr>
+          <tr><td><code>ZeroDivisionError</code></td><td>除以 0</td><td>对空列表求平均(<code>len</code> 为 0)</td></tr>
+        </tbody>
+      </table>
+      <div class="callout go"><span class="label">去精读 · 标准动作</span><p>精读:Automate 第 5 章(Debugging)。<b>标准动作:</b>读最后一行认类型 → 看行号定位 → 还不懂就把最后一行复制去搜或问 AI。这套动作一路用到项目 P6。</p></div>
+
+      <!-- ========== 模块 D ========== -->
+      <p class="handoff">五块地基到齐了。下面把它们<b>组装起来</b>,回头把第 1 章那 17 行代码逐行读懂。</p>
+      <h2 id="assemble"><span class="no">15</span><span>实战:把第 1 章那 17 行读懂</span></h2>
+      <p>五块地基学完,回到<a href="01-人工智能全景与学习环境.html#minilab">第 1 章</a>那段「看得懂却写不出」的代码,逐行标注它用了本章哪块——读完应该能合上页面自己默写。</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">rule_vs_learn.py · 逐行对应本章</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">weights </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [1, 2, 3]              </span><span style="color:#8B95A8;font-style:italic"># 列表(第 8 节)</span></span>
+<span class="line"><span style="color:#14181F">prices  </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [4.2, 7.9, 12.1]      </span><span style="color:#8B95A8;font-style:italic"># 列表(第 8 节)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> loss(w):                        </span><span style="color:#8B95A8;font-style:italic"># 函数定义(第 12 节)</span></span>
+<span class="line"><span style="color:#14181F">    total </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 0                       </span><span style="color:#8B95A8;font-style:italic"># 变量(第 7 节)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    for</span><span style="color:#14181F"> x, y </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> zip(weights, prices): </span><span style="color:#8B95A8;font-style:italic"># for + zip(第 11 节)</span></span>
+<span class="line"><span style="color:#14181F">        error </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> y </span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F"> w </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> x            </span><span style="color:#8B95A8;font-style:italic"># 算术(第 7 节)</span></span>
+<span class="line"><span style="color:#14181F">        total </span><span style="color:#14181F;font-weight:bold">+=</span><span style="color:#14181F"> error </span><span style="color:#14181F;font-weight:bold">**</span><span style="color:#14181F"> 2          </span><span style="color:#8B95A8;font-style:italic"># 累加平方(第 11 节)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> total </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> len(weights)      </span><span style="color:#8B95A8;font-style:italic"># 返回 + len(第 8、12 节)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">best_w, best_loss </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 0, loss(0)     </span><span style="color:#8B95A8;font-style:italic"># 调用函数(第 12 节)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> i </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> range(20001):              </span><span style="color:#8B95A8;font-style:italic"># for + range(第 11 节)</span></span>
+<span class="line"><span style="color:#14181F">    w </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> i </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> 0.001</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F"> loss(w) </span><span style="color:#14181F;font-weight:bold">&#x3C;</span><span style="color:#14181F"> best_loss:          </span><span style="color:#8B95A8;font-style:italic"># if + 比较(第 10 节)</span></span>
+<span class="line"><span style="color:#14181F">        best_w, best_loss </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> w, loss(w)</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"学到的 w = </span><span style="color:#557089">{</span><span style="color:#14181F">best_w</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)     </span><span style="color:#8B95A8;font-style:italic"># f-string(第 13 节)</span></span></code></pre>
+      </div>
+      <div class="callout go"><span class="label">回到第 1 章的承诺</span><p>这段里的每一样——列表、for、zip、if、函数、return、f-string——本章都单独拆过了。第 18 节练习 3 会让人从空白默写它。做到了,第 2 章就达标。</p></div>
+
+      <h2 id="reflist"><span class="no">16</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(第 6 节已排好主线路径 + 骨架↔章节对照);下面把血肉集中成卡片,每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。文字与视频主线<b>各挑一条从头跟完即可,不要混着跳</b>。均于 2026-08-12 核实在线;打不开就记住名字搜一下。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://automatetheboringstuff.com/" target="_blank" rel="noopener">Automate the Boring Stuff(第 3 版)</a></span><span class="spine">默认主线 · 文字</span><span class="tags">在线书 · 英文(可机翻) · 通读 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">零基础最友好的 Python 免费在线书,用小任务教语法。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">它的章节和本章五块骨架一一对应(见第 6 节对照表),跟完就"能默写、能组装"。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">第 1–7 章(第 8 章之后先跳)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">按第 6 节的对照表逐节配:变量↔Ch1、列表↔Ch6、字典↔Ch7…</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.bilibili.com/video/BV1sHU9BmEne/" target="_blank" rel="noopener">黑马 · Python + AI 零基础入门</a></span><span class="spine">主线 · 中文视频</span><span class="tags">视频 · 中文 · 从头跟 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">直接对着 AI 方向讲的中文零基础视频课。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">爱看视频、想要中文、又冲着 AI 来——这条最贴本课程目标。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">从头跟一条,别和文字主线并行。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">整章的中文视频替代主线。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/playlist?list=PL-osiE80TeTskrapNbzXhwoFUiLCjGgY7" target="_blank" rel="noopener">Corey Schafer · Python Beginner Tutorials</a></span><span class="tags">视频 · 英文 · 挑着看 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">口碑极好的英文入门视频,每集只讲一个概念。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">每集正好对应本章一节,可以挑着看、不乱。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">按本章分节对应挑集看。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">每节卡住就看对应那一集。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://docs.python.org/zh-cn/3/tutorial/index.html" target="_blank" rel="noopener">Python 官方教程(中文)</a></span><span class="tags">官方 · 当字典查 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">权威的一手教程/字典。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">主线的备选,或想确认某个语法的精确定义时查它。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">第 3、4、5 章(数字/字符串/列表/流程控制)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">全章的权威字典。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">17</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 9 · 六个新手误区</caption>
+        <thead><tr><th>常见误区</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>要先学完 Python 才能碰 AI</td><td>语法书 600 页,AI 高频用到的不到 60 页。会本章五块就能上路,缺的边做边查。</td></tr>
+          <tr><td>缩进只是为了好看</td><td>缩进是语法,决定哪几行属于这个分支,缩错直接报错。</td></tr>
+          <tr><td><code>=</code> 就是等于</td><td><code>=</code> 是赋值,<code>==</code> 才是判断相等。新手第一大坑。</td></tr>
+          <tr><td>列表编号从 1 开始</td><td>从 0 开始;最后一个是 <code>[-1]</code>。</td></tr>
+          <tr><td>写了 <code>def</code> 就运行了</td><td>定义只是造好待命,必须调用才执行。</td></tr>
+          <tr><td>报错了就是我太笨</td><td>报错是线索不是判决,读最后一行是可学会的机械动作。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">18</span><span>手把手练习</span></h2>
+      <ol class="steps">
+        <li>
+          <p><b>列表与字典取值。</b>已知 <code>student = {"名字": "阿彩", "分数": [88, 92, 79]}</code>。打印:①名字;②第一门分数;③三门总和。</p>
+          <details><summary>提示</summary><p>名字 <code>student["名字"]</code>;分数是列表,<code>student["分数"][0]</code>;总和 <code>sum(student["分数"])</code>。</p></details>
+        </li>
+        <li>
+          <p><b>for 求平均。</b>不用 <code>sum()</code>,用 <code>for</code> 把 <code>[70, 85, 90, 95]</code> 累加再除以个数,打印平均分。</p>
+          <details><summary>提示</summary><p><code>total = 0</code> → <code>for n in 列表: total = total + n</code> → <code>total / len(列表)</code>。回看第 11 节单步演示。</p></details>
+        </li>
+        <li>
+          <p><b>默写第 1 章代码。</b>合上第 15 节,从空白文件把 <code>rule_vs_learn.py</code> 重写、跑通,看到 <code>w ≈ 4.021</code>。</p>
+          <details><summary>提示</summary><p>骨架:两列表 → <code>def loss(w)</code> 里 <code>for ... zip</code> 累加平方误差 → 主循环 <code>for i in range(20001)</code> 里 <code>if loss(w) &lt; best_loss</code> → 打印。卡住只看第 15 节注释、不看代码。</p></details>
+        </li>
+        <li>
+          <p><b>读一个报错。</b>故意写 <code>d = {"a": 1}</code> 然后 <code>print(d["b"])</code>,跑一下。说出:报什么错?最后一行是什么?为什么?</p>
+          <details><summary>提示</summary><p>会是 <code>KeyError: 'b'</code>——字典里没有 <code>"b"</code> 这个键。对照第 14 节报错表。</p></details>
+        </li>
+      </ol>
+
+      <h2 id="answers"><span class="no">19</span><span>参考答案</span></h2>
+      <details><summary>练习 1 · 列表与字典取值</summary>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">student </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> {</span><span style="color:#557089">"名字"</span><span style="color:#14181F">: </span><span style="color:#557089">"阿彩"</span><span style="color:#14181F">, </span><span style="color:#557089">"分数"</span><span style="color:#14181F">: [88, 92, 79]}</span></span>
+<span class="line"><span style="color:#14181F">print(student[</span><span style="color:#557089">"名字"</span><span style="color:#14181F">])        </span><span style="color:#8B95A8;font-style:italic"># 阿彩</span></span>
+<span class="line"><span style="color:#14181F">print(student[</span><span style="color:#557089">"分数"</span><span style="color:#14181F">][0])     </span><span style="color:#8B95A8;font-style:italic"># 88</span></span>
+<span class="line"><span style="color:#14181F">print(sum(student[</span><span style="color:#557089">"分数"</span><span style="color:#14181F">]))   </span><span style="color:#8B95A8;font-style:italic"># 259</span></span></code></pre>
+        <p>要点:字典按键取,列表按位置取;「字典套列表」两步连写。</p>
+      </details>
+      <details><summary>练习 2 · for 求平均</summary>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">nums </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [70, 85, 90, 95]</span></span>
+<span class="line"><span style="color:#14181F">total </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 0</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> n </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> nums:</span></span>
+<span class="line"><span style="color:#14181F">    total </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> total </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> n</span></span>
+<span class="line"><span style="color:#14181F">print(total </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> len(nums))     </span><span style="color:#8B95A8;font-style:italic"># 85.0</span></span></code></pre>
+        <p>「累加器」套路:循环外归零,循环内每轮吃进一个。</p>
+      </details>
+      <details><summary>练习 3 · 默写第 1 章代码</summary>
+        <p>对照第 15 节。评判不是一字不差,而是:两列表建对了?<code>loss</code> 里 <code>for...zip</code> 累加了平方误差?主循环用 <code>if &lt;</code> 记住了更小的损失?跑出来 <code>w ≈ 4.021</code>?能跑通、逻辑对就算过。</p>
+      </details>
+      <details><summary>练习 4 · 读一个报错</summary>
+        <p>最后一行 <code>KeyError: 'b'</code>:向字典要键 <code>"b"</code> 的值,但字典里只有 <code>"a"</code>。修法:先确认键存在,或用 <code>d.get("b")</code>(查不到返回 <code>None</code> 而不报错)。</p>
+      </details>
+
+      <section class="self-check">
+        <h2 id="checklist" class="bare"><span class="no">20</span><span>学完之后自查清单</span></h2>
+        <p>能勾 8 条以上再进第 3 章(勾选状态存在本机浏览器):</p>
+        <ul class="checklist">
+          <li><input type="checkbox">我能说清 <code>=</code> 和 <code>==</code> 的区别,并知道 <code>x = x + 1</code> 为什么不是方程</li>
+          <li><input type="checkbox">我能说出 int/float/str/bool/list/dict 各是什么,各举一例</li>
+          <li><input type="checkbox">我知道列表编号从 0 开始,会用 <code>[0]</code>、<code>[-1]</code>、<code>len()</code>、<code>append()</code></li>
+          <li><input type="checkbox">我能分清什么时候用列表、什么时候用字典,并能取「字典套列表」的值</li>
+          <li><input type="checkbox">我能写带 <code>elif</code> 的 if 分支,知道缩进决定分支范围</li>
+          <li><input type="checkbox">我能写 <code>for</code> 循环遍历列表、用累加器求和,并知道 zip 干嘛</li>
+          <li><input type="checkbox">我能用 <code>def</code> 定义带参数、有返回值的函数,并知道「定义 ≠ 执行」</li>
+          <li><input type="checkbox">遇到报错,我会先读最后一行、认类型、按行号定位</li>
+          <li><input type="checkbox">我沿着第 6 节的主线(Automate 或一套视频课)从头跟了一遍</li>
+          <li><input type="checkbox">我从空白文件默写出了第 1 章的 17 行并跑通(练习 3)</li>
+        </ul>
+      </section>
+
+      <div class="challenge">
+        <span class="label">进阶挑战 · 刚好够不着</span>
+        <h3>给第 1 章那段代码加一个功能</h3>
+        <p>在第 15 节代码基础上,把「学到的 <code>w</code>」连同「此时的损失值 <code>best_loss</code>」一起用 f-string 打印成一句话(损失保留 4 位小数)。做完想一想:如果把 <code>range(20001)</code> 改小到 <code>range(100)</code>,学到的 <code>w</code> 会更准还是更差?为什么?</p>
+        <details><summary>提示(卡住再展开)</summary><p>打印:<code>print(f"w = {best_w:.3f},损失 = {best_loss:.4f}")</code>。范围改小 = 只试了前一小段 <code>w</code>,大概率还没扫到最优就停了,结果更差——这就是后面第 6 章「训练轮数」的雏形。</p></details>
+      </div>
+
+      <h2 id="next"><span class="no">21</span><span>本章与下一章的连接</span></h2>
+      <p>本章的列表能装一排数字;但真到 AI,数据动辄成千上万、还排成多维的表和图像,纯 Python 列表又慢又难算。</p>
+      <p><a href="03-NumPy数组与形状.html">第 3 章「NumPy:数组与形状」</a>把列表升级成<b>数组</b>,一条命令对上万个数同时运算(向量化),并引入贯穿后续所有课程的<b>形状(shape)</b>。进入条件:上面自查清单勾满 8 条,尤其练习 3 的默写要真做到。</p>
+
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="01-人工智能全景与学习环境.html" class="prev">
+          <span class="lb">← 上一章</span>
+          <span class="tt">01 · 全景与学习环境</span>
+        </a>
+        <a href="03-NumPy数组与形状.html" class="next">
+          <span class="lb">下一章 · 03  →</span>
+          <span class="tt">回课程首页看进度</span>
+        </a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">第 2 章 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="var" href="#var"><i>7</i>变量与类型</a>
+        <a data-toc-target="list" href="#list"><i>8</i>列表 list</a>
+        <a data-toc-target="dict" href="#dict"><i>9</i>字典 dict</a>
+        <a data-toc-target="if" href="#if"><i>10</i>if 分支</a>
+        <a data-toc-target="for" href="#for"><i>11</i>for 循环</a>
+        <a data-toc-target="func" href="#func"><i>12</i>函数 def</a>
+        <a data-toc-target="fstring" href="#fstring"><i>13</i>f-string</a>
+        <a data-toc-target="error" href="#error"><i>14</i>读懂报错</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>15</i>实战 17 行</a>
+        <a data-toc-target="reflist" href="#reflist"><i>16</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>17</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>18</i>手把手练习</a>
+        <a data-toc-target="answers" href="#answers"><i>19</i>参考答案</a>
+        <a data-toc-target="checklist" href="#checklist"><i>20</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>21</i>连接下一章</a>
+      </div>
+    </aside>
+
+  </div>
+
+</main>
+
+<script>
+/* 1. 进度条 */
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;
+  progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+
+/* 2. 目录高亮当前小节 */
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){
+  var link=tocByCid.get(e.target.id);if(!link)return;
+  if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}
+});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+
+/* 3. 代码复制 */
+document.querySelectorAll('.code-block .copy').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;
+    navigator.clipboard.writeText(pre.innerText).then(function(){
+      var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');
+      setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);
+    }).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});
+  });
+});
+
+/* 4. 第 11 节 for 循环单步演示(机制模拟) */
+(function(){
+  'use strict';
+  var data=[88,92,79];
+  var cellsEl=document.getElementById('loopcells');
+  var totalEl=document.getElementById('looptotal');
+  var exprEl=document.getElementById('loopexpr');
+  var msgEl=document.getElementById('loopmsg');
+  var stepBtn=document.getElementById('loopstep');
+  var resetBtn=document.getElementById('loopreset');
+  var idx=-1,total=0;
+  function drawCells(){
+    cellsEl.innerHTML='';
+    data.forEach(function(v,i){
+      var c=document.createElement('div');
+      c.className='cell'+(i===idx?' active':i<idx?' done':'');
+      c.textContent=v;cellsEl.appendChild(c);
+    });
+  }
+  function step(){
+    if(idx>=data.length-1){
+      exprEl.textContent='';
+      msgEl.innerHTML='<b>循环结束</b> · total = '+total
+        +',平均 = '+total+' / 3 = '+(total/3).toFixed(2);
+      stepBtn.disabled=true;return;
+    }
+    idx++;var before=total;total+=data[idx];
+    exprEl.textContent='← 第 '+(idx+1)+' 轮:取出 scores['+idx+'] = '
+      +data[idx]+',total = '+before+' + '+data[idx]+' = '+total;
+    totalEl.textContent=total;drawCells();
+  }
+  function reset(){
+    idx=-1;total=0;totalEl.textContent='0';exprEl.textContent='';stepBtn.disabled=false;
+    msgEl.innerHTML='循环体每执行一轮,<code>total</code> 就吃进一个元素;取完三个,循环自然结束。';
+    drawCells();
+  }
+  stepBtn.addEventListener('click',step);
+  resetBtn.addEventListener('click',reset);
+  reset();
+})();
+</script>
+<script src="../assets/study-tracker.js" data-ch="02" data-kind="chapter" data-title="Python 基础:为 AI 准备的最小集"></script>
+</body>
+</html>

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P2 · 第一个预测模型</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg,.term .thead{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0;}
+.badge{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.04em;color:var(--ink-soft);border:1px solid var(--rule);border-radius:20px;padding:4px 12px;background:var(--surface);}
+.badge b{color:var(--acc);font-weight:700;}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.milestone{border-left:3px solid var(--acc);padding:2px 0 2px 15px;margin:18px 0 18px -18px;}
+.milestone .label{display:block;font-family:var(--sans);font-size:var(--fs-small);font-weight:600;color:var(--acc);margin:0 0 4px;}
+.milestone p{margin:4px 0;}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.term{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:#12151b;}
+.term .thead{display:flex;align-items:center;gap:8px;padding:7px 14px;background:#1b1f27;border-bottom:1px solid #2a2f3a;color:#8b95a8;}
+.term .dots{display:flex;gap:5px;}
+.term .dots i{width:9px;height:9px;border-radius:50%;display:block;background:#3a4150;}
+.term pre{margin:0;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;color:#d7dce5;}
+.term .u{color:#8fa7ff;} .term .a{color:#e6e9f0;} .term .c{color:#6b7688;} .term .p{color:#5fd39a;}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="P1-数据体检报告.html">P1 数据体检</a><span class="sep">—</span>
+      <a href="P2-第一个预测模型.html" class="current">P2 第一个预测模型</a><span class="sep">—</span>
+      <a href="P3-手写数字识别.html">P3 手写数字</a>
+      <span class="spacer"></span>
+      <a href="#build" class="jump">开始搭建</a>
+      <a href="#pit" class="jump">常见坑</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">项目 · P2 · 第一个真正的机器学习模型</p>
+        <h1>第一个预测模型</h1>
+        <div class="badge-row">
+          <span class="badge">难度 ★★☆</span>
+          <span class="badge">scikit-learn</span>
+          <span class="badge">约 4–5 小时</span>
+          <span class="badge">无需 GPU / 无需付费 API</span>
+        </div>
+        <p class="recap">深度课程 Track A(<a href="../深度课程/D01-线性回归全拆解.html">D01</a>–<a href="../深度课程/D06-特征工程与数据预处理.html">D06</a>)的工具已经备齐。这个项目把它们拧成一次<b>完整的建模流程</b>:接着 <a href="P1-数据体检报告.html">P1</a> 体检过的那份数据,做防泄露的预处理、训两三个模型、用 <a href="../深度课程/D05-评价指标与验证深挖.html">D05</a> 的指标科学评估、最后解释"模型到底学到了什么"。<b>这是从"学过算法"到"能交付一个模型"的分水岭</b>——也是数据岗位面试里最常被要求复述的那条流水线。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">做完这个项目,会拥有</p>
+        <ul>
+          <li>一条从原始 CSV 到评估报告的完整建模流水线(可复用到任何表格数据)</li>
+          <li>一份带混淆矩阵、精确率/召回率、交叉验证分数的评估结果</li>
+          <li>一张特征重要性图:说清模型凭什么做判断</li>
+          <li>对"离线分数高 ≠ 真的好"的第一手警觉</li>
+        </ul>
+      </section>
+
+      <h2 id="preview"><span class="no">1</span><span>成品长什么样</span></h2>
+      <div class="term">
+        <div class="thead">终端输出 · 建模与评估</div>
+        <pre><span class="p">$</span> <span class="a">python 建模.py</span>
+<span class="c">--- 数据 ---</span>
+<span class="u">训练集</span> 712 条 | <span class="u">测试集</span> 179 条(分层抽样,正负比例一致)
+<span class="c">--- 交叉验证(5 折,只在训练集上)---</span>
+<span class="u">逻辑回归</span>      准确率 0.793 ± 0.031
+<span class="u">随机森林</span>      准确率 0.816 ± 0.024   ← 更好
+<span class="c">--- 测试集最终评估(只跑一次)---</span>
+准确率 0.821 | 精确率 0.800 | 召回率 0.730 | F1 0.764
+混淆矩阵  [[97 13]
+           [19 50]]
+<span class="c">--- 模型凭什么判断 ---</span>
+<span class="u">Sex_female</span> 0.28 | <span class="u">Fare</span> 0.19 | <span class="u">Age</span> 0.17 | <span class="u">Pclass</span> 0.14 …
+<span class="c">→ 已生成 评估报告.png</span></pre>
+      </div>
+      <p>四段输出对应四件事:<b>数据怎么切、模型怎么比、最终成绩、以及模型的判断依据</b>。做完这四段,一个模型才算"交付完整"。</p>
+
+      <h2 id="prep"><span class="no">2</span><span>准备</span></h2>
+      <ol class="steps">
+        <li><p><b>装库。</b></p>
+          <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span><button class="copy" type="button">复制</button></span></div><pre>pip install pandas scikit-learn matplotlib</pre></div>
+        </li>
+        <li><p><b>先做完 <a href="P1-数据体检报告.html">P1</a>。</b>这个项目直接用 P1 的结论:Cabin 缺 77% → 删;Age 缺 20% → 中位数填;Sex/Pclass 是强相关特征。<b>没做过 P1 也能跑,但会不知道这些决定从哪来。</b></p></li>
+        <li><p><b>建目录。</b></p>
+          <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span><button class="copy" type="button">复制</button></span></div><pre>mkdir ~\ai-lab\p2-first-model
+cd ~\ai-lab\p2-first-model</pre></div>
+        </li>
+      </ol>
+
+      <h2 id="build"><span class="no">3</span><span>分步搭建</span></h2>
+
+      <h3>第 1 步 · 先切分,再做任何处理</h3>
+      <p>顺序至关重要:<b>先把测试集切出来锁进抽屉</b>,之后所有处理(填充、缩放、编码)都只能从训练集学(<a href="../深度课程/D05-评价指标与验证深挖.html">D05</a> 的数据泄露)。</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">建模.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> pandas </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> pd</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.model_selection </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> train_test_split</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">URL </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089"> "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"</span></span>
+<span class="line"><span style="color:#14181F">df </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> pd.read_csv(URL)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">y </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> df[</span><span style="color:#557089">"Survived"</span><span style="color:#14181F">]                                    </span><span style="color:#8B95A8;font-style:italic"># 标签:要预测的</span></span>
+<span class="line"><span style="color:#14181F">X </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> df[[</span><span style="color:#557089">"Pclass"</span><span style="color:#14181F">, </span><span style="color:#557089">"Sex"</span><span style="color:#14181F">, </span><span style="color:#557089">"Age"</span><span style="color:#14181F">, </span><span style="color:#557089">"SibSp"</span><span style="color:#14181F">, </span><span style="color:#557089">"Parch"</span><span style="color:#14181F">, </span><span style="color:#557089">"Fare"</span><span style="color:#14181F">, </span><span style="color:#557089">"Embarked"</span><span style="color:#14181F">]]  </span><span style="color:#8B95A8;font-style:italic"># 特征:P1 挑出来的</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">X_train, X_test, y_train, y_test </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> train_test_split(</span></span>
+<span class="line"><span style="color:#14181F">    X, y, test_size</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0.2, random_state</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">42,</span></span>
+<span class="line"><span style="color:#14181F">    stratify</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">y,                                       </span><span style="color:#8B95A8;font-style:italic"># 分层:保证两边正负比例一致</span></span>
+<span class="line"><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"训练集"</span><span style="color:#14181F">, len(X_train), </span><span style="color:#557089">"| 测试集"</span><span style="color:#14181F">, len(X_test))</span></span></code></pre>
+      </div>
+      <div class="milestone"><span class="label">检查点</span><p>看到 712 / 179。<b>关键纪律:从现在起,<code>X_test</code> 在最后一步之前绝不能被碰</b>——不能用它算均值、不能用它调参数。这是本项目最重要的一条规矩。</p></div>
+
+      <h3>第 2 步 · 预处理流水线(防泄露)</h3>
+      <div class="code-block">
+        <div class="chead"><span class="fn">建模.py(续)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.pipeline </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> Pipeline</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.compose </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> ColumnTransformer</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.impute </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> SimpleImputer</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.preprocessing </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> StandardScaler, OneHotEncoder</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">num_cols </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [</span><span style="color:#557089">"Age"</span><span style="color:#14181F">, </span><span style="color:#557089">"SibSp"</span><span style="color:#14181F">, </span><span style="color:#557089">"Parch"</span><span style="color:#14181F">, </span><span style="color:#557089">"Fare"</span><span style="color:#14181F">]      </span><span style="color:#8B95A8;font-style:italic"># 数值列</span></span>
+<span class="line"><span style="color:#14181F">cat_cols </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [</span><span style="color:#557089">"Pclass"</span><span style="color:#14181F">, </span><span style="color:#557089">"Sex"</span><span style="color:#14181F">, </span><span style="color:#557089">"Embarked"</span><span style="color:#14181F">]          </span><span style="color:#8B95A8;font-style:italic"># 类别列(Pclass 是伪数值,P1 第 3 步发现的)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">num_pipe </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> Pipeline([(</span><span style="color:#557089">"impute"</span><span style="color:#14181F">, SimpleImputer(strategy</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"median"</span><span style="color:#14181F">)),   </span><span style="color:#8B95A8;font-style:italic"># P1 的结论:中位数填 Age</span></span>
+<span class="line"><span style="color:#14181F">                     (</span><span style="color:#557089">"scale"</span><span style="color:#14181F">,  StandardScaler())])                  </span><span style="color:#8B95A8;font-style:italic"># 线性模型需要缩放</span></span>
+<span class="line"><span style="color:#14181F">cat_pipe </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> Pipeline([(</span><span style="color:#557089">"impute"</span><span style="color:#14181F">, SimpleImputer(strategy</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"most_frequent"</span><span style="color:#14181F">)),</span></span>
+<span class="line"><span style="color:#14181F">                     (</span><span style="color:#557089">"onehot"</span><span style="color:#14181F">, OneHotEncoder(handle_unknown</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"ignore"</span><span style="color:#14181F">))])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">pre </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> ColumnTransformer([(</span><span style="color:#557089">"num"</span><span style="color:#14181F">, num_pipe, num_cols),</span></span>
+<span class="line"><span style="color:#14181F">                         (</span><span style="color:#557089">"cat"</span><span style="color:#14181F">, cat_pipe, cat_cols)])</span></span></code></pre>
+      </div>
+      <div class="milestone"><span class="label">检查点</span><p>这段还没跑任何数据,只是<b>定义了处理规则</b>。把它写成 Pipeline 而不是手动处理,是因为流水线会保证:<code>fit</code> 时只从训练集学统计量(中位数、均值、类别表),<code>predict</code> 时原样套用——<b>从机制上不可能泄露</b>(<a href="../深度课程/D06-特征工程与数据预处理.html">D06</a>)。</p></div>
+
+      <h3>第 3 步 · 训两个模型,用交叉验证公平比较</h3>
+      <div class="code-block">
+        <div class="chead"><span class="fn">建模.py(续)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.linear_model </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> LogisticRegression</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.ensemble </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> RandomForestClassifier</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.model_selection </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> cross_val_score</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">models </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> {</span></span>
+<span class="line"><span style="color:#557089">    "逻辑回归"</span><span style="color:#14181F">: LogisticRegression(max_iter</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">1000),        </span><span style="color:#8B95A8;font-style:italic"># D02</span></span>
+<span class="line"><span style="color:#557089">    "随机森林"</span><span style="color:#14181F">: RandomForestClassifier(n_estimators</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">300, random_state</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">42),  </span><span style="color:#8B95A8;font-style:italic"># D03</span></span>
+<span class="line"><span style="color:#14181F">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">best_name, best_score, best_pipe </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> None, </span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F">1, None</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> name, clf </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> models.items():</span></span>
+<span class="line"><span style="color:#14181F">    pipe </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> Pipeline([(</span><span style="color:#557089">"prep"</span><span style="color:#14181F">, pre), (</span><span style="color:#557089">"clf"</span><span style="color:#14181F">, clf)])        </span><span style="color:#8B95A8;font-style:italic"># 预处理 + 模型 打包成一个对象</span></span>
+<span class="line"><span style="color:#14181F">    scores </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> cross_val_score(pipe, X_train, y_train, cv</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">5)  </span><span style="color:#8B95A8;font-style:italic"># 5 折交叉验证(D05)</span></span>
+<span class="line"><span style="color:#14181F">    print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"</span><span style="color:#557089">{</span><span style="color:#14181F">name</span><span style="color:#557089">}</span><span style="color:#557089">  准确率 </span><span style="color:#557089">{</span><span style="color:#14181F">scores.mean()</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089"> ± </span><span style="color:#557089">{</span><span style="color:#14181F">scores.std()</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F"> scores.mean() </span><span style="color:#14181F;font-weight:bold">></span><span style="color:#14181F"> best_score:</span></span>
+<span class="line"><span style="color:#14181F">        best_name, best_score, best_pipe </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> name, scores.mean(), pipe</span></span></code></pre>
+      </div>
+      <div class="milestone"><span class="label">检查点</span><p>两个模型都跑出分数,随机森林略高。<b>注意三点</b>:①交叉验证<b>只在训练集上</b>做;②带 ± 的标准差比单个数字更有信息(波动大说明不稳);③<a href="../深度课程/D03-决策树随机森林与梯度提升.html">D03</a> 说过树模型不需要缩放,但放在流水线里无害——统一流程更省心。</p></div>
+
+      <h3>第 4 步 · 最终评估:测试集只跑一次</h3>
+      <div class="code-block">
+        <div class="chead"><span class="fn">建模.py(续)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.metrics </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> (accuracy_score, precision_score, recall_score,</span></span>
+<span class="line"><span style="color:#14181F">                             f1_score, confusion_matrix, classification_report)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">best_pipe.fit(X_train, y_train)              </span><span style="color:#8B95A8;font-style:italic"># 用全部训练集重新训一次</span></span>
+<span class="line"><span style="color:#14181F">pred </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> best_pipe.predict(X_test)             </span><span style="color:#8B95A8;font-style:italic"># 抽屉打开:测试集只在这里用一次</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"准确率 </span><span style="color:#557089">{</span><span style="color:#14181F">accuracy_score(y_test, pred)</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089"> | "</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">      f</span><span style="color:#557089">"精确率 </span><span style="color:#557089">{</span><span style="color:#14181F">precision_score(y_test, pred)</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089"> | "</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">      f</span><span style="color:#557089">"召回率 </span><span style="color:#557089">{</span><span style="color:#14181F">recall_score(y_test, pred)</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089"> | "</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">      f</span><span style="color:#557089">"F1 </span><span style="color:#557089">{</span><span style="color:#14181F">f1_score(y_test, pred)</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"混淆矩阵\n"</span><span style="color:#14181F">, confusion_matrix(y_test, pred))</span></span>
+<span class="line"><span style="color:#14181F">print(classification_report(y_test, pred, target_names</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">[</span><span style="color:#557089">"遇难"</span><span style="color:#14181F">, </span><span style="color:#557089">"生还"</span><span style="color:#14181F">]))</span></span></code></pre>
+      </div>
+      <div class="milestone"><span class="label">检查点</span><p>拿到四个指标 + 混淆矩阵。<b>会读混淆矩阵才算过关</b>(<a href="../深度课程/D05-评价指标与验证深挖.html">D05</a>):左上=正确预测遇难,右下=正确预测生还,右上=误报(说生还其实遇难),左下=漏报。<b>想想哪种错更严重</b>——这个问题没有技术答案,取决于用途。</p></div>
+
+      <h3>第 5 步 · 模型凭什么判断</h3>
+      <div class="code-block">
+        <div class="chead"><span class="fn">建模.py(续)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> matplotlib</span></span>
+<span class="line"><span style="color:#14181F">matplotlib.use(</span><span style="color:#557089">"Agg"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> matplotlib.pyplot </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> plt</span></span>
+<span class="line"><span style="color:#14181F">plt.rcParams[</span><span style="color:#557089">"font.sans-serif"</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [</span><span style="color:#557089">"Microsoft YaHei"</span><span style="color:#14181F">]</span></span>
+<span class="line"><span style="color:#14181F">plt.rcParams[</span><span style="color:#557089">"axes.unicode_minus"</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> False</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">names </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> best_pipe.named_steps[</span><span style="color:#557089">"prep"</span><span style="color:#14181F">].get_feature_names_out()   </span><span style="color:#8B95A8;font-style:italic"># one-hot 后的列名</span></span>
+<span class="line"><span style="color:#14181F">clf </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> best_pipe.named_steps[</span><span style="color:#557089">"clf"</span><span style="color:#14181F">]</span></span>
+<span class="line"><span style="color:#14181F">imp </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> clf.feature_importances_ </span><span style="color:#14181F;font-weight:bold">if</span><span style="color:#14181F"> hasattr(clf, </span><span style="color:#557089">"feature_importances_"</span><span style="color:#14181F">) \</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">      else</span><span style="color:#14181F"> abs(clf.coef_[0])                                    </span><span style="color:#8B95A8;font-style:italic"># 树用重要性,线性用系数</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">s </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> pd.Series(imp, index</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">names).sort_values(ascending</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">False).head(10)</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"模型凭什么判断:\n"</span><span style="color:#14181F">, s.round(3).to_string())</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">fig, ax </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> plt.subplots(1, 2, figsize</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">(12, 4.5))</span></span>
+<span class="line"><span style="color:#14181F">s.sort_values().plot(kind</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"barh"</span><span style="color:#14181F">, ax</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">ax[0]); ax[0].set_title(</span><span style="color:#557089">"特征重要性 Top10"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">cm </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> confusion_matrix(y_test, pred)</span></span>
+<span class="line"><span style="color:#14181F">ax[1].imshow(cm, cmap</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"Blues"</span><span style="color:#14181F">); ax[1].set_title(</span><span style="color:#557089">"混淆矩阵"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> i </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> range(2):</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    for</span><span style="color:#14181F"> j </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> range(2):</span></span>
+<span class="line"><span style="color:#14181F">        ax[1].text(j, i, cm[i][j], ha</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"center"</span><span style="color:#14181F">, va</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"center"</span><span style="color:#14181F">, fontsize</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">14)</span></span>
+<span class="line"><span style="color:#14181F">plt.tight_layout(); plt.savefig(</span><span style="color:#557089">"评估报告.png"</span><span style="color:#14181F">, dpi</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">120)</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"→ 已生成 评估报告.png"</span><span style="color:#14181F">)</span></span></code></pre>
+      </div>
+      <div class="milestone"><span class="label">交付</span><p>看到 <code>Sex_female</code> 排第一——和 <a href="P1-数据体检报告.html">P1</a> 第 6 步体检发现的最强信号一致。<b>模型没有魔法,它学到的就是数据里本来存在的规律。</b>这张图 + 那四个指标,就是这个项目的交付物。</p></div>
+
+      <h2 id="run"><span class="no">4</span><span>跑起来之后:该看什么</span></h2>
+      <p>拿到分数不是终点。按顺序问自己三个问题:</p>
+      <ol>
+        <li><b>这个分数好吗?</b>要有基线对比:全猜"遇难"的准确率是多少(约 62%)?模型 82% 比它好多少?<b>没有基线的分数没有意义</b>。</li>
+        <li><b>错在哪?</b>把预测错的样本挑出来看几条(<code>X_test[pred != y_test]</code>),常能发现规律——比如"高票价但遇难的男性"总被判错。</li>
+        <li><b>能不能更好?</b>顺序应该是:先造特征(<a href="../深度课程/D06-特征工程与数据预处理.html">D06</a>,如"家庭人数 = SibSp+Parch+1"),再调超参(<code>GridSearchCV</code>),最后才换模型。<b>特征的收益通常大于换模型。</b></li>
+      </ol>
+
+      <h2 id="pit"><span class="no">5</span><span>常见坑</span></h2>
+      <table class="tbl">
+        <caption>表 1 · 六个最常见的坑</caption>
+        <thead><tr><th>现象</th><th>原因与解法</th></tr></thead>
+        <tbody>
+          <tr><td>分数高得离谱(如 0.99)</td><td><b>八成是数据泄露</b>:特征里混进了答案(如用 PassengerId 猜),或在划分前就做了预处理。用流水线 + 检查特征来源。</td></tr>
+          <tr><td>反复用测试集调参,分数越调越高</td><td>测试集被"用坏"了——它已经变相参与了训练,分数不再可信。<b>调参只能用交叉验证或验证集</b>。</td></tr>
+          <tr><td><code>ConvergenceWarning</code>(逻辑回归)</td><td>迭代次数不够。加 <code>max_iter=1000</code>,并确认数值列做了缩放。</td></tr>
+          <tr><td>只看准确率就下结论</td><td>类别不平衡时准确率会骗人(<a href="../深度课程/D05-评价指标与验证深挖.html">D05</a>)。至少同时看精确率、召回率、F1。</td></tr>
+          <tr><td>特征名对不上(one-hot 之后)</td><td>用 <code>prep.get_feature_names_out()</code> 取变换后的列名,别手写。</td></tr>
+          <tr><td>换个 random_state 分数差很多</td><td>数据量小、波动大。用交叉验证的均值 ± 标准差来判断,别信单次划分。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="more"><span class="no">6</span><span>进阶</span></h2>
+      <ul>
+        <li><b>造两个新特征</b>:<code>家庭人数 = SibSp + Parch + 1</code>、从姓名里提取称谓(Mr/Mrs/Miss)。看分数提升多少——<a href="../深度课程/D06-特征工程与数据预处理.html">D06</a> 说"特征常比模型更重要",这里能亲眼验证。</li>
+        <li><b>加网格搜索</b>:用 <code>GridSearchCV</code> 同时搜"填充策略"和"树的深度",整条流水线一起搜(<a href="../深度课程/D05-评价指标与验证深挖.html">D05</a>)。</li>
+        <li><b>加第三个模型</b>:梯度提升(<code>HistGradientBoostingClassifier</code>),看它是不是像 <a href="../深度课程/D03-决策树随机森林与梯度提升.html">D03</a> 说的那样在表格数据上更强。</li>
+        <li><b>换个数据集重跑</b>:房价预测(回归任务)——把分类指标换成 <a href="../深度课程/D01-线性回归全拆解.html">D01</a> 的均方误差,流水线其余部分几乎不用改。</li>
+      </ul>
+
+      <h2 id="learned"><span class="no">7</span><span>学到了什么</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 概念 ↔ 代码对照</caption>
+        <thead><tr><th>课程里的概念</th><th>这个项目里的哪一步</th></tr></thead>
+        <tbody>
+          <tr><td><a href="../基础课程/05-机器学习核心概念.html">第 5 章</a> · 训练/测试集划分</td><td>第 1 步 <code>train_test_split(stratify=y)</code></td></tr>
+          <tr><td><a href="../深度课程/D06-特征工程与数据预处理.html">D06</a> · 防泄露流水线</td><td>第 2 步 <code>Pipeline + ColumnTransformer</code></td></tr>
+          <tr><td><a href="../深度课程/D02-逻辑回归与分类边界.html">D02</a> / <a href="../深度课程/D03-决策树随机森林与梯度提升.html">D03</a> · 两类模型</td><td>第 3 步 逻辑回归 vs 随机森林</td></tr>
+          <tr><td><a href="../深度课程/D05-评价指标与验证深挖.html">D05</a> · 交叉验证与指标</td><td>第 3 步 <code>cross_val_score</code>、第 4 步 混淆矩阵/F1</td></tr>
+          <tr><td><a href="../深度课程/D03-决策树随机森林与梯度提升.html">D03</a> · 特征重要性</td><td>第 5 步 <code>feature_importances_</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="checklist"><span class="no">8</span><span>自查清单</span></h2>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我跑通了五步,拿到了四个评估指标</li>
+          <li><input type="checkbox"> 我全程只用了一次测试集</li>
+          <li><input type="checkbox"> 我能读懂混淆矩阵的四个格子</li>
+          <li><input type="checkbox"> 我知道该和什么基线比较</li>
+          <li><input type="checkbox"> 我看了特征重要性,并能解释模型的判断依据</li>
+          <li><input type="checkbox"> 我理解为什么预处理必须写进流水线</li>
+          <li><input type="checkbox"> 我至少做了一项进阶(造特征或网格搜索)</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">9</span><span>下一个项目</span></h2>
+      <p>表格数据的完整流程走通了。<a href="P3-手写数字识别.html">P3 · 手写数字识别</a>换一个战场:<b>图像</b>。那里 scikit-learn 让位给 PyTorch,特征不再靠手工挑选,而是让 <a href="../深度课程/D08-卷积神经网络CNN.html">CNN</a> 自己从像素里学——这正是 <a href="../深度课程/D11-迁移学习与微调.html">D11</a> 说的"深度学习自己学特征"。训练循环用 <a href="../深度课程/D07-PyTorch与完整训练循环.html">D07</a> 那五步,评估指标还是这一章用的这些。</p>
+      <nav class="chapter-nav" aria-label="导航">
+        <a href="P1-数据体检报告.html"><span class="lb">上一个项目</span><span class="tt">P1 · 数据体检报告</span></a>
+        <a href="P3-手写数字识别.html" class="next"><span class="lb">下一个项目</span><span class="tt">P3 · 手写数字识别</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本页目录">
+      <p class="toc-label">P2 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">看清目标</span>
+        <a data-toc-target="preview" href="#preview"><i>1</i>成品长什么样</a>
+        <a data-toc-target="prep" href="#prep"><i>2</i>准备</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="build" href="#build"><i>3</i>分步搭建</a>
+        <a data-toc-target="run" href="#run"><i>4</i>跑完看什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">消化</span>
+        <a data-toc-target="pit" href="#pit"><i>5</i>常见坑</a>
+        <a data-toc-target="more" href="#more"><i>6</i>进阶</a>
+        <a data-toc-target="learned" href="#learned"><i>7</i>学到了什么</a>
+        <a data-toc-target="checklist" href="#checklist"><i>8</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>9</i>下一个项目</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="P2" data-kind="project" data-title="第一个预测模型"></script>
+</body>
+</html>

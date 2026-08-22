@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>03 · NumPy:数组与形状</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{
+  font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{
+  font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);
+  padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:24px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+article h2.bare{border-top:none;padding-top:0;margin-top:0;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-code{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink);text-align:center;margin:0 0 16px;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.idxgrid{margin:0 auto;border-collapse:collapse;text-align:center;}
+.idxgrid th{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);font-weight:600;text-align:right;padding:6px 14px 6px 0;white-space:nowrap;}
+.idxgrid td{font-family:var(--mono);width:62px;padding:6px 0;font-size:var(--fs-small);color:var(--ink-faint);}
+.idxgrid tr.cells td{border:1px solid var(--rule);padding:12px 0;font-size:var(--fs-lead);font-weight:700;color:var(--ink);}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nf-ink{fill:var(--ink);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-mono{font-family:var(--mono);font-size:12px;fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.gc{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.gc-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.gv{font-family:var(--mono);font-size:15px;font-weight:700;fill:var(--ink);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;border-top:none;padding-top:0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.chapter-nav a.disabled{opacity:.55;pointer-events:none;}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){
+  .chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}
+  .schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}
+}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="02-Python基础.html">02 Python 基础</a><span class="sep">—</span>
+      <a href="03-NumPy数组与形状.html" class="current">03 NumPy</a><span class="sep">—</span>
+      <a href="04-Pandas表格数据.html">04 Pandas</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-03.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">基础课程 · Chapter 03</p>
+        <h1>NumPy:数组与形状</h1>
+        <p class="recap">上一章的列表能装一串数,但一次只能挨个算,上万个数就慢得没法用。这一章把它升级成 NumPy 的 <b>数组(ndarray)</b>:一整块规整数据,一条命令就能整批运算——这是后面一切「张量」操作的地基。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,外部精读 + 动手约 3~5 小时。全程只用到加减乘除和「求平均」,概念都用第 2 章的列表作对照。每出现一个新词,当场用白话解释。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>ndarray——一块规整、同类型、带形状的数据,比列表快得多</li>
+          <li>shape 与维度——(行 × 列),reshape 换形状不改数据</li>
+          <li>索引与切片——取某行某列某块,还能用条件(布尔)取</li>
+          <li>向量化——整批一起算,不写 for 循环</li>
+          <li>广播——形状不同的数组,按规则自动对齐再算</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接上一章:</b><a href="02-Python基础.html#list">第 2 章的列表</a>是一串数据,但每次运算要写 <code>for</code> 一个个过。<b>通向下一章:</b><a href="04-Pandas表格数据.html">第 4 章 Pandas</a>在数组之上加「行列标签」,做表格数据的清洗与统计。NumPy 是 Pandas、以及后面 PyTorch 张量的共同地基。</p>
+      </div>
+
+      <!-- ========== 模块 A ========== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>做完第 2 章、会用列表和 <code>for</code> 循环,但一处理「一大批数」就觉得又慢又啰嗦的人。</li>
+        <li>想读懂 AI 代码里满屏的 <code>array</code>、<code>.shape</code>、<code>x[:, 0]</code>、<code>a * b</code> 到底在干什么的人。</li>
+        <li>设计、产品等非计算机背景,准备往机器学习、深度学习走,需要先把「数据长什么样」搞清楚的人。</li>
+      </ul>
+      <p><b>不适合</b>:已经能熟练用 NumPy 做向量化和广播的人——直接跳到第 4 章 Pandas。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>两样:一是<a href="02-Python基础.html">第 2 章</a>的列表、循环、函数;二是<a href="02-Python基础.html#prereq">第 1 章第 8 节</a>建好的 <code>.venv</code> 环境。本章要新装一个库,在激活的环境里跑一次:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">装 NumPy</span><span class="rt"><span class="lang">bash</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">pip install numpy</span></span></code></pre>
+      </div>
+      <p>装完在 Python 里 <code>import numpy as np</code> 不报错就成了。<code>np</code> 是全世界通用的简称,本章一律这么写。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>把一列或一表数据装进 <code>ndarray</code>,并说清它的 <code>shape</code>(几行几列)。</li>
+        <li>用切片和布尔索引,精确取出数组里想要的行、列、或满足条件的元素。</li>
+        <li>把「对每个数做同样的事」的 <code>for</code> 循环,改写成一行<b>向量化</b>运算。</li>
+        <li>看懂两个形状不同的数组为什么能相加,说出<b>广播</b>的对齐规则。</li>
+        <li>读懂一段真实的数据预处理代码(如把一批分数标准化),不再被 <code>.shape</code> 和 <code>[:, None]</code> 卡住。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">NumPy 把「一堆同类型的数」打包成一块<b>规整的、带形状的内存</b>,于是能用一条命令对整块数据高速运算——这就是<b>向量化</b>。</p>
+      <p>列表是一个个格子松散地串在一起,每个格子还能装不同类型;数组是一整块对齐的方阵,类型统一、形状明确。正因为规整,底层才能一次性批量处理,比 Python 循环快几十上百倍。AI 里的图片、特征、权重,本质都是这种规整的数(张量),NumPy 就是操作它们的地基。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <p>先记住「就这五块」。中间是本章目标,四周是达成它要用的五块地基,下面模块 C 逐块拆。</p>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="NumPy 五块地基环绕核心目标">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">列表升级成</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">高速数组</text>
+          <rect x="298" y="32" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① ndarray 数组</text>
+          <rect x="588" y="122" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="670" y="150" text-anchor="middle" class="nl">② shape 维度</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ 索引 · 切片</text>
+          <rect x="144" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="226" y="358" text-anchor="middle" class="nl">④ 向量化</text>
+          <rect x="8" y="122" width="150" height="46" rx="8" class="d-ink nf"/>
+          <text x="83" y="150" text-anchor="middle" class="nl">⑤ 广播</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。学完能把它们组装起来,读懂第 12 节那段真实的数据预处理代码。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 B ========== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>本章每一小节只负责把「这是什么、长什么样」用图讲清。真正把 NumPy 练熟,靠<b>一条外部主线</b>——从头到尾跟完一套,比东拼西凑扎实得多。下面选好主线,把它的章节和本章骨架一一对应,顺着走完即可。</p>
+
+      <div class="callout go">
+        <span class="label">默认主线 · 文字</span>
+        <p><b>NumPy 官方「absolute basics for beginners」(全文免费)。</b>为什么是它:官方为零基础专门裁的唯一入门页,概念权威、例子最小、和本章五块几乎一一对应。<b>通读全篇</b>。链接:<a href="https://numpy.org/doc/stable/user/absolute_beginners.html" target="_blank" rel="noopener">numpy.org/doc/stable/user/absolute_beginners.html</a></p>
+      </div>
+
+      <table class="tbl">
+        <caption>表 1 · 本章骨架 ↔ 主线精读对应</caption>
+        <thead><tr><th>本章骨架(先看图,3–5 分钟)</th><th>主线精读(官方 absolute basics,读这段)</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td>第 7 节 · ndarray</td><td>“What is an array” + “Array fundamentals”</td></tr>
+          <tr><td>第 8 节 · shape 与维度</td><td>“Array attributes” + “reshape”</td></tr>
+          <tr><td>第 9 节 · 索引与切片</td><td>“Indexing and slicing”</td></tr>
+          <tr><td>第 10 节 · 向量化</td><td>“Basic array operations”</td></tr>
+          <tr><td>第 11 节 · 广播</td><td>“Broadcasting”</td></tr>
+        </tbody>
+      </table>
+
+      <p><b>看图学更顺?加一条图解主线(设计背景强烈推荐):</b></p>
+      <ul>
+        <li><b>NumPy Illustrated · Lev Maximov</b> — <a href="https://betterprogramming.pub/3b1d4976de1d?sk=57b908a77aa44075a49293fa1631dd9b" target="_blank" rel="noopener">全图解的可视化指南(官方给的免费直读链)</a>。只读 Vectors 与 Matrices 两部分,3D+ 以后再看。每个操作都有图,和本章互为补充。</li>
+        <li><b>换视频主线</b> — 英文 <a href="https://www.youtube.com/results?search_query=freecodecamp+numpy+tutorial" target="_blank" rel="noopener">freeCodeCamp · Python NumPy Tutorial(约 1 小时)</a>;中文 <a href="https://www.bilibili.com/video/BV1Ex411L7oT/" target="_blank" rel="noopener">莫烦 · Numpy &amp; Pandas</a>(看 NumPy 部分)。挑一条从头跟,别混着跳。</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">再配两件</span>
+        <p><b>广播卡住</b> — 去 <a href="https://numpy.org/doc/stable/user/basics.broadcasting.html" target="_blank" rel="noopener">官方 Broadcasting 规则页</a>查那一页,读完就走。</p>
+        <p><b>学完过桥</b> — <a href="https://github.com/rougier/numpy-tutorial" target="_blank" rel="noopener">Rougier · From Python to NumPy</a> 或 <a href="http://cs231n.github.io/python-numpy-tutorial/" target="_blank" rel="noopener">Stanford CS231n · python-numpy</a>,进 PyTorch/张量时再回来。<b>现在先不碰。</b></p>
+      </div>
+
+      <!-- ========== 模块 C ========== -->
+      <p class="handoff">先把五块里的第一块——数组本身——立起来:它和第 2 章的列表到底差在哪。</p>
+      <h2 id="ndarray"><span class="no">7</span><span>ndarray:数组是什么</span></h2>
+      <p class="one-liner">ndarray<span class="en">n-dimensional array</span>:一块<b>规整的、同类型的、带形状</b>的数据。用 <code>np.array([...])</code> 从列表造出来。</p>
+      <p>和列表的关键区别:列表里每个格子松散独立、还能各装各的类型;数组是<b>一整块对齐的内存</b>,所有元素同一类型、排成规整的方阵。正因为规整,底层才能一次性批量算——这就是它快的根。</p>
+      <figure>
+        <div class="fig-code">a = np.array([88, 92, 79, 100])</div>
+        <svg viewBox="0 0 620 150" role="img" aria-label="列表松散,数组是一整块规整内存">
+          <text x="40" y="34" class="el">Python 列表:一个个独立格子</text>
+          <rect x="40" y="44" width="46" height="40" rx="7" class="d-soft"/>
+          <rect x="98" y="44" width="46" height="40" rx="7" class="d-soft"/>
+          <rect x="156" y="44" width="46" height="40" rx="7" class="d-soft"/>
+          <rect x="214" y="44" width="46" height="40" rx="7" class="d-soft"/>
+          <text x="63" y="70" text-anchor="middle" class="gv">88</text>
+          <text x="121" y="70" text-anchor="middle" class="gv">92</text>
+          <text x="179" y="70" text-anchor="middle" class="gv">79</text>
+          <text x="237" y="70" text-anchor="middle" class="gv">100</text>
+          <text x="360" y="34" class="el-acc" font-weight="700">NumPy 数组:一整块对齐的内存</text>
+          <rect x="360" y="44" width="212" height="40" rx="6" class="gc-acc"/>
+          <line x1="413" y1="44" x2="413" y2="84" class="d-acc"/>
+          <line x1="466" y1="44" x2="466" y2="84" class="d-acc"/>
+          <line x1="519" y1="44" x2="519" y2="84" class="d-acc"/>
+          <text x="386" y="70" text-anchor="middle" class="gv">88</text>
+          <text x="439" y="70" text-anchor="middle" class="gv">92</text>
+          <text x="492" y="70" text-anchor="middle" class="gv">79</text>
+          <text x="545" y="70" text-anchor="middle" class="gv">100</text>
+          <text x="360" y="112" class="el">同类型 · 连续 · 带形状,才能整批高速算</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>同样四个数:列表是松散格子,数组是一整块规整内存。规整,是向量化的前提。</figcaption>
+      </figure>
+      <div class="code-block">
+        <div class="chead"><span class="fn">造数组 · 看属性</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> numpy </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> np</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">a </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([88, 92, 79, 100])   </span><span style="color:#8B95A8;font-style:italic"># 从列表造一维数组</span></span>
+<span class="line"><span style="color:#14181F">print(a)          </span><span style="color:#8B95A8;font-style:italic"># [ 88  92  79 100]</span></span>
+<span class="line"><span style="color:#14181F">print(a.dtype)    </span><span style="color:#8B95A8;font-style:italic"># int64  —— 全体统一的类型</span></span>
+<span class="line"><span style="color:#14181F">print(type(a))    </span><span style="color:#8B95A8;font-style:italic"># &#x3C;class 'numpy.ndarray'></span></span>
+<span class="line"><span style="color:#14181F">print(a </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> 2)      </span><span style="color:#8B95A8;font-style:italic"># [176 184 158 200]  —— 整批乘 2,没写 for</span></span></code></pre>
+      </div>
+      <div class="callout go"><span class="label">去精读</span><p>官方 absolute basics 的「What is an array / Array fundamentals」;<code>np.zeros</code>、<code>np.ones</code>、<code>np.arange</code> 几个常用造法读那一段顺带就会。</p></div>
+
+      <p class="handoff">数组有了,下一步得会说它「几行几列」——这就是 shape。</p>
+      <h2 id="shape"><span class="no">8</span><span>shape 与维度</span></h2>
+      <p class="one-liner">shape:数组的<b>形状</b>,一个元组,像 <code>(2, 3)</code> 表示「2 行 3 列」。<code>reshape</code> 换形状但<b>不改数据本身</b>。</p>
+      <p>一维数组只有长度;二维数组有行有列;再往上是三维、更高维(图片就是「高 × 宽 × 颜色通道」的三维数组)。<code>.shape</code> 给出每个维度多大,<code>.ndim</code> 给出有几个维度。同样一批数,可以 <code>reshape</code> 成不同形状——数字没变,只是排布变了。</p>
+      <figure>
+        <div class="fig-code">b = np.arange(6)  →  b.reshape(2, 3)</div>
+        <svg viewBox="0 0 640 190" role="img" aria-label="同样六个数 reshape 成 2 行 3 列">
+          <defs><marker id="m-a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <text x="20" y="44" class="el">一维 shape=(6,)</text>
+          <g>
+            <rect x="20" y="54" width="44" height="40" class="gc"/><rect x="64" y="54" width="44" height="40" class="gc"/><rect x="108" y="54" width="44" height="40" class="gc"/>
+            <rect x="152" y="54" width="44" height="40" class="gc"/><rect x="196" y="54" width="44" height="40" class="gc"/><rect x="240" y="54" width="44" height="40" class="gc"/>
+            <text x="42" y="80" text-anchor="middle" class="gv">0</text><text x="86" y="80" text-anchor="middle" class="gv">1</text><text x="130" y="80" text-anchor="middle" class="gv">2</text>
+            <text x="174" y="80" text-anchor="middle" class="gv">3</text><text x="218" y="80" text-anchor="middle" class="gv">4</text><text x="262" y="80" text-anchor="middle" class="gv">5</text>
+          </g>
+          <line x1="300" y1="74" x2="360" y2="74" class="d-acc" marker-end="url(#m-a3)"/>
+          <text x="330" y="60" text-anchor="middle" class="el-acc">reshape(2,3)</text>
+          <text x="392" y="44" class="el">二维 shape=(2,3)</text>
+          <g>
+            <rect x="392" y="54" width="44" height="40" class="gc-acc"/><rect x="436" y="54" width="44" height="40" class="gc-acc"/><rect x="480" y="54" width="44" height="40" class="gc-acc"/>
+            <rect x="392" y="94" width="44" height="40" class="gc-acc"/><rect x="436" y="94" width="44" height="40" class="gc-acc"/><rect x="480" y="94" width="44" height="40" class="gc-acc"/>
+            <text x="414" y="80" text-anchor="middle" class="gv">0</text><text x="458" y="80" text-anchor="middle" class="gv">1</text><text x="502" y="80" text-anchor="middle" class="gv">2</text>
+            <text x="414" y="120" text-anchor="middle" class="gv">3</text><text x="458" y="120" text-anchor="middle" class="gv">4</text><text x="502" y="120" text-anchor="middle" class="gv">5</text>
+          </g>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>同样六个数,<code>reshape(2, 3)</code> 排成 2 行 3 列——数字没变,只是形状变了。</figcaption>
+      </figure>
+      <div class="code-block">
+        <div class="chead"><span class="fn">shape 与 reshape</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">b </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.arange(6)        </span><span style="color:#8B95A8;font-style:italic"># [0 1 2 3 4 5]</span></span>
+<span class="line"><span style="color:#14181F">print(b.shape)          </span><span style="color:#8B95A8;font-style:italic"># (6,)   一维,长度 6</span></span>
+<span class="line"><span style="color:#14181F">c </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> b.reshape(2, 3)     </span><span style="color:#8B95A8;font-style:italic"># 排成 2 行 3 列</span></span>
+<span class="line"><span style="color:#14181F">print(c.shape)          </span><span style="color:#8B95A8;font-style:italic"># (2, 3)</span></span>
+<span class="line"><span style="color:#14181F">print(c.ndim)           </span><span style="color:#8B95A8;font-style:italic"># 2      两个维度</span></span>
+<span class="line"><span style="color:#14181F">print(c)</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># [[0 1 2]</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic">#  [3 4 5]]</span></span></code></pre>
+      </div>
+      <div class="callout warn"><span class="label">reshape 元素数要对得上</span><p><code>reshape</code> 前后元素总数必须相等:6 个数只能排成 <code>(2,3)</code>、<code>(3,2)</code>、<code>(6,)</code> 这些,排 <code>(2,4)</code> 会报错。填 <code>-1</code> 让 NumPy 自己算那一维:<code>b.reshape(2, -1)</code>。</p></div>
+
+      <p class="handoff">会说形状之后,要能精确取出数组里的某行、某列、某块——这是索引与切片。</p>
+      <h2 id="index"><span class="no">9</span><span>索引与切片</span></h2>
+      <p class="one-liner">二维数组用 <code>a[行, 列]</code> 取值:逗号前挑行、逗号后挑列;<code>:</code> 表示「这一维全要」。还能用<b>条件</b>(布尔)一次取出满足要求的元素。</p>
+      <p>一维索引和列表一样(<code>a[0]</code>、<code>a[-1]</code>、<code>a[1:3]</code>)。二维多了个逗号:<code>a[0, 1]</code> 是第 0 行第 1 列;<code>a[0, :]</code> 是整个第 0 行;<code>a[:, 0]</code> 是整个第 0 列。最有用的是<b>布尔索引</b>:<code>a[a &gt; 90]</code> 直接取出所有大于 90 的数,一行顶一个筛选循环。</p>
+      <figure>
+        <div class="fig-code">a = np.array([[88, 92, 79], [95, 60, 85]])   # shape (2, 3)</div>
+        <table class="idxgrid">
+          <tr><th></th><td>列 0</td><td>列 1</td><td>列 2</td></tr>
+          <tr class="cells"><th>行 0</th><td>88</td><td>92</td><td>79</td></tr>
+          <tr class="cells"><th>行 1</th><td>95</td><td>60</td><td>85</td></tr>
+        </table>
+        <div class="fig-note">a[0, 1] → 92　·　a[1, :] → [95 60 85]　·　a[:, 0] → [88 95]　·　a[a&gt;90] → [92 95]</div>
+        <figcaption><span class="fig-num">图 4</span>二维索引:<code>[行, 列]</code>。<code>:</code> = 整行/整列;<code>a&gt;90</code> 这类条件直接筛出元素。</figcaption>
+      </figure>
+      <div class="code-block">
+        <div class="chead"><span class="fn">索引 · 切片 · 布尔</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">a </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([[88, 92, 79],</span></span>
+<span class="line"><span style="color:#14181F">              [95, 60, 85]])</span></span>
+<span class="line"><span style="color:#14181F">print(a[0, 1])     </span><span style="color:#8B95A8;font-style:italic"># 92         第 0 行第 1 列</span></span>
+<span class="line"><span style="color:#14181F">print(a[1, :])     </span><span style="color:#8B95A8;font-style:italic"># [95 60 85] 整个第 1 行</span></span>
+<span class="line"><span style="color:#14181F">print(a[:, 0])     </span><span style="color:#8B95A8;font-style:italic"># [88 95]    整个第 0 列</span></span>
+<span class="line"><span style="color:#14181F">print(a[a </span><span style="color:#14181F;font-weight:bold">></span><span style="color:#14181F"> 90])   </span><span style="color:#8B95A8;font-style:italic"># [92 95]    所有大于 90 的数(布尔索引)</span></span>
+<span class="line"><span style="color:#14181F">a[a </span><span style="color:#14181F;font-weight:bold">&#x3C;</span><span style="color:#14181F"> 61] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 61     </span><span style="color:#8B95A8;font-style:italic"># 把不及格的一次性抬到 61(整批赋值)</span></span></code></pre>
+      </div>
+      <div class="callout go"><span class="label">去精读</span><p>官方 absolute basics 的「Indexing and slicing」;布尔索引在那一页叫 “Boolean indexing”,是 AI 数据清洗里最常用的一招。</p></div>
+
+      <p class="handoff">取值会了,再看 NumPy 最核心的本事:不写 for,整批一起算。</p>
+      <h2 id="vectorize"><span class="no">10</span><span>向量化:整批一起算</span></h2>
+      <p class="one-liner">向量化<span class="en">vectorization</span>:对整个数组直接做 <code>+ - * /</code> 或 <code>sum/mean</code>,一条命令算完所有元素,不写 <code>for</code>。</p>
+      <p>第 2 章求平均要写循环累加;NumPy 里 <code>a.mean()</code> 一步到位。两个数组 <code>a + b</code> 是逐元素相加;<code>a * 2</code> 是每个都乘 2。聚合运算还能<b>按维度</b>:<code>a.sum(axis=0)</code> 沿「行」方向压下去得到每列的和,<code>axis=1</code> 得到每行的和。<code>axis</code> 指的是「哪个维度被压掉」。</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">向量化 vs 循环</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">scores </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([88, 92, 79, 100])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 第 2 章的写法:循环累加</span></span>
+<span class="line"><span style="color:#14181F">total </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 0</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> s </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> scores:</span></span>
+<span class="line"><span style="color:#14181F">    total </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> total </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> s</span></span>
+<span class="line"><span style="color:#14181F">avg </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> total </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> len(scores)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># NumPy 的写法:一行,整批算</span></span>
+<span class="line"><span style="color:#14181F">avg </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> scores.mean()          </span><span style="color:#8B95A8;font-style:italic"># 89.75</span></span>
+<span class="line"><span style="color:#14181F">top </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> scores.max()           </span><span style="color:#8B95A8;font-style:italic"># 100</span></span>
+<span class="line"><span style="color:#14181F">norm </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> scores </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> scores.max() </span><span style="color:#8B95A8;font-style:italic"># 每个数除以最大值,整批完成</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">a </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([[1, 2, 3],</span></span>
+<span class="line"><span style="color:#14181F">              [4, 5, 6]])</span></span>
+<span class="line"><span style="color:#14181F">print(a.sum(axis</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0))   </span><span style="color:#8B95A8;font-style:italic"># [5 7 9]  每列的和(压掉行)</span></span>
+<span class="line"><span style="color:#14181F">print(a.sum(axis</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">1))   </span><span style="color:#8B95A8;font-style:italic"># [6 15]   每行的和(压掉列)</span></span></code></pre>
+      </div>
+      <div class="predict">
+        <span class="ql">想一想</span>
+        <p><code>a.sum(axis=0)</code> 和 <code>a.sum(axis=1)</code> 为什么一个得到 3 个数、一个得到 2 个数?</p>
+        <details><summary>看答案</summary>
+        <p><code>a</code> 是 2 行 3 列。<code>axis=0</code> 压掉「行」这一维(2 消失),每一列剩一个和,共 3 个 → <code>[5 7 9]</code>。<code>axis=1</code> 压掉「列」这一维(3 消失),每一行剩一个和,共 2 个 → <code>[6 15]</code>。记住:<b>axis 是被压掉的那一维</b>。</p></details>
+      </div>
+      <div class="callout warn"><span class="label">为什么非要向量化</span><p>不只是少写字:向量化把循环交给底层 C 批量执行,处理上万个数比 Python 的 <code>for</code> 快几十上百倍。AI 里动辄百万级数据,循环根本跑不动——这就是 NumPy 存在的理由。</p></div>
+
+      <p class="handoff">最后一块,也是最容易懵的一块:两个形状不一样的数组,凭什么能相加。</p>
+      <h2 id="broadcast"><span class="no">11</span><span>广播 broadcasting</span></h2>
+      <p class="one-liner">广播<span class="en">broadcasting</span>:形状不同的数组做运算时,NumPy 按规则把小的那个<b>自动「铺开」</b>到大的形状,再逐元素算——省得手动复制。</p>
+      <p>最简单的广播:数组 <code>+ 单个数</code>,那个数被铺到每个元素上(<code>a + 10</code>)。进阶:一个 <code>(3,)</code> 的行,和一个 <code>(3,1)</code> 的列相加,NumPy 把行按列数铺、把列按行数铺,得到一个 <code>(3,3)</code> 的方阵。规则一句话:<b>从右往左对齐每一维,某一维要么相等、要么其中一个是 1(1 的那个被铺开)</b>。</p>
+      <figure>
+        <div class="fig-code">行 (1,3) + 列 (3,1) → (3,3)</div>
+        <svg viewBox="0 0 600 210" role="img" aria-label="行和列广播成一个方阵">
+          <defs><marker id="m-b4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <!-- 行 -->
+          <rect x="70" y="24" width="40" height="34" class="gc"/><rect x="110" y="24" width="40" height="34" class="gc"/><rect x="150" y="24" width="40" height="34" class="gc"/>
+          <text x="90" y="47" text-anchor="middle" class="gv">10</text><text x="130" y="47" text-anchor="middle" class="gv">20</text><text x="170" y="47" text-anchor="middle" class="gv">30</text>
+          <text x="200" y="46" class="el">行 (1,3)</text>
+          <!-- 列 -->
+          <rect x="16" y="78" width="40" height="34" class="gc"/><rect x="16" y="112" width="40" height="34" class="gc"/><rect x="16" y="146" width="40" height="34" class="gc"/>
+          <text x="36" y="101" text-anchor="middle" class="gv">1</text><text x="36" y="135" text-anchor="middle" class="gv">2</text><text x="36" y="169" text-anchor="middle" class="gv">3</text>
+          <text x="16" y="70" class="el">列 (3,1)</text>
+          <!-- 结果方阵 -->
+          <g>
+            <rect x="70" y="78" width="40" height="34" class="gc-acc"/><rect x="110" y="78" width="40" height="34" class="gc-acc"/><rect x="150" y="78" width="40" height="34" class="gc-acc"/>
+            <rect x="70" y="112" width="40" height="34" class="gc-acc"/><rect x="110" y="112" width="40" height="34" class="gc-acc"/><rect x="150" y="112" width="40" height="34" class="gc-acc"/>
+            <rect x="70" y="146" width="40" height="34" class="gc-acc"/><rect x="110" y="146" width="40" height="34" class="gc-acc"/><rect x="150" y="146" width="40" height="34" class="gc-acc"/>
+            <text x="90" y="101" text-anchor="middle" class="gv">11</text><text x="130" y="101" text-anchor="middle" class="gv">21</text><text x="170" y="101" text-anchor="middle" class="gv">31</text>
+            <text x="90" y="135" text-anchor="middle" class="gv">12</text><text x="130" y="135" text-anchor="middle" class="gv">22</text><text x="170" y="135" text-anchor="middle" class="gv">32</text>
+            <text x="90" y="169" text-anchor="middle" class="gv">13</text><text x="130" y="169" text-anchor="middle" class="gv">23</text><text x="170" y="169" text-anchor="middle" class="gv">33</text>
+          </g>
+          <text x="240" y="130" class="el-acc" font-weight="700">= (3,3):行铺 3 份、列铺 3 份,逐格相加</text>
+        </svg>
+        <figcaption><span class="fig-num">图 5</span>广播:<code>(1,3)</code> 的行和 <code>(3,1)</code> 的列相加,各自铺开成 <code>(3,3)</code> 再逐格算。</figcaption>
+      </figure>
+      <div class="code-block">
+        <div class="chead"><span class="fn">广播</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">a </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([10, 20, 30])   </span><span style="color:#8B95A8;font-style:italic"># shape (3,)</span></span>
+<span class="line"><span style="color:#14181F">print(a </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> 100)               </span><span style="color:#8B95A8;font-style:italic"># [110 120 130]  单个数铺到每个元素</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">row </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([[10, 20, 30]])       </span><span style="color:#8B95A8;font-style:italic"># shape (1, 3)</span></span>
+<span class="line"><span style="color:#14181F">col </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([[1], [2], [3]])      </span><span style="color:#8B95A8;font-style:italic"># shape (3, 1)</span></span>
+<span class="line"><span style="color:#14181F">print(row </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> col)             </span><span style="color:#8B95A8;font-style:italic"># 广播成 (3, 3)</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># [[11 21 31]</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic">#  [12 22 32]</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic">#  [13 23 33]]</span></span></code></pre>
+      </div>
+      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:官方 absolute basics 的「Broadcasting」,规则细节看 <a href="https://numpy.org/doc/stable/user/basics.broadcasting.html" target="_blank" rel="noopener">Broadcasting 专页</a>。<b>往后连:</b>PyTorch 的张量运算沿用同一套广播规则,这里搞懂了那里直接省事。</p></div>
+
+      <!-- ========== 模块 D ========== -->
+      <p class="handoff">五块地基到齐了。下面把它们组装起来,读懂一段真实的数据预处理代码。</p>
+      <h2 id="assemble"><span class="no">12</span><span>实战:把一批分数标准化</span></h2>
+      <p>「标准化」是喂数据给模型前几乎必做的一步:把每个数减去平均值、再除以标准差,让整批数据变成「以 0 为中心」。下面这段就用到本章全部五块——数组、shape、索引、向量化、广播:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">standardize.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> numpy </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> np</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 3 个学生、4 门课的成绩,shape (3, 4)</span></span>
+<span class="line"><span style="color:#14181F">scores </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([[88, 92, 79, 100],</span></span>
+<span class="line"><span style="color:#14181F">                   [95, 60, 85,  70],</span></span>
+<span class="line"><span style="color:#14181F">                   [70, 75, 90,  88]])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">col_mean </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> scores.mean(axis</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0)   </span><span style="color:#8B95A8;font-style:italic"># 每门课的平均(压掉行)→ (4,)</span></span>
+<span class="line"><span style="color:#14181F">col_std  </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> scores.std(axis</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0)    </span><span style="color:#8B95A8;font-style:italic"># 每门课的标准差 → (4,)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 广播:(3,4) 减 (4,) 再除 (4,),每门课各自标准化</span></span>
+<span class="line"><span style="color:#14181F">z </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> (scores </span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F"> col_mean) </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> col_std</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(z.shape)          </span><span style="color:#8B95A8;font-style:italic"># (3, 4)</span></span>
+<span class="line"><span style="color:#14181F">print(z.mean(axis</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0))   </span><span style="color:#8B95A8;font-style:italic"># 约 [0 0 0 0]  每列已以 0 为中心</span></span>
+<span class="line"><span style="color:#14181F">print(scores[z </span><span style="color:#14181F;font-weight:bold">></span><span style="color:#14181F"> 1])    </span><span style="color:#8B95A8;font-style:italic"># 布尔索引:挑出明显高于本门平均的成绩</span></span></code></pre>
+      </div>
+      <p>读一遍:<code>mean(axis=0)</code> 和 <code>std(axis=0)</code> 是<b>向量化聚合</b>,一步得到每门课的均值和标准差;<code>(scores - col_mean) / col_std</code> 是 <code>(3,4)</code> 和 <code>(4,)</code> 的<b>广播</b>,每门课各自标准化;<code>z &gt; 1</code> 是<b>布尔索引</b>,挑出突出的成绩。全程<b>没有一个 for 循环</b>——这就是 NumPy 的日常。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战</span>
+        <h3>改改看</h3>
+        <p>把上面的标准化改成<b>按学生(按行)</b>做:每个学生减自己四门课的平均、除自己的标准差。提示:<code>axis</code> 换成 <code>1</code>,但广播时形状对不上会报错——想想为什么,再用 <code>[:, None]</code> 把 <code>(3,)</code> 变成 <code>(3,1)</code> 让广播对齐。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。均于 2026-08-14 核实在线;打不开就记住名字搜一下。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://numpy.org/doc/stable/user/absolute_beginners.html" target="_blank" rel="noopener">NumPy 官方 · the absolute basics</a></span><span class="spine">默认主线</span><span class="tags">官方教程 · 英文(可机翻) · 1–2h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">官方零基础入门,数组/形状/索引/广播一篇讲全。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">它的顺序几乎就是本章五节,权威、不过时,跟完就会用。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全篇,对着本章骨架读。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">全章;广播那节配它的 Broadcasting 段。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://betterprogramming.pub/3b1d4976de1d?sk=57b908a77aa44075a49293fa1631dd9b" target="_blank" rel="noopener">NumPy Illustrated(图解)</a></span><span class="tags">图解博客 · 英文 · 40min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">用大量图把 NumPy 的形状/运算画出来的图解文。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">对设计背景的人,图解比文字更快建立"形状"直觉。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Vectors + Matrices 两部分。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「形状」「广播」两节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.bilibili.com/video/BV1Ex411L7oT/" target="_blank" rel="noopener">莫烦 · Numpy &amp; Pandas</a></span><span class="tags">视频 · 中文 · 2h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">中文视频主线,从头把 NumPy 讲一遍。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">爱看视频、想中文跟一条的话选它。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">NumPy 部分从头跟。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">整章的中文替代主线。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://numpy.org/doc/stable/user/basics.broadcasting.html" target="_blank" rel="noopener">官方 · Broadcasting 规则</a></span><span class="tags">官方 · 当字典查 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">广播规则的一手说明。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">形状对不上报错时,来这查"能不能广播、怎么对齐"。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">广播那一页。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「广播」节。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 3 · 五个新手误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>数组和列表差不多,能混用</td><td>数组同类型、连续内存、能向量化;列表松散、能混类型、只能循环。AI 数据一律用数组。</td></tr>
+          <tr><td><code>reshape</code> 会改变数据</td><td>只改「形状」,数字和顺序都没动;元素总数必须对得上,否则报错。</td></tr>
+          <tr><td><code>a[:, 0]</code> 是「第 0 个」</td><td>逗号前是行、后是列;<code>a[:, 0]</code> 是「所有行的第 0 列」,即整个第 0 列。</td></tr>
+          <tr><td><code>axis=0</code> 是「按行算」</td><td><code>axis</code> 是<b>被压掉</b>的维度。<code>axis=0</code> 压掉行,得到每列的结果。</td></tr>
+          <tr><td>广播是我要手动复制数据</td><td>NumPy 自动按规则铺开,不真的占那么多内存;只要保证每一维「相等或有一个是 1」。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>手把手练习</span></h2>
+      <ol class="steps">
+        <li><b>造数组、看形状。</b>把 <code>[[1,2,3,4],[5,6,7,8]]</code> 造成数组,打印它的 <code>shape</code>、<code>ndim</code>、<code>dtype</code>。<details><summary>提示</summary><p><code>np.array(...)</code> 之后访问 <code>.shape</code> / <code>.ndim</code> / <code>.dtype</code> 三个属性。</p></details></li>
+        <li><b>reshape。</b>用 <code>np.arange(12)</code> 造 0–11,reshape 成 3 行 4 列;再用 <code>-1</code> 让 NumPy 自己算成 4 行几列。<details><summary>提示</summary><p><code>np.arange(12).reshape(3,4)</code>;<code>reshape(4,-1)</code>。</p></details></li>
+        <li><b>索引与布尔。</b>对上一题的 3×4 数组:取第 1 行、取第 2 列、取出所有偶数。<details><summary>提示</summary><p><code>a[1,:]</code>、<code>a[:,2]</code>、<code>a[a%2==0]</code>。</p></details></li>
+        <li><b>向量化求平均。</b>不用 <code>for</code>,用一行把 <code>[70,85,90,95]</code> 求平均、求最大、并整批除以最大值。<details><summary>提示</summary><p><code>a.mean()</code>、<code>a.max()</code>、<code>a/a.max()</code>。</p></details></li>
+        <li><b>广播。</b>让 <code>[1,2,3]</code>(行)和 <code>[[10],[20],[30]]</code>(列)相加,预测结果形状,再跑出来核对。<details><summary>提示</summary><p>行 <code>(3,)</code>、列 <code>(3,1)</code>,广播成 <code>(3,3)</code>。</p></details></li>
+      </ol>
+
+      <h2 id="answers"><span class="no">16</span><span>参考答案</span></h2>
+      <details><summary>练习 1 · 造数组、看形状</summary>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">a </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([[1,2,3,4],[5,6,7,8]])</span></span>
+<span class="line"><span style="color:#14181F">print(a.shape)  </span><span style="color:#8B95A8;font-style:italic"># (2, 4)</span></span>
+<span class="line"><span style="color:#14181F">print(a.ndim)   </span><span style="color:#8B95A8;font-style:italic"># 2</span></span>
+<span class="line"><span style="color:#14181F">print(a.dtype)  </span><span style="color:#8B95A8;font-style:italic"># int64</span></span></code></pre></details>
+      <details><summary>练习 2 · reshape</summary>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">b </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.arange(12).reshape(3, 4)</span></span>
+<span class="line"><span style="color:#14181F">c </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> b.reshape(4, </span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F">1)   </span><span style="color:#8B95A8;font-style:italic"># 自动算成 (4, 3)</span></span></code></pre></details>
+      <details><summary>练习 3 · 索引与布尔</summary>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">b[1, :]        </span><span style="color:#8B95A8;font-style:italic"># 第 1 行</span></span>
+<span class="line"><span style="color:#14181F">b[:, 2]        </span><span style="color:#8B95A8;font-style:italic"># 第 2 列</span></span>
+<span class="line"><span style="color:#14181F">b[b </span><span style="color:#14181F;font-weight:bold">%</span><span style="color:#14181F"> 2 </span><span style="color:#14181F;font-weight:bold">==</span><span style="color:#14181F"> 0]  </span><span style="color:#8B95A8;font-style:italic"># 所有偶数</span></span></code></pre></details>
+      <details><summary>练习 4 · 向量化</summary>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">a </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([70, 85, 90, 95])</span></span>
+<span class="line"><span style="color:#14181F">a.mean()    </span><span style="color:#8B95A8;font-style:italic"># 85.0</span></span>
+<span class="line"><span style="color:#14181F">a.max()     </span><span style="color:#8B95A8;font-style:italic"># 95</span></span>
+<span class="line"><span style="color:#14181F">a </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> a.max() </span><span style="color:#8B95A8;font-style:italic"># 整批除以最大值</span></span></code></pre></details>
+      <details><summary>练习 5 · 广播</summary>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">row </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([1, 2, 3])          </span><span style="color:#8B95A8;font-style:italic"># (3,)</span></span>
+<span class="line"><span style="color:#14181F">col </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([[10],[20],[30]])   </span><span style="color:#8B95A8;font-style:italic"># (3, 1)</span></span>
+<span class="line"><span style="color:#14181F">row </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> col      </span><span style="color:#8B95A8;font-style:italic"># (3, 3)</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># [[11 12 13]</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic">#  [21 22 23]</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic">#  [31 32 33]]</span></span></code></pre></details>
+
+      <h2 id="checklist"><span class="no">17</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上再进第 4 章(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清数组和列表的区别,并用 <code>np.array</code> 造出一维/二维数组</li>
+          <li><input type="checkbox"> 我能读出一个数组的 <code>shape</code> 和 <code>ndim</code>,并用 <code>reshape</code> 换形状</li>
+          <li><input type="checkbox"> 我知道 <code>a[行, 列]</code> 和 <code>:</code> 的用法,会用布尔索引 <code>a[a&gt;x]</code></li>
+          <li><input type="checkbox"> 我能把一个求和/求平均的 <code>for</code> 循环改成一行向量化</li>
+          <li><input type="checkbox"> 我理解 <code>axis</code> 是「被压掉的维度」,能预测 <code>sum(axis=0/1)</code> 的形状</li>
+          <li><input type="checkbox"> 我能说出广播的对齐规则(每维相等或有一个是 1)</li>
+          <li><input type="checkbox"> 我读懂了第 12 节的标准化代码,知道它每一步用到哪块地基</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">18</span><span>本章与下一章的连接</span></h2>
+      <p>数组解决了「一堆纯数字怎么高速算」。但真实数据往往带<b>标签</b>——哪一列是「姓名」、哪一列是「分数」,还有缺失值要清洗。<a href="04-Pandas表格数据.html">第 4 章 Pandas</a>在数组之上加了行列标签,把 NumPy 的能力包装成好用的「表格」。本章练熟的 shape、索引、向量化、广播,到 Pandas 里全都还在用——NumPy 是它的地基。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="02-Python基础.html"><span class="lb">上一章</span><span class="tt">02 · Python 基础</span></a>
+        <a href="04-Pandas表格数据.html" class="next"><span class="lb">下一章</span><span class="tt">04 · Pandas</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">第 3 章 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="ndarray" href="#ndarray"><i>7</i>ndarray 数组</a>
+        <a data-toc-target="shape" href="#shape"><i>8</i>shape 维度</a>
+        <a data-toc-target="index" href="#index"><i>9</i>索引与切片</a>
+        <a data-toc-target="vectorize" href="#vectorize"><i>10</i>向量化</a>
+        <a data-toc-target="broadcast" href="#broadcast"><i>11</i>广播</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>实战:标准化</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>手把手练习</a>
+        <a data-toc-target="answers" href="#answers"><i>16</i>参考答案</a>
+        <a data-toc-target="checklist" href="#checklist"><i>17</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>18</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){
+  var link=tocByCid.get(e.target.id);if(!link)return;
+  if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}
+});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;
+    navigator.clipboard.writeText(pre.innerText).then(function(){
+      var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');
+      setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);
+    }).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});
+  });
+});
+</script>
+<script src="../assets/study-tracker.js" data-ch="03" data-kind="chapter" data-title="NumPy:数组与形状"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+# 授权 · License
+
+## 文字、图、题目(本仓库的主体内容)
+
+**知识共享 署名-非商业性使用-相同方式共享 4.0 国际
+(CC BY-NC-SA 4.0)**
+
+Copyright (c) 2026 yunmin311
+
+完整条款:https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh
+法律文本:https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.zh-Hans
+
+简单说,可以:
+
+- **分享** —— 在任何媒介以任何形式复制、发行本作品
+- **演绎** —— 修改、转换或以本作品为基础进行创作
+
+条件是:
+
+- **署名(BY)** —— 必须给出适当的署名,提供指向本仓库的链接,并说明是否作了修改
+- **非商业性使用(NC)** —— 不得将本作品用于商业目的
+- **相同方式共享(SA)** —— 基于本作品创作的内容,必须以相同的许可协议分发
+
+## 代码
+
+`assets/` 下的 .js 与 .py、`_工具/` 下的脚本、`实验室/code/` 下的 Python 文件,
+以及各页面内嵌的脚本,采用 **MIT** 许可 —— 见 `LICENSE-CODE`。
+
+## 第三方素材
+
+- 纸纹背景 `assets/paper-linen*.jpg`:由 [ambientCG](https://ambientcg.com/view?id=Fabric036)
+  的 Fabric036 提亮调色而来。ambientCG 素材为 **CC0**(公有领域),可商用、免署名。
+  见 `assets/paper-linen.CC0.txt`。
+- 页面用到的字体(Noto Sans SC、JetBrains Mono)**只在 CSS 里按名字引用,没有随仓库分发**,
+  由读者本机或系统提供。
+- 正文中引用的外部课程、书籍、论文、视频,**版权归各自作者所有**。
+  本仓库只做索引与导读(标题、链接、以及"该看哪一段"的说明),不复制其内容。
+  如果任何权利人认为本仓库的引用方式不妥,请提 Issue,会立即调整或移除。

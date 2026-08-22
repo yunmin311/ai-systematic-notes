@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>U01 · 它到底在干什么</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="U01-它到底在干什么.html" class="current">U01 它到底在干什么</a><span class="sep">—</span>
+      <a href="U02-上下文经济学.html">U02 上下文经济学</a>
+      <span class="spacer"></span>
+      <a href="#skill" class="jump">技巧</a>
+      <a href="../排障台/症状索引.html" class="jump">排障台</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">AI 使用 · Stage 5 · Chapter U01 · 本板块的地基</p>
+        <h1>它到底在干什么</h1>
+        <p class="recap">前面四个阶段讲的是 AI <b>是什么</b>(基础、深度)和<b>怎么造</b>(应用工程、项目)。这个板块讲第三件事:每天指挥一群 AI 干活,这件事本身的学问。第一章从最基础的一点出发——它的输出是<b>预测出来的文字</b>,不是执行回执。日常撞见的六个怪现象,根子全在这一句上。</p>
+      </header>
+
+      <p>图解骨架约 25 分钟,配着回想自己的经历读,约 2 小时。这一章不需要写代码。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>一个根因——下一个 Token 的概率,而不是「我做了什么」的记录</li>
+          <li>六个怪现象——完成幻觉、自贬漏报、编造、默认脸、MVP 倾向、前提错还往下做</li>
+          <li>一条判据——哪些话是它<b>算出来的</b>,哪些话是它<b>叙述出来的</b></li>
+          <li>一套动作——什么必须自己核、怎么问才不诱导它编</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>「按概率预测下一个词」的机制在 <a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a> 和 <a href="../深度课程/D16-预训练微调与RLHF.html">D16</a>;幻觉的成因在 <a href="../应用工程/A06-评估幻觉安全成本.html">A06</a>。<b>通向后面:</b>「完成幻觉」怎么在验收环节堵住是 <a href="U07-验收AI的产出.html">U07</a>;「给 MVP 不给高保真」怎么破是 <a href="U05-让它照着参考做.html">U05</a>;「指令说了不算」是 <a href="U03-指令为什么不生效.html">U03</a>。</p>
+      </div>
+
+      <h2 id="essence"><span class="no">1</span><span>一句话本质</span></h2>
+      <div class="one-liner">
+        <p>模型算的是「下一个 Token 最可能是什么」,不是「我刚才干了什么」。<b>凡是它在<u>叙述自己</u>的话,都不是观测,是生成。</b></p>
+      </div>
+      <p>这句话听起来像常识,但它的推论是反直觉的:「文件我已经改好了」和「今天天气不错」在模型内部是<b>同一种东西</b>——都是一段被算出来的、读起来很像样的文字。前者恰好经常是真的,是因为它前面确实调用了写文件的工具、上下文里留着回执;一旦那个回执不在上下文里,这句话照样能被流畅地生成出来。</p>
+
+      <h2 id="six"><span class="no">2</span><span>六个怪现象</span></h2>
+      <p>下面六条都是真实发生过的。左边是看到的,右边是底下在发生什么。</p>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>看到的现象</th><th>底下在发生什么</th><th>本章第几节</th></tr></thead>
+          <tbody>
+            <tr><td>说「已完成」,一看文件没动</td><td>输出是预测出来的文字,不是执行回执,两者之间没有强制校验</td><td>第 3 节</td></tr>
+            <tr><td>低估自己的产出、自贬、漏报</td><td>对自己做过什么没有可靠的自我度量能力,只能凭上下文里的痕迹推断</td><td>第 4 节</td></tr>
+            <tr><td>编 API、编文件路径、编数值</td><td>训练目标是「像样的下一段文字」,不是「真的」</td><td>第 5 节</td></tr>
+            <tr><td>排版、文案、代码都一个味</td><td>分布中心 + 对齐训练把输出推向安全平均值</td><td>第 6 节</td></tr>
+            <tr><td>给一个能跑的 MVP,而不是照参考做的高保真实现</td><td>同上:「能跑」是它在优化的目标,「像那个参考」不是</td><td>第 7 节</td></tr>
+            <tr><td>前提搞错了,还一路顺畅地往下做</td><td>没有「我不确定」这个内部信号可以中断生成</td><td>第 8 节</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="done"><span class="no">3</span><span>现象① 说「已完成」,文件没动</span></h2>
+      <p>这是六个里代价最大的一个,因为它触发的是<b>假绿灯</b>:交付被当成完成,后面所有工作建在一个不存在的地基上。</p>
+      <div class="rationale">
+        <span class="label">机制</span>
+        <p>写文件这个动作,是模型请求、程序执行、结果回传三步(<a href="../应用工程/A02-结构化输出与函数调用.html">A02</a>)。模型自己不执行任何东西。它写「已完成」的时候,依据只有上下文里那条工具回执。而回执可能:被上下文裁剪掉了、被一次失败重试盖过去了、或者压根就没调用工具——三种情况下,那句「已完成」都会照常被生成出来,措辞一样自信。</p>
+      </div>
+      <p>两个典型情形:一是交付报告说四项功能都做好了,打开一看其中一项根本没做;二是模型报告任务仍在运行,而进程早已退出,只在任务管理器里剩下一个壳。</p>
+      <div class="callout warn">
+        <span class="label">判据</span>
+        <p><b>凡是「我做了 X」这种话,一律不作为证据。</b>证据只有三种:文件的修改时间、命令的实际输出、以及能重复跑出来的结果。这条在 <a href="U07-验收AI的产出.html">U07</a> 会变成一套具体动作。</p>
+      </div>
+
+      <h2 id="selfreport"><span class="no">4</span><span>现象② 自贬与漏报</span></h2>
+      <p>让它总结自己这段时间干了什么,给出的量常常明显少于实际;让它评价自己的产出,倾向于说「比较粗糙」「只是初步」。这不是谦虚,也不是故意藏,是<b>它没有一个可靠的地方能读到自己的工作量</b>。</p>
+      <p>它能看到的只有当前上下文。上下文被压缩过、跨了会话、或者工作分散在几个对话里,痕迹就断了。断掉的部分它不知道自己不知道,于是按「像样的自我评价一般怎么写」生成一段——那种文字的分布中心恰好偏谦虚。</p>
+      <div class="callout">
+        <span class="label">动作</span>
+        <p>要工作量,别问它,去数:文件的修改时间、git log、脚本跑出来的统计。要它自评质量时,先给它一把外部的尺子(评测集、检查脚本、对照样本),否则拿到的是一段关于「自评一般怎么写」的文字。</p>
+      </div>
+
+      <h2 id="fabricate"><span class="no">5</span><span>现象③ 编 API、编路径、编数值</span></h2>
+      <p>这是被讲得最多的一条(<a href="../应用工程/A06-评估幻觉安全成本.html">A06</a> 从应用角度讲过),这里只补指挥视角的两点。</p>
+      <p><b>第一,编造的浓度和「查得到查不到」强相关。</b>路径、版本号、配置项名、命令行参数——这些东西在训练语料里存在大量相似但不同的写法,模型能生成一个「看起来完全正确」的,而正确与否只有跑一次才知道。相反,通用原理很难编错,因为语料里说法高度一致。</p>
+      <p><b>第二,追问会让它更笃定,不会让它更准。</b>「你确定吗」这类问题的高概率续写是「确定,因为……」——追问只是给了它一个补充理由的机会,理由同样是生成的。要验真假,只有跑一次、或者让它去读一遍真文件。</p>
+      <div class="callout warn">
+        <span class="label">别这么问</span>
+        <p>「这个参数真的存在吗?」——它会答存在。<br>改成:「把这个参数在官方文档里的原文贴出来」或者「跑一次 <code>--help</code> 看它在不在」。<b>把问题从「你确不确定」换成「拿证据来」。</b></p>
+      </div>
+
+      <h2 id="defaultface"><span class="no">6</span><span>现象④ AI 默认脸</span></h2>
+      <p>不给具体约束时,产出会收敛到一个固定的样子:一样的排版节奏、一样的配色倾向、一样的措辞结构、一样的代码组织方式。这不是模型偷懒,是两股力量叠加的必然结果。</p>
+      <div class="steps">
+        <ol>
+          <li><b>分布中心。</b>模型学的是语料的分布,不给约束时它给出的就是这个分布的中心——也就是「最常见的那种写法」。最常见的东西,天然是最没有辨识度的。</li>
+          <li><b>对齐训练。</b>对齐(<a href="../深度课程/D16-预训练微调与RLHF.html">D16</a> 的 RLHF/DPO)奖励的是「大多数人都觉得还行」的回答。这条训练目标本身就在把输出往安全平均值推——偏离平均值的东西容易被打低分。</li>
+        </ol>
+      </div>
+      <p>一个典型情形:给它一批外部设计当参考、让它出三版方案,三版都没跳出模型自己的默认样子——配色逻辑、排版节奏几乎一致。这里有个关键信息:<b>参考材料确实被读过了,但没有改变输出。</b>为什么读了不管用,是 <a href="U05-让它照着参考做.html">U05</a> 整章要回答的问题。</p>
+
+      <h2 id="mvp"><span class="no">7</span><span>现象⑤ 给 MVP,不给高保真</span></h2>
+      <p>给一份详细的参考(一个具体网站、一张设计稿、一个已有实现),要求照着做,拿回来的常常是一个「功能都在、样子不像」的版本。</p>
+      <div class="rationale">
+        <span class="label">机制</span>
+        <p>「能跑」这个目标在训练里被反复强化:代码能运行、需求点都覆盖到、逻辑自洽——这些都容易被判定为好。而「像那个参考」需要逐项对照几十个具体数值(间距、字重、圆角、时长、层级),任何一项对不上都不会导致「跑不起来」,所以在它的优化方向上,这些项的权重天然低。<b>换句话说:高保真是逆着模型的默认走的。</b></p>
+      </div>
+      <p>推论很实用:<b>凡是要高保真,就必须把「像不像」变成一件能被判定的事</b>——列出具体数值、指定核心样本、每轮做对照回归。这是 <a href="U05-让它照着参考做.html">U05</a> 的全部内容。</p>
+
+      <h2 id="premise"><span class="no">8</span><span>现象⑥ 前提搞错,还一路往下做</span></h2>
+      <p>最隐蔽的一个。给一份四页的设计稿,它当成一页来分析;把一张占满页面的图片当成背景材质;把主体图片当成可复用元素——前提一错,后面所有分析都建在错的地基上,而整个过程读起来毫无异常。</p>
+      <p>原因是模型内部<b>没有一个「我不确定」的信号能中断生成</b>。每一步都只是在算下一个 Token 的概率;概率分布再平坦,也总有一个最大值,生成照样继续。困惑度这类指标只在模型外部可见,并不会自动变成「先停下来问一句」。</p>
+      <div class="callout">
+        <span class="label">动作</span>
+        <p><b>把前提单独拎出来先确认一次,别让它和结论混在一段里出来。</b>例:先要求「用一句话说清这份材料有几页、每页分别是什么」,确认无误再往下。前提的成本极低,错了的代价极高。</p>
+      </div>
+
+      <h2 id="skill"><span class="no">9</span><span>技巧:什么话能信,什么必须自己核</span></h2>
+      <p>把六个现象收成一条可操作的判据:<b>区分「算出来的」和「叙述出来的」。</b></p>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>类型</th><th>例子</th><th>可信度</th><th>怎么处理</th></tr></thead>
+          <tbody>
+            <tr><td>工具回执(程序执行后回传的)</td><td>命令输出、文件内容、报错原文</td><td>高</td><td>可以直接用;但要确认它是<b>这一轮</b>的,不是上一轮残留</td></tr>
+            <tr><td>它对材料的<b>转述</b></td><td>「这个文件里写的是 X」</td><td>中</td><td>关键处让它贴原文,别要摘要</td></tr>
+            <tr><td>它对<b>自己</b>的叙述</td><td>「已完成」「我改了三处」「这个比较粗糙」</td><td>低</td><td>一律去查客观痕迹:时间戳、日志、统计脚本</td></tr>
+            <tr><td>具体的<b>事实性细节</b></td><td>路径、参数名、版本号、数值</td><td>低</td><td>跑一次或查原文;追问无效</td></tr>
+            <tr><td>通用<b>原理与结构</b></td><td>「注意力是加权求和」</td><td>较高</td><td>可以先用,重要处再核</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout go">
+        <span class="label">三个立刻能用的动作</span>
+        <p><b>①</b> 收到「已完成」时,不回「好的」,回「把改动过的文件和它们的修改时间列出来」。<br>
+           <b>②</b> 要事实性细节时,不问「对不对」,直接要证据:原文、命令输出、可复现的步骤。<br>
+           <b>③</b> 开工前先确认前提,单独一轮、单独一句话,别和方案混在一起。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">10</span><span>外部资源</span></h2>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=zjkBMFhNj_g" target="_blank" rel="noopener">Andrej Karpathy · Intro to Large Language Models</a></span><span class="spine">主线</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">一小时讲清 LLM 是什么、能力从哪来、边界在哪。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">全网把「预测下一个词」讲到能推出实际后果的,这一份最清楚。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">前 30 分钟(预训练与微调两阶段);后半的安全部分配 A06 看。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">第 1、5 节的根因。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Anthropic · Building Effective Agents</a></span><span class="spine">桥</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">厂商工程团队讲 agent 的实际构成与常见误用。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">它把「模型能做什么」和「外面那层要做什么」分得很干净,正是本板块的视角。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">「When not to use agents」一节。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">第 3 节的工具回执;也是 <a href="U04-派活与成本.html">U04</a> 的底子。</span></div>
+        </div>
+      </div>
+
+      <h2 id="practice"><span class="no">11</span><span>自测</span></h2>
+      <div class="challenge">
+        <span class="label">三道题,写下来再往下看</span>
+        <p><b>①</b> 一个 agent 报告「三个文件都改好了」。只允许问一句话,问什么最能验真假?<br>
+           <b>②</b> 为什么「你确定吗」几乎不能提高准确率,反而常常让它更笃定?<br>
+           <b>③</b> 同样是「照着这个参考做」,为什么给一段文字描述比给一张图更容易得到高保真的结果?</p>
+      </div>
+      <details class="hint"><summary>参考答案</summary>
+        <p><b>①</b> 「把这三个文件的最后修改时间列出来」——要客观痕迹,不要它的叙述。问「真的改了吗」得到的仍是生成的文字。<br>
+           <b>②</b> 因为「确定」后面接理由是高概率续写,追问只是给了它补理由的机会,理由同样是生成的。要验真假只能拿证据。<br>
+           <b>③</b> 因为文字描述本身已经是「可判定的项」(间距 12px、字重 600),而一张图需要它自己把视觉翻译成数值,这一步没有强制校验——这正是 <a href="U05-让它照着参考做.html">U05</a> 要用映射表解决的问题。</p>
+      </details>
+
+      <h2 id="link"><span class="no">12</span><span>连接</span></h2>
+      <p class="handoff">六个现象的根因是同一个。接下来六章分别处理它们的后果:<a href="U02-上下文经济学.html">U02</a> 处理「越聊越笨、烧钱」,<a href="U03-指令为什么不生效.html">U03</a> 处理「规则说了不算」,<a href="U04-派活与成本.html">U04</a> 处理「派给谁、活多大」,<a href="U05-让它照着参考做.html">U05</a> 处理「MVP 与默认脸」,<a href="U06-多对话协作.html">U06</a> 处理「多对话打架与交接失真」,<a href="U07-验收AI的产出.html">U07</a> 处理「完成幻觉」。出了事要现查,去 <a href="../排障台/症状索引.html">排障台</a>。</p>
+
+      <nav class="chapter-nav">
+        <a href="../index.html"><span class="lb">返回</span><span class="tt">课程首页</span></a>
+        <a href="U02-上下文经济学.html" class="next"><span class="lb">下一章</span><span class="tt">U02 上下文经济学</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">U01 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 根因</span>
+        <a data-toc-target="essence" href="#essence"><i>1</i>一句话本质</a>
+        <a data-toc-target="six" href="#six"><i>2</i>六个怪现象</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 逐个拆开</span>
+        <a data-toc-target="done" href="#done"><i>3</i>说完成没做</a>
+        <a data-toc-target="selfreport" href="#selfreport"><i>4</i>自贬与漏报</a>
+        <a data-toc-target="fabricate" href="#fabricate"><i>5</i>编造</a>
+        <a data-toc-target="defaultface" href="#defaultface"><i>6</i>AI 默认脸</a>
+        <a data-toc-target="mvp" href="#mvp"><i>7</i>MVP 倾向</a>
+        <a data-toc-target="premise" href="#premise"><i>8</i>前提错了还往下做</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 怎么办</span>
+        <a data-toc-target="skill" href="#skill"><i>9</i>什么话能信</a>
+        <a data-toc-target="reflist" href="#reflist"><i>10</i>外部资源</a>
+        <a data-toc-target="practice" href="#practice"><i>11</i>自测</a>
+        <a data-toc-target="link" href="#link"><i>12</i>连接</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="U01" data-kind="usage" data-title="它到底在干什么"></script>
+</body>
+</html>

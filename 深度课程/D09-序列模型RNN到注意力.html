@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D09 · 序列模型:RNN 到注意力</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="D08-卷积神经网络CNN.html">D08 CNN</a><span class="sep">—</span>
+      <a href="D09-序列模型RNN到注意力.html" class="current">D09 序列模型</a><span class="sep">—</span>
+      <span class="plan">Track B · 通向 Track C</span>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D09.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track B · Chapter D09 · 通向大模型的转折</p>
+        <h1>序列模型:RNN 到注意力</h1>
+        <p class="recap"><a href="D08-卷积神经网络CNN.html">CNN</a> 让网络学会处理有<b>空间结构</b>的数据(图像)。但还有一大类数据是<b>按顺序</b>展开的:一句话里的词、一段时间的股价、一串语音——它们的意义藏在"先后顺序和前后依赖"里(把"我不喜欢它"打乱就全变味了)。这一章讲怎么处理这类<b>序列</b>数据:先看 <b>RNN(循环神经网络)</b>怎么"带着记忆"一个一个地读,再看它撞上了什么墙,以及为什么它最终被<b>注意力机制</b>取代。这是全 Track B 最关键的转折——<b>注意力,正是通向大模型(Track C)的那道门。</b></p>
+      </header>
+
+      <p>图解骨架约 30 分钟,精读约 3~5 小时。这一章重"直觉和脉络"胜过"代码细节"——注意力的逐步手算留到 <a href="../index.html">Track C 的 D14</a>,这里先把"它解决了什么、凭什么赢"想透。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>序列数据——顺序本身就是信息,不能像图像那样随便处理</li>
+          <li>RNN——带着一个"记忆"(隐状态)逐个读词,把前文信息一路带下去</li>
+          <li>RNN 的两堵墙——长依赖记不住(梯度消失)、只能串行、跑得慢</li>
+          <li>注意力 attention——一步看全序列,按"相关度"给每个词加权,想看谁看谁</li>
+          <li>从 RNN 到 Transformer——注意力取代循环,为什么是一次范式革命</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>网络训练照旧用 <a href="D07-PyTorch与完整训练循环.html">D07</a> 的五步循环(这里只换模型);和 <a href="D08-卷积神经网络CNN.html">CNN</a> 并列——CNN 管空间、RNN/注意力管顺序。<b>通向后面:</b>注意力是 <a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>提过的 Transformer 的核心,也是 <b>Track C 大模型内部</b>的起点——<a href="../index.html">D14 注意力逐步手算</a>、<a href="../index.html">D15 Transformer 完整结构</a>都从这里长出来。</p>
+      </div>
+
+      <!-- ===== 模块 A ===== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>想搞懂大模型"底子"、但被 Transformer 直接劝退的人——先从这一章的脉络进。</li>
+        <li>听过 RNN、LSTM、注意力,却串不起来"谁先谁后、谁替代谁"的人。</li>
+        <li>做过图像、想理解文本/时间序列这类顺序数据怎么处理的人。</li>
+      </ul>
+      <p><b>不适合</b>:想立刻上手写 Transformer 代码的人——那是 <a href="../index.html">Track C</a>。这一章先把"为什么会有注意力"这条脉络打通,后面才不会学得云里雾里。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>需要:<a href="D07-PyTorch与完整训练循环.html">D07</a>(训练循环)、<a href="../基础课程/07-神经网络入门.html">第 7 章</a>(层与前向)、<a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>(对 Token、Transformer 有个印象)。数学几乎为零——本章靠图和直觉讲脉络,注意力的具体计算(Q/K/V 相乘)留到 D14 再逐步手算。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清"序列数据"为什么不能像图像那样处理。</li>
+        <li>用大白话解释 RNN 的"隐状态/记忆"是怎么带着前文往后走的。</li>
+        <li>说清 RNN 的两个致命短板(长依赖、串行慢)。</li>
+        <li>用直觉解释注意力"想看谁就看谁、按相关度加权"是什么意思。</li>
+        <li>讲清"注意力为什么取代 RNN、为什么是通向大模型的门"。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">处理序列有两条路:<b>RNN</b> 像人读书——从左到右一个字一个字读,脑子里存一份"记忆"(隐状态)边读边更新;<b>注意力</b>像开卷答题——处理某个词时,<b>一步就能回头扫全篇、按相关度只挑重要的几处重点看</b>。注意力用"直接连接任意两个位置"甩开了 RNN 的两堵墙,成了大模型的地基。</p>
+      <p>为什么序列特殊:图像可以整张一起看,但序列的意义依赖顺序和距离——"下雨了所以我带了伞"里,"带伞"要依赖很前面的"下雨"。处理它,得有办法把"前面的信息"带到"后面"。RNN 的办法是"接力棒":存一份记忆,读一个词就更新一次,把浓缩的前文一路传下去。这很符合直觉,但接力棒传得越远、早期信息越容易被冲淡(第 8 节)。注意力换了个思路:干脆让每个词都能<b>直接</b>去看序列里任意其他词,不用接力——谁相关就重点看谁。这一下解决了"传太远记不住",还因为"所有词可以同时算"而能大规模并行、训得飞快。这两点,把它推上了大模型的王座。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="序列模型五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="640" y1="168" x2="480" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="540" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="220" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="120" y1="168" x2="280" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">怎么处理</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">有顺序的数据</text>
+          <rect x="290" y="32" width="180" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 序列数据</text>
+          <rect x="596" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="674" y="150" text-anchor="middle" class="nl">② RNN 带记忆</text>
+          <rect x="446" y="330" width="176" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ RNN 的两堵墙</text>
+          <rect x="144" y="330" width="176" height="46" rx="8" class="box-acc"/>
+          <text x="232" y="358" text-anchor="middle" class="nl-acc">④ 注意力</text>
+          <rect x="8" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="86" y="150" text-anchor="middle" class="nl">⑤ 到 Transformer</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。②RNN 是老办法,③它的两堵墙催生了④注意力(蓝=重点),⑤注意力堆成 Transformer,把接力棒彻底扔掉——这就是通向大模型的转折。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 B ===== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <div class="callout go">
+        <span class="label">默认主线 · 建立直觉</span>
+        <p><b>Jay Alammar《图解 Transformer》+ 3Blue1Brown 深度学习系列关于注意力的视频。</b>为什么:这两个是全网公认把"注意力/Transformer"讲得最直观的材料,大量动画和图示,先看它们建立画面感,后面 Track C 的手算才不空。链接:<a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">The Illustrated Transformer</a>、<a href="https://www.3blue1brown.com/topics/neural-networks" target="_blank" rel="noopener">3Blue1Brown · 神经网络</a>。</p>
+      </div>
+      <p><b>想动手 + 想更系统:</b></p>
+      <ul>
+        <li><b>《动手学深度学习》(d2l)</b> — <a href="https://zh.d2l.ai/chapter_recurrent-neural-networks/index.html" target="_blank" rel="noopener">循环神经网络</a>与<a href="https://zh.d2l.ai/chapter_attention-mechanisms/index.html" target="_blank" rel="noopener">注意力机制</a>两章,想跑代码、想看数学时用。</li>
+      </ul>
+
+      <!-- ===== 模块 C ===== -->
+      <p class="handoff">先说清楚:为什么序列数据要特殊对待。</p>
+      <h2 id="seq"><span class="no">7</span><span>序列数据:顺序就是信息</span></h2>
+      <p class="one-liner">序列 = <b>一串按顺序排列、且顺序有意义</b>的数据:句子(词的序列)、股价(时间点的序列)、语音(声音帧的序列)。它和图像的关键区别是:<b>处理它必须尊重顺序、并且能把"前面的信息"带到"后面"</b>——因为一个词的含义常常依赖它前面(甚至很前面)的词。</p>
+      <p>两个直觉:<b>顺序不能乱。</b>"猫追狗"和"狗追猫"用的词一模一样,意思却相反——顺序本身携带信息,这是序列区别于"一袋子特征"的根本。<b>依赖可能很长。</b>"我在法国长大,……(中间一大段),所以我说一口流利的<u>法语</u>"——要正确填出"法语",模型得记住很前面的"法国"。所以处理序列的模型,核心考验就是:<b>能不能把远处的相关信息,准确地带到当前位置</b>。RNN 和注意力,就是对这个考验给出的两种不同答卷。</p>
+
+      <p class="handoff">第一种答卷,最符合"人怎么读书"的直觉:RNN。</p>
+      <h2 id="rnn"><span class="no">8</span><span>RNN:带着记忆逐个读</span></h2>
+      <p class="one-liner">RNN(循环神经网络)像人从左到右读句子:维护一份<b>隐状态(hidden state)</b>当"记忆",每读入一个词,就把"这个词 + 上一刻的记忆"揉在一起、更新出新的记忆,一路传下去。到句尾,这份记忆就浓缩了整句的信息。<b>LSTM/GRU</b> 是 RNN 的改良版,专门为了"记得更久"。</p>
+      <p>把它想成传接力棒:每个位置做一次相同的运算——输入"当前词 + 手里的棒(旧记忆)",输出"新的棒(新记忆)",再递给下一个位置(见图 2)。这样前文信息就顺着接力一路带到后面。它天然尊重顺序(必须从左往右一个个来),也确实能处理任意长的序列。<b>但接力有个毛病:传得越远,早期信息越容易被后来的一次次更新冲淡、稀释</b>——句子一长,开头的"法国"传到结尾常常就模糊了。这就是下一节的第一堵墙。<b>LSTM</b>(长短期记忆网络)加了几道"门"来决定"记什么、忘什么",能明显记得更久,是深度学习早期处理文本、语音的主力。</p>
+      <figure>
+        <svg viewBox="0 0 720 240" role="img" aria-label="RNN 展开:隐状态一路传递">
+          <defs><marker id="m-rnn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker>
+          <marker id="m-rnn2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#14181f"/></marker></defs>
+          <!-- hidden state boxes -->
+          <rect x="120" y="70" width="90" height="46" rx="8" class="box-acc"/><text x="165" y="98" text-anchor="middle" class="nl-acc">记忆 h₁</text>
+          <rect x="315" y="70" width="90" height="46" rx="8" class="box-acc"/><text x="360" y="98" text-anchor="middle" class="nl-acc">记忆 h₂</text>
+          <rect x="510" y="70" width="90" height="46" rx="8" class="box-acc"/><text x="555" y="98" text-anchor="middle" class="nl-acc">记忆 h₃</text>
+          <!-- pass along -->
+          <line x1="210" y1="93" x2="313" y2="93" class="d-acc" marker-end="url(#m-rnn)"/>
+          <line x1="405" y1="93" x2="508" y2="93" class="d-acc" marker-end="url(#m-rnn)"/>
+          <line x1="602" y1="93" x2="662" y2="93" class="d-acc" marker-end="url(#m-rnn)"/>
+          <text x="640" y="84" text-anchor="middle" class="el-acc">…</text>
+          <!-- input tokens -->
+          <rect x="128" y="168" width="74" height="40" rx="6" class="d-ink nf"/><text x="165" y="193" text-anchor="middle" class="nl">词 x₁</text>
+          <rect x="323" y="168" width="74" height="40" rx="6" class="d-ink nf"/><text x="360" y="193" text-anchor="middle" class="nl">词 x₂</text>
+          <rect x="518" y="168" width="74" height="40" rx="6" class="d-ink nf"/><text x="555" y="193" text-anchor="middle" class="nl">词 x₃</text>
+          <line x1="165" y1="168" x2="165" y2="118" class="d-ink" marker-end="url(#m-rnn2)"/>
+          <line x1="360" y1="168" x2="360" y2="118" class="d-ink" marker-end="url(#m-rnn2)"/>
+          <line x1="555" y1="168" x2="555" y2="118" class="d-ink" marker-end="url(#m-rnn2)"/>
+          <text x="120" y="36" text-anchor="middle" class="el">每步:新记忆 = f(当前词, 上一刻记忆)</text>
+          <text x="360" y="150" text-anchor="middle" class="el">从左到右,一个一个读(串行)</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>RNN 展开的样子:像传接力棒,把"记忆(隐状态)"从左一路传到右,每步用"当前词 + 旧记忆"更新出新记忆。传得越远,开头的信息越容易被冲淡。</figcaption>
+      </figure>
+
+      <p class="handoff">RNN 的接力棒,撞上了两堵怎么也绕不过的墙。</p>
+      <h2 id="wall"><span class="no">9</span><span>RNN 的两堵墙</span></h2>
+      <p class="one-liner"><b>墙一:长依赖记不住。</b>信息靠接力一路传,传得越远越模糊(专业叫"梯度消失"),句子一长开头就忘了——LSTM 缓解但没根治。<b>墙二:只能串行、慢。</b>必须读完第 1 个词才能读第 2 个,天生没法并行,数据一大训练就慢得让人绝望。</p>
+      <p>这两堵墙都源自"接力"这个机制本身。<b>墙一</b>:每传一步,早期信息就被揉进一次新运算、稀释一点,传几十步后几乎荡然无存;反过来训练时,误差要沿着这条长链一路传回开头去调参数,信号越传越弱(梯度消失),开头的参数几乎学不动。<b>墙二</b>更致命于"大规模":GPU 的威力在于并行,可 RNN 规定"第 t 步必须等第 t−1 步算完",这条串行链把并行的门堵死了——训练一个大语料上的大模型,慢到不可接受。业界急需一种"既能连接任意远的位置、又能大规模并行"的机制。2017 年,注意力给出了答案。</p>
+
+      <p class="handoff">答案:不接力了,让每个词直接去看它想看的任何词。</p>
+      <h2 id="attn"><span class="no">10</span><span>注意力 attention</span></h2>
+      <p class="one-liner">注意力的思路:处理某个词时,<b>让它一步就"看"到序列里所有词,并给每个词打一个"相关度"分,然后按分数加权地把它们的信息汇总过来</b>——相关的重点看、无关的几乎不看。没有接力、没有距离衰减:任意两个词都是"直接连接"。而且所有词可以<b>同时</b>算,天生适合 GPU 并行。</p>
+      <p>一个直观例子:理解"它"指代谁——"<u>猫</u>抓老鼠,因为<u>它</u>饿了"。人读到"它"会自动回看,判断"它=猫"。注意力做的就是这件事:处理"它"时,给"猫""老鼠"等每个词算一个相关度,发现"猫"最相关(权重最大),于是把"猫"的信息重点汇进"它"的表示里(见图 3)。这套机制里有三个角色——<b>Query(我在找什么)、Key(每个词的标签)、Value(每个词的内容)</b>:用"我的 Query"去和"各词的 Key"比对算出相关度,再按相关度加权汇总各词的 Value。<b>这里只需记住"按相关度加权、想看谁看谁"这个直觉;Q/K/V 到底怎么相乘、怎么归一化,留到 <a href="../index.html">Track C 的 D14 一步步手算</a>。</b>关键是:它一举打穿 RNN 的两堵墙——任意距离直连(不再健忘)、全部并行(不再慢)。</p>
+      <figure>
+        <svg viewBox="0 0 720 210" role="img" aria-label="注意力:当前词按相关度看所有词">
+          <defs><marker id="m-at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <text x="360" y="30" text-anchor="middle" class="el">处理"它"时,一步看全句、按相关度加权</text>
+          <!-- top: current token -->
+          <rect x="300" y="46" width="120" height="42" rx="8" class="box-acc"/><text x="360" y="72" text-anchor="middle" class="nl-acc">当前词:它</text>
+          <!-- bottom tokens -->
+          <rect x="40" y="150" width="86" height="40" rx="6" class="d-ink nf"/><text x="83" y="175" text-anchor="middle" class="nl">猫</text>
+          <rect x="176" y="150" width="86" height="40" rx="6" class="d-ink nf"/><text x="219" y="175" text-anchor="middle" class="nl">抓</text>
+          <rect x="312" y="150" width="96" height="40" rx="6" class="d-ink nf"/><text x="360" y="175" text-anchor="middle" class="nl">老鼠</text>
+          <rect x="458" y="150" width="86" height="40" rx="6" class="d-ink nf"/><text x="501" y="175" text-anchor="middle" class="nl">因为</text>
+          <rect x="594" y="150" width="86" height="40" rx="6" class="d-ink nf"/><text x="637" y="175" text-anchor="middle" class="nl">饿</text>
+          <!-- weighted edges: 猫 thick accent, others thin -->
+          <line x1="345" y1="88" x2="95" y2="150" stroke="#2743c7" stroke-width="3.4" marker-end="url(#m-at)"/>
+          <text x="205" y="120" text-anchor="middle" class="el-acc">高相关</text>
+          <line x1="352" y1="88" x2="219" y2="150" stroke="#8b95a8" stroke-width="1.1"/>
+          <line x1="362" y1="90" x2="360" y2="150" stroke="#8b95a8" stroke-width="1.1"/>
+          <line x1="372" y1="88" x2="497" y2="150" stroke="#8b95a8" stroke-width="1.1"/>
+          <line x1="378" y1="88" x2="628" y2="150" stroke="#8b95a8" stroke-width="1.4"/>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>注意力:处理"它"时,一步就连到全句每个词,按相关度加权(粗蓝=高相关,"它→猫")。任意两词直接连接、可并行——正是这两点让它甩开 RNN。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 D ===== -->
+      <p class="handoff">把注意力堆起来、彻底扔掉接力棒,就得到了 Transformer——大模型的地基。</p>
+      <h2 id="assemble"><span class="no">11</span><span>从 RNN 到 Transformer</span></h2>
+      <p class="one-liner">2017 年一篇论文《Attention Is All You Need》做了件狠事:<b>把 RNN 的循环结构整个拿掉,只用注意力(加一些前馈层)堆成网络</b>——这就是 <b>Transformer</b>。它任意距离直连、可大规模并行,于是能在海量文本上训练出超大模型。<b>今天所有大语言模型(GPT、Claude)都是 Transformer。</b></p>
+      <p>一张表把两条路看清:</p>
+      <table class="tbl">
+        <caption>表 1 · RNN vs 注意力(Transformer)</caption>
+        <thead><tr><th>维度</th><th>RNN / LSTM</th><th>注意力 / Transformer</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td>怎么传信息</td><td>接力棒(逐步传记忆)</td><td>任意两词直接连接</td></tr>
+          <tr><td>长依赖</td><td>传远了会忘(梯度消失)</td><td>再远也是"一步直达"</td></tr>
+          <tr><td>能否并行</td><td>不能,必须串行</td><td>能,全部同时算(GPU 友好)</td></tr>
+          <tr><td>训练大模型</td><td>慢,难以扩大</td><td>快,能堆到千亿参数</td></tr>
+          <tr><td>今天的地位</td><td>基本退居特定小场景</td><td>所有大语言模型的地基</td></tr>
+        </tbody>
+      </table>
+      <p>需要提醒的是:<b>注意力也不是没有代价。</b>"每个词都看所有词",计算量随序列长度<b>平方</b>增长——序列一长就很贵,这也是"上下文窗口有上限"的根源之一(<a href="../index.html">D17</a> 会讲省钱的办法)。但瑕不掩瑜:能并行、能连长依赖这两条,让它成了大模型时代的绝对主角。至于注意力内部 Q/K/V 到底怎么算、Transformer 一整块长什么样——那正是 <b>Track C</b> 的内容,现在已经站在它的门口了。下面给一段"RNN 长这样"的代码,让人对序列模型代码有个手感;真正的注意力代码留到 Track C。</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">rnn_glance.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch.nn </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> nn</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 一个最简单的序列模型:LSTM(RNN 的改良版)+ 一个分类头</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 例:输入一句话(词向量序列),判断它是好评还是差评</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">class</span><span style="color:#14181F"> TextClassifier(nn.Module):</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    def</span><span style="color:#14181F"> __init__(self, vocab_size, embed_dim</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">64, hidden</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">128, num_classes</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">2):</span></span>
+<span class="line"><span style="color:#14181F">        super().__init__()</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.embed </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.Embedding(vocab_size, embed_dim)   </span><span style="color:#8B95A8;font-style:italic"># 词 → 向量(第 8 章)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.lstm  </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.LSTM(embed_dim, hidden, batch_first</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)  </span><span style="color:#8B95A8;font-style:italic"># 带记忆逐个读</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.head  </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.Linear(hidden, num_classes)        </span><span style="color:#8B95A8;font-style:italic"># 用最后的记忆做分类</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    def</span><span style="color:#14181F"> forward(self, x):                </span><span style="color:#8B95A8;font-style:italic"># x: 一批句子(每句是词编号序列)</span></span>
+<span class="line"><span style="color:#14181F">        e </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F;font-weight:bold"> self</span><span style="color:#14181F">.embed(x)                </span><span style="color:#8B95A8;font-style:italic"># 每个词变成向量</span></span>
+<span class="line"><span style="color:#14181F">        out, (h, c) </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F;font-weight:bold"> self</span><span style="color:#14181F">.lstm(e)       </span><span style="color:#8B95A8;font-style:italic"># LSTM 一路读完,h 是最后的"记忆"</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        return</span><span style="color:#14181F;font-weight:bold"> self</span><span style="color:#14181F">.head(h[</span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F">1])          </span><span style="color:#8B95A8;font-style:italic"># 拿最后记忆分类</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">model </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> TextClassifier(vocab_size</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">10000)</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 训练它?还是 D07 那五步循环,损失用 CrossEntropyLoss——一字不改</span></span></code></pre>
+      </div>
+      <div class="challenge">
+        <span class="label">进阶挑战 · 想清楚脉络</span>
+        <h3>用一句话讲给别人听</h3>
+        <p>①不看本章,给朋友讲清"RNN 怎么读句子、为什么会忘、注意力怎么解决"。②找一句有长距离指代的话(如"我养的那只<u>猫</u>……<u>它</u>很黏人"),说说注意力处理"它"时该重点看哪个词。③想想:为什么"能并行"对训练<b>大</b>模型如此关键?(提示:GPU + 海量数据)④预习一下 <a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">图解 Transformer</a>,带着"Q/K/V 是怎么算相关度的"这个问题进 Track C。把这四点想透,就真正站在了大模型的门口。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">12</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;下列链接均于 2026-08-19 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">The Illustrated Transformer</a></span><span class="spine">默认主线</span><span class="tags">图解博客 · 英文 · 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">全网公认把注意力/Transformer 讲得最直观的图解长文,一步步拆 Q/K/V。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章只讲注意力的"脉络和直觉",它把内部机制画出来,是进 Track C 前的最佳预习。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全文;重点盯 Self-Attention 的 Query/Key/Value 那几张图,公式先跳。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 10 节(注意力)+ 第 11 节(到 Transformer)读,带着"Q/K/V 怎么算相关度"进 D14。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.3blue1brown.com/topics/neural-networks" target="_blank" rel="noopener">3Blue1Brown · 神经网络系列</a></span><span class="tags">视频 · 有中文字幕 · 40min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">顶级数学动画频道,近年新增了专讲大模型里注意力/Transformer 的几集。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">动画比文字更快建立"注意力在做什么"的画面感,看完再读文字不费劲。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">"Attention in transformers"及相关那两三集。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 10 节先看,建立直觉后再回本章脉络。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://zh.d2l.ai/chapter_attention-mechanisms/index.html" target="_blank" rel="noopener">动手学深度学习 · 注意力机制</a></span><span class="tags">中文 · 书+代码 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">中文教材里把注意力/自注意力的数学和代码都给全的一章。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想从"直觉"进到"能算、能写"时用它——是 Track C 手算注意力的先修。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">"注意力评分函数""自注意力"两节。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">本章第 10 节的进阶延伸;真正细算留到 Track C · D14。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://zh.d2l.ai/chapter_recurrent-neural-networks/index.html" target="_blank" rel="noopener">动手学深度学习 · 循环神经网络</a></span><span class="tags">中文 · 书+代码 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">RNN / LSTM 的动手实现章。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想亲手写一个 RNN、体会"接力棒"和它的两堵墙时看它。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">"循环神经网络""长短期记忆网络(LSTM)"两节。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 8 节(RNN 带记忆)+ 第 9 节(两堵墙)。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">13</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 3 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>RNN 已经没用、不必了解</td><td>它是理解"为什么会有注意力"的必要台阶;在小型/流式场景仍有用武之地。</td></tr>
+          <tr><td>LSTM 彻底解决了长依赖</td><td>只是缓解,没根治;真正打穿这堵墙的是注意力的"任意距离直连"。</td></tr>
+          <tr><td>注意力是一种很玄的黑魔法</td><td>直觉很朴素:按相关度加权地看其他词。内部就是 Q/K/V 几步矩阵运算(D14)。</td></tr>
+          <tr><td>注意力没有缺点</td><td>有:计算量随序列长度平方增长,序列越长越贵——这是上下文窗口有上限的根源之一。</td></tr>
+          <tr><td>Transformer 只能用于文本</td><td>不。图像(ViT)、语音、蛋白质都在用;它是一种通用的序列/集合处理机制。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">14</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>序列为何特殊。</b>为什么序列数据不能像图像那样处理?<details><summary>参考答案</summary><p>顺序本身是信息("猫追狗"≠"狗追猫"),且含义常依赖很远的前文,必须能把前面的信息准确带到后面。</p></details></li>
+        <li><b>RNN 的记忆。</b>RNN 靠什么把前文带到后面?<details><summary>参考答案</summary><p>隐状态(记忆):每读一个词,用"当前词+上一刻记忆"更新出新记忆,像接力棒一路往后传。</p></details></li>
+        <li><b>两堵墙。</b>RNN 的两个致命短板是什么?<details><summary>参考答案</summary><p>①长依赖记不住(传远了被稀释=梯度消失);②只能串行、无法并行,训练大模型太慢。</p></details></li>
+        <li><b>注意力凭什么赢。</b>注意力用哪两点甩开 RNN?<details><summary>参考答案</summary><p>①任意两词直接连接(不接力,再远也一步直达,不健忘);②所有词同时算,可大规模并行(GPU 友好、能训超大模型)。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">15</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上,就打通了通向大模型的脉络,可以进 Track C(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清序列数据为什么要尊重顺序、要带长依赖</li>
+          <li><input type="checkbox"> 我能用"接力棒/记忆"解释 RNN 怎么工作</li>
+          <li><input type="checkbox"> 我知道 RNN 的两堵墙(长依赖、串行慢)</li>
+          <li><input type="checkbox"> 我理解 LSTM 是为"记得更久"而生的改良</li>
+          <li><input type="checkbox"> 我能用"按相关度加权看全序列"解释注意力</li>
+          <li><input type="checkbox"> 我讲得清注意力为什么取代 RNN、为什么能并行</li>
+          <li><input type="checkbox"> 我知道 Transformer = 只用注意力堆起来,是大模型的地基</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">16</span><span>本章与下一章的连接</span></h2>
+      <p>现在站在了一道门前。<b>Track B 深度学习到这里告一段落</b>:懂了训练循环(D07)、会看图的 CNN(D08)、处理顺序的 RNN 与注意力(D09)。而"注意力"这三个字,正是推门进入 <b>Track C 大模型内部</b>的钥匙——那里会把这一章一带而过的 Q/K/V <a href="../index.html">逐步手算(D14)</a>、把注意力堆成完整的 <a href="../index.html">Transformer(D15)</a>、再讲预训练与 RLHF 怎么把它变成 ChatGPT(D16)。<b>剩下 <a href="D10-优化器正则化与训练技巧.html">D10 训练技巧</a>和 <a href="D11-迁移学习与微调.html">D11 迁移学习</a></b>是把深度学习"训好、用好"的两块实战补丁,建议顺手学完,调模型和复用预训练模型的能力会立刻上一个台阶。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="D08-卷积神经网络CNN.html"><span class="lb">上一章</span><span class="tt">D08 · 卷积神经网络 CNN</span></a>
+        <a href="D10-优化器正则化与训练技巧.html" class="next"><span class="lb">下一章</span><span class="tt">D10 · 优化器、正则化与训练技巧</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D09 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="seq" href="#seq"><i>7</i>序列数据</a>
+        <a data-toc-target="rnn" href="#rnn"><i>8</i>RNN 带记忆</a>
+        <a data-toc-target="wall" href="#wall"><i>9</i>RNN 的两堵墙</a>
+        <a data-toc-target="attn" href="#attn"><i>10</i>注意力</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>11</i>到 Transformer</a>
+        <a data-toc-target="reflist" href="#reflist"><i>12</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>13</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>14</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>15</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>16</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D09" data-kind="chapter" data-title="序列模型:RNN 到注意力"></script>
+</body>
+</html>

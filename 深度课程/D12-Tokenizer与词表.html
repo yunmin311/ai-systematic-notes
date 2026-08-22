@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D12 · Tokenizer 与词表</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="D11-迁移学习与微调.html">D11 迁移学习</a><span class="sep">—</span>
+      <a href="D12-Tokenizer与词表.html" class="current">D12 Tokenizer</a><span class="sep">—</span>
+      <a href="D13-Embedding与向量空间.html">D13 Embedding</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D12.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track C · Chapter D12 · 大模型内部开篇</p>
+        <h1>Tokenizer 与词表</h1>
+        <p class="recap">至此站到了大模型的门里。<b>Track C 要做的事,是把 <a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>那张鸟瞰图的每一站拆到底</b>——而第一站,就是文字进入模型前的最后一道关卡:<b>分词(Tokenizer)</b>。模型不认字,只认数字。所以任何一句话进来,都要先被切成一个个 <b>Token(词块)</b>、再换成编号。这一步看着琐碎,却决定了三件天天遇到的事:<b>为什么中文更费钱、为什么模型数不清一个词里有几个字母、为什么上下文窗口的"长度"是按 Token 算的</b>。</p>
+      </header>
+
+      <p>图解骨架约 25 分钟,动手 + 精读约 2~3 小时。本章配套的动手方式:打开在线 Tokenizer,把句子切开对照观察。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>为什么要分词——模型只吃数字,文字必须先切块再编号</li>
+          <li>切多大才对——按字太碎、按词表爆炸,子词(subword)是折中</li>
+          <li>BPE 怎么切——从字符起步,把最常一起出现的一对反复合并</li>
+          <li>词表 vocabulary——切出来的块和编号的对照表,大小是关键取舍</li>
+          <li>后果——中文更费 token、模型数不清字母、按 token 计费与计长度</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>续 <a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>数据流的第 ② 站(分词器),把它从"一句话带过"拆到底。<b>通向后面:</b>切好的 Token 编号,下一步就要变成向量——那是 <a href="D13-Embedding与向量空间.html">D13 Embedding</a>;而 Token 数量直接决定 <a href="D17-推理量化与部署成本.html">D17</a> 讲的成本和上下文窗口。</p>
+      </div>
+
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>用 API 时看到"按 token 计费"、却说不清 token 到底是什么的人。</li>
+        <li>好奇"为什么同样一段话,中文比英文贵"的人。</li>
+        <li>被"模型连 strawberry 里有几个 r 都数不对"这类现象逗笑、又想知道原因的人。</li>
+      </ul>
+      <p><b>不适合</b>:还没建立大模型鸟瞰的人——先读 <a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>,有了整张地图,这一章才知道自己在拆哪一站。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>需要:<a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>(Token、数据流六站的印象)。没有数学。会一点 Python 更好(第 11 节有一段可跑的代码),不会也不影响读懂。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清模型为什么必须先分词,而不能直接读汉字或字母。</li>
+        <li>解释"按字切 / 按词切 / 按子词切"各自的毛病与好处。</li>
+        <li>用大白话讲清 BPE 的合并过程。</li>
+        <li>说清词表大小的取舍(大 vs 小各自代价)。</li>
+        <li>解释为什么中文更费 token、模型为什么数不清字母。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">Tokenizer:<b>一本"文字↔编号"的对照词典,外加一套把任意文字切成词典里条目的规则。</b>它把人类的字符串,翻译成模型唯一能处理的东西——一串整数。模型眼里从来没有"字",只有这些编号。</p>
+      <p>为什么必须有这一步:神经网络的输入是数字张量(<a href="D07-PyTorch与完整训练循环.html">D07</a>),它没法直接吃"今天天气真好"这串字符。于是需要一个约定:把文字切成有限种类的小块,每种块分配一个固定编号。这本"词典"叫<b>词表(vocabulary)</b>,切的规则叫 <b>Tokenizer(分词器)</b>。它是在训练模型<b>之前</b>就定好、之后<b>再也不能改</b>的——因为模型的每个编号都对应着训练时学到的一个向量,换词表等于把模型的字典抽走。所以 Tokenizer 是模型的"出生设置",也是它能力和成本的一道硬边界。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="Tokenizer 五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="640" y1="168" x2="480" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="540" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="220" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="120" y1="168" x2="280" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">文字 → 一串编号</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">(模型唯一能读的)</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 为什么要分词</text>
+          <rect x="596" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="674" y="150" text-anchor="middle" class="nl">② 切多大才对</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ BPE 怎么切</text>
+          <rect x="146" y="330" width="174" height="46" rx="8" class="d-ink nf"/>
+          <text x="233" y="358" text-anchor="middle" class="nl">④ 词表与大小取舍</text>
+          <rect x="8" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="86" y="150" text-anchor="middle" class="nl">⑤ 三个真实后果</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。②③④是"怎么切、切成什么",⑤是这些技术选择在日常使用中的直接后果(费用、长度、数不清字母)。</figcaption>
+      </figure>
+
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>这一章的最佳学法是<b>边读边玩</b>:打开在线 Tokenizer,把自己的句子(中文、英文、代码、emoji 都试)切给它看,亲眼看到切法和数量,比读十遍定义都快。</p>
+      <div class="callout go">
+        <span class="label">默认主线 · 边玩边读 · 约 1–2 小时</span>
+        <p><b>在线 Tokenizer(tiktokenizer)+ Hugging Face《Tokenizers》章。</b><b>怎么用:</b>先用在线工具把中英文各切几句、记下 token 数差异(第 10 节要用),再读 HF 课程把 BPE 的原理补上。链接:<a href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener">tiktokenizer</a>、<a href="https://huggingface.co/learn/nlp-course/chapter6/1" target="_blank" rel="noopener">HF · Tokenizers</a>(可切中文)。</p>
+      </div>
+      <table class="tbl">
+        <caption>表 1 · 本章骨架 ↔ 主线对应</caption>
+        <thead><tr><th>本章骨架</th><th>主线精读 / 动手</th></tr></thead>
+        <tbody>
+          <tr><td>第 7 节 · 为什么要分词</td><td>HF Chapter 6.1(为什么需要 tokenizer)</td></tr>
+          <tr><td>第 8 节 · 切多大才对</td><td>HF Chapter 6.2(字/词/子词三种粒度)</td></tr>
+          <tr><td>第 9 节 · BPE 怎么切</td><td>HF Chapter 6.5(BPE 逐步演示)</td></tr>
+          <tr><td>第 10 节 · 词表与三个后果</td><td>在线 Tokenizer 亲手切中英文对比</td></tr>
+        </tbody>
+      </table>
+
+      <p class="handoff">先说清最根本的那件事:模型为什么读不了字。</p>
+      <h2 id="why"><span class="no">7</span><span>为什么要分词</span></h2>
+      <p class="one-liner">神经网络只做数字运算(<a href="D07-PyTorch与完整训练循环.html">D07</a> 的张量),它没有"认字"这个能力。所以必须先约定一本<b>有限</b>的词典:把文字切成词典里的条目,每条给一个编号。<b>"有限"是关键</b>——模型的输出层要为词典里每一个条目算一个概率(<a href="D02-逻辑回归与分类边界.html">D02 的 softmax</a>),词典无限大就没法算。</p>
+      <p>顺着走一遍:输入"今天天气真好"→ Tokenizer 按规则切成若干块(比如「今天」「天气」「真」「好」)→ 查词表得到编号(比如 <code>[3245, 8721, 522, 1043]</code>)→ 这串整数才是模型真正的输入。模型算完,输出的也是"词表里每个条目作为下一个 Token 的概率"(<a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>的第 ⑤ 站),抽一个编号,再用同一本词表翻回文字。<b>所以词表既是入口也是出口</b>:模型能说出的一切,都是这本词典里条目的排列组合——它无法输出词典里没有的东西(生僻字通常被拆成几个字节块拼出来)。</p>
+
+      <p class="handoff">既然要切,那切多大?这是个有代价的选择。</p>
+      <h2 id="grain"><span class="no">8</span><span>切多大才对:字 / 词 / 子词</span></h2>
+      <p class="one-liner">三种粒度各有毛病:<b>按字符切</b>——词表极小,但一句话变超长、每个字符几乎没含义;<b>按完整单词切</b>——含义足,但词表要几十上百万还总遇到没见过的新词;<b>按子词(subword)切</b>——把常见词整块保留、把罕见词拆成常见片段,兼顾两头。<b>今天所有主流大模型都用子词。</b></p>
+      <p>为什么子词是赢家:语言里少数词极常用、多数词很罕见。子词的策略是"<b>常用的整块留着,罕见的拆开拼</b>"——比如 <code>unhappiness</code> 可能被切成 <code>un</code>+<code>happi</code>+<code>ness</code>,三块都是常见片段。好处有三:①词表能压在几万这个可控规模;②<b>永远不会遇到"不认识的词"</b>(实在不行就拆到字符/字节级,总能拼出来);③还顺带保留了构词法的信息(<code>un-</code> 这个前缀在很多词里都出现,模型能学到它表否定)。代价是:一个词可能被切成好几块,<b>模型看到的"最小单位"不是人眼里的字或词</b>——这正是第 10 节那些怪现象的根源。</p>
+      <figure>
+        <svg viewBox="0 0 700 250" role="img" aria-label="三种切分粒度对比">
+          <text x="350" y="26" text-anchor="middle" class="el">同一个词 unhappiness,三种切法</text>
+          <text x="80" y="66" class="nl">按字符</text>
+          <g>
+            <rect x="170" y="48" width="34" height="30" rx="4" class="box"/><text x="187" y="68" text-anchor="middle" class="el">u</text>
+            <rect x="208" y="48" width="34" height="30" rx="4" class="box"/><text x="225" y="68" text-anchor="middle" class="el">n</text>
+            <rect x="246" y="48" width="34" height="30" rx="4" class="box"/><text x="263" y="68" text-anchor="middle" class="el">h</text>
+            <rect x="284" y="48" width="34" height="30" rx="4" class="box"/><text x="301" y="68" text-anchor="middle" class="el">a</text>
+            <rect x="322" y="48" width="34" height="30" rx="4" class="box"/><text x="339" y="68" text-anchor="middle" class="el">p</text>
+            <rect x="360" y="48" width="34" height="30" rx="4" class="box"/><text x="377" y="68" text-anchor="middle" class="el">…</text>
+          </g>
+          <text x="560" y="68" class="el">词表小,但序列超长、单字符无含义</text>
+          <text x="80" y="136" class="nl">按整词</text>
+          <rect x="170" y="118" width="224" height="30" rx="4" class="box"/><text x="282" y="138" text-anchor="middle" class="el">unhappiness</text>
+          <text x="560" y="138" class="el">含义足,但词表爆炸、遇新词就抓瞎</text>
+          <text x="80" y="206" class="nl-acc">按子词</text>
+          <g>
+            <rect x="170" y="188" width="62" height="30" rx="4" class="box-acc"/><text x="201" y="208" text-anchor="middle" class="nl-acc">un</text>
+            <rect x="236" y="188" width="82" height="30" rx="4" class="box-acc"/><text x="277" y="208" text-anchor="middle" class="nl-acc">happi</text>
+            <rect x="322" y="188" width="72" height="30" rx="4" class="box-acc"/><text x="358" y="208" text-anchor="middle" class="nl-acc">ness</text>
+          </g>
+          <text x="560" y="208" class="el-acc">词表可控 + 永不遇生词(今天的选择)</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>三种切分粒度。子词(蓝)把常见词整块留、罕见词拆成常见片段,同时避开了"词表爆炸"和"序列过长"两个坑。</figcaption>
+      </figure>
+
+      <p class="handoff">子词的切法从哪来?不是人定的,是从语料里"统计"出来的。</p>
+      <h2 id="bpe"><span class="no">9</span><span>BPE:把最常一起出现的一对反复合并</span></h2>
+      <p class="one-liner"><b>BPE(Byte Pair Encoding,字节对编码)</b>是最主流的子词算法。思路极朴素:<b>先把所有文字拆成单个字符,然后统计"哪两个相邻块最常一起出现",把这一对合并成一个新块;重复几万次,直到词表达到设定大小。</b>常用的组合自然就被合并成了整块,罕见的仍是碎片。</p>
+      <p>举个缩小版例子:语料里有大量 <code>low</code>、<code>lower</code>、<code>lowest</code>。一开始全是字符 <code>l o w e r s t</code>;统计发现 <code>l</code>+<code>o</code> 最常挨着 → 合并成 <code>lo</code>;下一轮 <code>lo</code>+<code>w</code> 最常挨着 → 合并成 <code>low</code>;再下一轮可能把 <code>e</code>+<code>r</code> 合成 <code>er</code>……几轮之后,<code>low</code> 和 <code>er</code> 都成了词表里的整块,于是 <code>lower</code> 只需两个 Token。<b>这个"合并顺序表"就是训练出来的 Tokenizer</b>,以后切任何新文本,都照这张表从头合并一遍。注意两点:①它<b>纯靠统计,不懂语义</b>——切出来的块未必符合语言学上的词根;②它在<b>字节</b>层面兜底(所以叫 Byte Pair),意味着任何字符——罕见汉字、emoji、乱码——都能被拼出来,永不失败。</p>
+      <figure>
+        <svg viewBox="0 0 660 230" role="img" aria-label="BPE 合并过程">
+          <defs><marker id="m-bp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <text x="60" y="40" class="el">起点</text>
+          <g>
+            <rect x="130" y="22" width="30" height="28" rx="4" class="box"/><text x="145" y="41" text-anchor="middle" class="el">l</text>
+            <rect x="164" y="22" width="30" height="28" rx="4" class="box"/><text x="179" y="41" text-anchor="middle" class="el">o</text>
+            <rect x="198" y="22" width="30" height="28" rx="4" class="box"/><text x="213" y="41" text-anchor="middle" class="el">w</text>
+            <rect x="232" y="22" width="30" height="28" rx="4" class="box"/><text x="247" y="41" text-anchor="middle" class="el">e</text>
+            <rect x="266" y="22" width="30" height="28" rx="4" class="box"/><text x="281" y="41" text-anchor="middle" class="el">r</text>
+          </g>
+          <text x="420" y="41" class="el">全部拆成字符</text>
+          <line x1="300" y1="64" x2="300" y2="86" class="d-acc" marker-end="url(#m-bp)"/>
+          <text x="60" y="112" class="el">第 1 轮</text>
+          <g>
+            <rect x="130" y="94" width="64" height="28" rx="4" class="box-acc"/><text x="162" y="113" text-anchor="middle" class="nl-acc">lo</text>
+            <rect x="198" y="94" width="30" height="28" rx="4" class="box"/><text x="213" y="113" text-anchor="middle" class="el">w</text>
+            <rect x="232" y="94" width="30" height="28" rx="4" class="box"/><text x="247" y="113" text-anchor="middle" class="el">e</text>
+            <rect x="266" y="94" width="30" height="28" rx="4" class="box"/><text x="281" y="113" text-anchor="middle" class="el">r</text>
+          </g>
+          <text x="420" y="113" class="el-acc">l+o 最常挨着 → 合并</text>
+          <line x1="300" y1="136" x2="300" y2="158" class="d-acc" marker-end="url(#m-bp)"/>
+          <text x="60" y="184" class="el">第 2 轮</text>
+          <g>
+            <rect x="130" y="166" width="98" height="28" rx="4" class="box-acc"/><text x="179" y="185" text-anchor="middle" class="nl-acc">low</text>
+            <rect x="232" y="166" width="64" height="28" rx="4" class="box-acc"/><text x="264" y="185" text-anchor="middle" class="nl-acc">er</text>
+          </g>
+          <text x="420" y="185" class="el-acc">继续合并 → lower 只需 2 个 Token</text>
+          <text x="330" y="218" text-anchor="middle" class="el">重复几万次,得到「合并顺序表」= 训练好的 Tokenizer</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>BPE 的合并过程:从字符起步,每轮把"最常相邻的一对"合并成新块,重复到词表设定大小。常用组合自然成整块,罕见的留碎片。</figcaption>
+      </figure>
+
+      <p class="handoff">切法定了,那本"词典"本身有多大?这个数字牵一发动全身。</p>
+      <h2 id="vocab"><span class="no">10</span><span>词表大小,与三个真实后果</span></h2>
+      <p class="one-liner"><b>词表(vocabulary)</b>= 所有 Token 与编号的对照表,现代模型通常几万到二十几万条。<b>词表大</b>:同样文本切出的 Token 更少(省钱省长度),但模型输出层更宽、更吃显存;<b>词表小</b>:反过来。这个取舍再加上"训练语料以英文为主"这个事实,直接造成天天遇到的三个现象。</p>
+      <p><b>后果一:中文更费 token。</b>英文的常见词在 BPE 里往往合成了整块(<code>the</code>、<code>ing</code> 各 1 个 Token),而中文语料在训练时占比小、常用组合被合并得少,很多汉字甚至要 1~2 个 Token 才能表示。结果:同样意思的一段话,中文的 Token 数常常是英文的<b>1.5~2 倍</b>——而 API 按 Token 计费、上下文窗口按 Token 计长度,所以<b>中文更贵、也更快撑满窗口</b>。<b>后果二:模型数不清字母。</b>问它 "strawberry 里有几个 r",它眼里根本不是 <code>s-t-r-a-w...</code> 这些字母,而是 <code>straw</code>+<code>berry</code> 两个整块——它从没"看见"过单个字母,自然数不准。<b>后果三:一切以 Token 为单位。</b>计费、上下文窗口上限、生成速度,统统按 Token 算,不是按字数——这就是为什么要对"Token"这个词有肌肉记忆(<a href="D17-推理量化与部署成本.html">D17</a> 会算这笔账)。</p>
+
+      <p class="handoff">用几行代码亲手切一遍,把上面的话变成自己的观察。</p>
+      <h2 id="assemble"><span class="no">11</span><span>组装:亲手切一段中英文对比</span></h2>
+      <p>用 OpenAI 的 <code>tiktoken</code> 库(装一行 <code>pip install tiktoken</code>)可以在本地看到真实的切分结果。跑一遍,会亲眼看到中英文的 Token 数差距:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">tokenize_demo.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> tiktoken</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">enc </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> tiktoken.get_encoding(</span><span style="color:#557089">"cl100k_base"</span><span style="color:#14181F">)   </span><span style="color:#8B95A8;font-style:italic"># 一种常用词表(约 10 万条)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> show(text):</span></span>
+<span class="line"><span style="color:#14181F">    ids </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> enc.encode(text)                    </span><span style="color:#8B95A8;font-style:italic"># 文字 → 编号列表(这就是模型的输入)</span></span>
+<span class="line"><span style="color:#14181F">    pieces </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [enc.decode([i]) </span><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> i </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> ids]   </span><span style="color:#8B95A8;font-style:italic"># 把每个编号翻回它对应的那一块</span></span>
+<span class="line"><span style="color:#14181F">    print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"</span><span style="color:#557089">{</span><span style="color:#14181F">len(ids)</span><span style="color:#14181F;font-weight:bold">:3d</span><span style="color:#557089">}</span><span style="color:#557089"> tokens | </span><span style="color:#557089">{</span><span style="color:#14181F">text</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">    print(</span><span style="color:#557089">"        切成:"</span><span style="color:#14181F">, pieces)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">show(</span><span style="color:#557089">"Machine learning is fun."</span><span style="color:#14181F">)             </span><span style="color:#8B95A8;font-style:italic"># 英文</span></span>
+<span class="line"><span style="color:#14181F">show(</span><span style="color:#557089">"机器学习很有意思。"</span><span style="color:#14181F">)                      </span><span style="color:#8B95A8;font-style:italic"># 同样意思的中文</span></span>
+<span class="line"><span style="color:#14181F">show(</span><span style="color:#557089">"strawberry"</span><span style="color:#14181F">)                           </span><span style="color:#8B95A8;font-style:italic"># 看看它被切成哪几块</span></span>
+<span class="line"><span style="color:#14181F">show(</span><span style="color:#557089">"🍓 emoji 也能切"</span><span style="color:#14181F">)                       </span><span style="color:#8B95A8;font-style:italic"># 字节兜底:什么都切得动</span></span></code></pre>
+      </div>
+      <p>会观察到三件事,正好印证第 10 节:①中文那句的 Token 数明显多于英文;②<code>strawberry</code> 被切成 <code>straw</code>+<code>berry</code> 之类的整块——模型确实"看不见"单个字母;③emoji 和任何生僻符号都能被切出来(字节兜底),永远不会失败。<b>把自己常写的提示词丢进去切一次</b>,对"这段提示词有多贵"就有了实感。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战 · 亲手验证</span>
+        <h3>把三个后果各验证一遍</h3>
+        <p>①拿一段真实写过的中文提示词,和它的英文翻译分别切,记下 Token 数之比——这就是日常多付的钱。②用在线 <a href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener">tiktokenizer</a> 切 <code>strawberry</code>,看它被切成几块,再去问模型"这个词里有几个 r",把现象和原因对上。③试试切一段代码和一串数字,看看数字是怎么被切的(常常一位一位切,这解释了模型算数为什么费劲)。④想想:如果要给一个纯中文产品选模型,"中文 Token 效率"该怎么进选型清单?</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">12</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;下列链接均于 2026-08-20 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener">tiktokenizer(在线分词器)</a></span><span class="spine">默认主线 · 动手</span><span class="tags">网页 · 交互 · 20min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">输入任意文字,实时看到它被切成哪些 Token、共几个、编号是多少。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">这一章所有抽象结论(中文更费、字母数不清),在这里三分钟就能亲眼验证。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">切中英文对照、切 strawberry、切自己的提示词。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 10 节(三个后果)+ 进阶挑战。</span></div>
+        </div>
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://huggingface.co/learn/nlp-course/chapter6/1" target="_blank" rel="noopener">Hugging Face 课程 · Tokenizers</a></span><span class="spine">默认主线 · 原理</span><span class="tags">课程 · 可切中文 · 2h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">系统讲三种切分粒度、BPE/WordPiece 算法、以及怎么训练自己的 tokenizer。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章讲清脉络和后果;它把算法细节和代码补全,是"懂原理"的那一半。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">6.1(为什么需要)、6.2(粒度)、6.5(BPE 逐步演示)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§7↔6.1、§8↔6.2、§9↔6.5。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=zduSFxRajkE" target="_blank" rel="noopener">Karpathy · Let's build the GPT Tokenizer</a></span><span class="tags">视频 · 英文(可开字幕) · 2h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">从零手写一个 BPE tokenizer 的完整视频,业内公认的权威讲解。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想彻底搞懂(而不只是会用)时看它;他还专门讲了"为什么 LLM 有这些怪毛病"。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">前 1 小时(BPE 构建);后半段讲特殊 token 和坑,可择机再看。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 9 节(BPE)深读。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://github.com/openai/tiktoken" target="_blank" rel="noopener">tiktoken(OpenAI 官方库)</a></span><span class="tags">代码库 · 工具 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">本章第 11 节代码用的那个分词库。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想在自己程序里预估 token 数、控成本时就用它。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">README 的 encode/decode 用法。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 11 节代码。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">13</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>1 个 Token = 1 个词</td><td>不是。英文常见词约 1 个,长词会拆成几块;中文常常 1 个字就 1~2 个 Token。</td></tr>
+          <tr><td>Tokenizer 是模型的一部分、可以随便换</td><td>它在训练前定死,换了等于抽走模型的字典——编号对应的向量全乱。</td></tr>
+          <tr><td>模型看得见字母,只是懒得数</td><td>真看不见。它的最小单位是 Token 整块,单个字母从未单独出现过。</td></tr>
+          <tr><td>词表越大越好</td><td>是取舍:词表大→序列短省钱,但输出层更宽、更吃显存和训练成本。</td></tr>
+          <tr><td>中文更费 token 是因为中文"信息密度高"</td><td>主要原因是训练语料以英文为主、中文的常见组合被合并得少,是工程结果不是语言宿命。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">14</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>为什么要分词。</b>模型为什么不能直接读汉字?<details><summary>参考答案</summary><p>神经网络只做数字运算,必须先把文字切成有限词表里的条目再换成编号;"有限"还因为输出层要为每个条目算一个概率。</p></details></li>
+        <li><b>三种粒度。</b>为什么主流选子词?<details><summary>参考答案</summary><p>按字符→序列太长、单位无含义;按整词→词表爆炸且遇新词抓瞎;子词把常见词整块留、罕见词拆成常见片段,词表可控且永不遇生词。</p></details></li>
+        <li><b>BPE。</b>一句话说清它怎么工作。<details><summary>参考答案</summary><p>先全拆成字符,反复统计"最常相邻的一对"并合并成新块,重复到词表设定大小;得到的合并顺序表就是 tokenizer。</p></details></li>
+        <li><b>三个后果。</b>为什么中文更费钱、模型数不清 strawberry 的 r?<details><summary>参考答案</summary><p>中文常用组合被合并得少(训练语料以英文为主),同义一段话 token 数常是英文 1.5~2 倍,而计费和窗口都按 token;字母数不清是因为模型看到的是 straw+berry 整块,从没见过单个字母。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">15</span><span>学完之后自查清单</span></h2>
+      <p>能勾 5 条以上就可以进 D13(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清模型为什么必须先分词</li>
+          <li><input type="checkbox"> 我能讲清字/词/子词三种粒度的取舍</li>
+          <li><input type="checkbox"> 我能用大白话解释 BPE 的合并过程</li>
+          <li><input type="checkbox"> 我理解词表大小的取舍</li>
+          <li><input type="checkbox"> 我能解释中文为什么更费 token</li>
+          <li><input type="checkbox"> 我知道模型为什么数不清一个词里的字母</li>
+          <li><input type="checkbox"> 我亲手用在线工具或 tiktoken 切过自己的句子</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">16</span><span>本章与下一章的连接</span></h2>
+      <p>现在文字已经变成了一串编号。但<b>编号本身没有含义</b>——3245 和 3246 挨着,不代表这两个 Token 意思相近。模型需要的是能表达"含义"的东西。<a href="D13-Embedding与向量空间.html">D13 · Embedding 与向量空间</a>就干这件事:<b>把每个编号换成一长串数字(向量),让"意思相近"变成"距离相近"</b>——这是大模型能理解语言的真正起点,也解释了 <a href="../应用工程/A03-RAG检索增强生成.html">A03 的 RAG</a> 为什么能"按语义搜索"。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="D11-迁移学习与微调.html"><span class="lb">上一章</span><span class="tt">D11 · 迁移学习与微调</span></a>
+        <a href="D13-Embedding与向量空间.html" class="next"><span class="lb">下一章</span><span class="tt">D13 · Embedding 与向量空间</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D12 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="why" href="#why"><i>7</i>为什么要分词</a>
+        <a data-toc-target="grain" href="#grain"><i>8</i>切多大才对</a>
+        <a data-toc-target="bpe" href="#bpe"><i>9</i>BPE 怎么切</a>
+        <a data-toc-target="vocab" href="#vocab"><i>10</i>词表与三个后果</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>11</i>亲手切一遍</a>
+        <a data-toc-target="reflist" href="#reflist"><i>12</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>13</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>14</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>15</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>16</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D12" data-kind="chapter" data-title="Tokenizer 与词表"></script>
+</body>
+</html>

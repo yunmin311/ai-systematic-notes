@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>U02 · 上下文经济学</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="U01-它到底在干什么.html">U01 它在干什么</a><span class="sep">—</span>
+      <a href="U02-上下文经济学.html" class="current">U02 上下文经济学</a><span class="sep">—</span>
+      <a href="U03-指令为什么不生效.html">U03 指令不生效</a>
+      <span class="spacer"></span>
+      <a href="#skill" class="jump">技巧</a>
+      <a href="../排障台/症状索引.html" class="jump">排障台</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">AI 使用 · Stage 5 · Chapter U02</p>
+        <h1>上下文经济学</h1>
+        <p class="recap">同一个对话聊到第三个小时,回答质量下滑、速度变慢、账单飙升——三件事其实是同一件事。<a href="../应用工程/A01-提示词工程与上下文.html">A01</a> 讲的是「单次调用该往里塞什么」;这一章讲的是另一件事:<b>一场几小时的会话里,它自己在不停往上下文里塞东西,该怎么管</b>。</p>
+      </header>
+
+      <p>约 1.5 小时。这一章有几个可以自己算的数,建议拿计算器跟着算一遍。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>真正的大头不是「写得长」,是<b>上下文被反复重读</b></li>
+          <li>缓存命中与失效——为什么改一句开头能让整场对话变贵</li>
+          <li>「越聊越笨」的两个来源:中段衰减 + 无关内容挤占</li>
+          <li>三个决定:什么时候压缩、什么时候开新对话、什么时候落成文件</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>上下文窗口的定义在 <a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>;预填充/解码与 KV cache 的成本结构在 <a href="../深度课程/D17-推理量化与部署成本.html">D17</a>;单次调用的提示词设计在 <a href="../应用工程/A01-提示词工程与上下文.html">A01</a>。<b>通向后面:</b>「上下文里的指令为什么会失效」是 <a href="U03-指令为什么不生效.html">U03</a>;「什么活该开新对话」是 <a href="U04-派活与成本.html">U04</a>。</p>
+      </div>
+
+      <h2 id="essence"><span class="no">1</span><span>一句话本质</span></h2>
+      <div class="one-liner">
+        <p>每问一句,整个上下文都要被<b>重新读一遍</b>。所以成本不是随对话长度线性增长的,是随「长度 × 轮数」增长的。</p>
+      </div>
+
+      <h2 id="cost"><span class="no">2</span><span>算一遍:大头在哪</span></h2>
+      <p>假设一场对话攒到 100k Token 的上下文,之后每轮再问一句、答一段(合计约 1k)。按 <a href="../深度课程/D17-推理量化与部署成本.html">D17</a> 的预填充/解码两段来算:</p>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th></th><th>每轮的输入 Token</th><th>10 轮合计</th><th>占比</th></tr></thead>
+          <tbody>
+            <tr><td>新写的内容(问题 + 回答)</td><td>约 1k</td><td>10k</td><td>约 9%</td></tr>
+            <tr class="sel"><td>被重读的历史上下文</td><td>100k</td><td>1,000k</td><td><b>约 91%</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fig-note">数字是估算,量级是真的:<b>长对话里九成以上的花费,买的是「把已经说过的话再读一遍」。</b></p>
+      <div class="callout warn">
+        <span class="label">推论</span>
+        <p>「让它回答简短点」几乎省不下钱——省的是那 9% 里的一小块。真正的杠杆只有两个:<b>让上下文别那么长</b>,和<b>让重读变便宜(缓存)</b>。</p>
+      </div>
+
+      <h2 id="cache"><span class="no">3</span><span>缓存:为什么改开头会让整场变贵</span></h2>
+      <p>厂商提供的提示缓存,缓存的是<b>前缀</b>:从第一个 Token 开始、连续不变的那一段,可以跳过重新计算,按很低的价格计费。</p>
+      <div class="rationale">
+        <span class="label">机制</span>
+        <p>缓存按前缀匹配。改动位置越靠前,失效的部分越多——在开头加一句话,后面全部内容的缓存<b>一次性全废</b>,这一轮要按全价重算。这就是为什么「稳定的东西放开头、变动的东西放末尾」是一条硬规矩,而不是风格偏好。</p>
+      </div>
+      <div class="callout go">
+        <span class="label">实操顺序</span>
+        <p>从前往后:<b>①</b> 长期不变的规则与背景 → <b>②</b> 本次任务的固定材料 → <b>③</b> 当前这一轮的问题。<br>反过来做(每轮在开头插一句「现在时间是……」)会让缓存永远命中不了。</p>
+      </div>
+
+      <h2 id="dumb"><span class="no">4</span><span>「越聊越笨」的两个来源</span></h2>
+      <div class="steps">
+        <ol>
+          <li><b>中段衰减。</b>注意力对超长序列中间部分的权重系统性偏低——开头和结尾记得牢,中间容易被略过。第 20 轮说的一条约束,到第 80 轮时正落在这个衰减区里。</li>
+          <li><b>无关内容挤占。</b>上下文里堆着大量已经作废的中间产物——试错过的方案、被推翻的结论、贴进来又没用上的长文件。它们不会自己消失,每一轮都参与竞争注意力。</li>
+        </ol>
+      </div>
+      <p>这两条合起来解释了一个常见现象:<b>同一条规则,对话早期照做,聊久了就不照做了</b>。不是它忘了,是那条规则在几万 Token 的中段里被稀释了。这个现象是 <a href="U03-指令为什么不生效.html">U03</a> 整章的起点。</p>
+
+      <h2 id="three"><span class="no">5</span><span>三个决定</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>做法</th><th>什么时候用</th><th>代价</th></tr></thead>
+          <tbody>
+            <tr><td><b>压缩</b>——把一大段历史概括成几条要点留下</td><td>任务没做完、但历史里大半是过程</td><td>细节会丢;概括本身是生成的,可能失真</td></tr>
+            <tr><td><b>开新对话</b></td><td>到了自然边界:一个子任务结束、换了主题</td><td>要重新交代背景,交接可能失真(见 <a href="U06-多对话协作.html">U06</a>)</td></tr>
+            <tr class="sel"><td><b>落成文件</b>——把结论写进磁盘,上下文里只留路径</td><td>结论要跨对话、跨机器、跨时间用</td><td>需要它主动去读;但这是唯一能<b>永久</b>降低上下文压力的办法</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <span class="label">判据</span>
+        <p>问一句:<b>这段内容,下一个对话还需要吗?</b><br>需要 → 落成文件。<br>只是本次任务的过程 → 压缩掉。<br>连本次都用不上了 → 该开新对话了。</p>
+      </div>
+
+      <h2 id="skill"><span class="no">6</span><span>技巧:上下文预算怎么排</span></h2>
+      <p>把窗口当成一个有限的桌面,开工前先分配,而不是等它满了再收拾。</p>
+      <div class="steps">
+        <ol>
+          <li><b>固定区(放开头,越稳越好)。</b>规则、口径、长期背景。这块要能吃满缓存,所以一旦写定就别再动。</li>
+          <li><b>材料区。</b>本次任务要读的文件。原则是<b>按需取片段,不整本贴</b>——这就是 <a href="../应用工程/A03-RAG检索增强生成.html">A03</a> 的思路用在日常对话上。</li>
+          <li><b>工作区(放末尾)。</b>当前这一轮的来回。这块允许频繁变动,因为它在最后,不会打掉前面的缓存。</li>
+          <li><b>留白。</b>别把窗口用到贴边——长输出、工具回执、报错原文都要地方。留出三成是安全线。</li>
+        </ol>
+      </div>
+      <div class="callout warn">
+        <span class="label">两个具体的坑</span>
+        <p><b>①</b> 把一个几千行的文件整个贴进来「让它先看看」——这一贴之后,后面每一轮都在为它付钱。改成先给路径和目录结构,要哪段读哪段。<br>
+           <b>②</b> 一个对话同时干两件不相关的事——两边的历史互相当噪声,还都被完整重读。宁可开两个。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">7</span><span>外部资源</span></h2>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching" target="_blank" rel="noopener">Anthropic · Prompt caching 官方文档</a></span><span class="spine">主线</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">提示缓存的规则:怎么命中、怎么失效、怎么计价。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">「前缀匹配」这条规则只有官方文档说得准,二手文章常写错失效条件。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">cache 的最小长度、TTL、以及哪些改动会让缓存失效这三段。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">第 3 节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://arxiv.org/abs/2307.03172" target="_blank" rel="noopener">Lost in the Middle(Liu et al., 2023)</a></span><span class="spine">论文 · 地基</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">实证:同一条信息放在长上下文的开头、中间、结尾,模型用上它的概率差别很大。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">「中段衰减」不是感觉,这篇把它测出来了。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">看那张 U 形曲线图和摘要即可,方法部分可略。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">第 4 节。</span></div>
+        </div>
+      </div>
+
+      <h2 id="practice"><span class="no">8</span><span>自测</span></h2>
+      <div class="challenge">
+        <span class="label">三道题</span>
+        <p><b>①</b> 一场对话已经攒到 80k 上下文。现在有两个选择:让它「以后回答都简短些」,或者把已完成部分的结论写成一个文件、然后开新对话。哪个真的省钱?差多少量级?<br>
+           <b>②</b> 每轮都在系统提示的第一行插入当前时间戳。这会造成什么后果?<br>
+           <b>③</b> 一条约束在第 15 轮说过,第 70 轮它没照做。列出两个可能的原因,以及各自对应的解法。</p>
+      </div>
+      <details class="hint"><summary>参考答案</summary>
+        <p><b>①</b> 后者。前者省的是每轮那 1k 里的一部分;后者把每轮重读的 80k 直接砍掉,量级差约两个数量级。<br>
+           <b>②</b> 前缀每轮都变,缓存永远命中不了,整场对话按全价计费。时间戳应该放在末尾的工作区。<br>
+           <b>③</b> 原因一:那条约束落在中段衰减区 → 解法是把它移到固定区开头,或落成文件让它每轮重读。原因二:上下文里堆了太多作废内容在挤占 → 解法是压缩或开新对话。真正可靠的解法是把它变成机械机制,见 <a href="U03-指令为什么不生效.html">U03</a>。</p>
+      </details>
+
+      <h2 id="link"><span class="no">9</span><span>连接</span></h2>
+      <p class="handoff">这一章解释了「为什么规则会在长对话里失效」的一半原因(位置与稀释)。另一半——<b>就算位置对了、也读到了,它照样不照做</b>——是下一章的内容。</p>
+
+      <nav class="chapter-nav">
+        <a href="U01-它到底在干什么.html"><span class="lb">上一章</span><span class="tt">U01 它到底在干什么</span></a>
+        <a href="U03-指令为什么不生效.html" class="next"><span class="lb">下一章</span><span class="tt">U03 指令为什么不生效</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">U02 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 成本结构</span>
+        <a data-toc-target="essence" href="#essence"><i>1</i>一句话本质</a>
+        <a data-toc-target="cost" href="#cost"><i>2</i>大头在哪</a>
+        <a data-toc-target="cache" href="#cache"><i>3</i>缓存与失效</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 质量下滑</span>
+        <a data-toc-target="dumb" href="#dumb"><i>4</i>越聊越笨</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 怎么管</span>
+        <a data-toc-target="three" href="#three"><i>5</i>三个决定</a>
+        <a data-toc-target="skill" href="#skill"><i>6</i>预算怎么排</a>
+        <a data-toc-target="reflist" href="#reflist"><i>7</i>外部资源</a>
+        <a data-toc-target="practice" href="#practice"><i>8</i>自测</a>
+        <a data-toc-target="link" href="#link"><i>9</i>连接</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="U02" data-kind="usage" data-title="上下文经济学"></script>
+</body>
+</html>

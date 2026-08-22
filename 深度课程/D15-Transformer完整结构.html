@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D15 · Transformer 完整结构</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="D14-注意力机制逐步手算.html">D14 注意力手算</a><span class="sep">—</span>
+      <a href="D15-Transformer完整结构.html" class="current">D15 Transformer</a><span class="sep">—</span>
+      <a href="D16-预训练微调与RLHF.html">D16 预训练与 RLHF</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D15.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track C · Chapter D15 · 读懂那张结构图</p>
+        <h1>Transformer 完整结构</h1>
+        <p class="recap"><a href="D14-注意力机制逐步手算.html">D14</a> 把注意力这块发动机拆开算过了。但发动机不等于整车:真实的 Transformer 在注意力外面还套了三样必需品——<b>前馈层</b>(每个位置各自再想一想)、<b>残差连接</b>和<b>层归一化</b>(让几十层能训得动)。这四件拼成一个<b>块(block)</b>,再把块堆几十层,前面接 <a href="D13-Embedding与向量空间.html">Embedding</a>、后面接一个输出层,<b>就是 GPT 的完整骨架</b>。这一章把它装起来,并逐块读懂论文里那张著名的结构图。</p>
+      </header>
+
+      <p>图解骨架约 30 分钟,精读 + 动手约 4~5 小时。读完这一章,再看任何大模型的结构图和参数配置(层数、隐藏维度、头数),都能对上号。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>一个块的四件套——多头注意力 + 前馈 + 残差 + 层归一化</li>
+          <li>前馈层 FFN——注意力负责"交流",前馈负责"各自消化"</li>
+          <li>残差 + 归一化——深到几十层还能训动的两个关键补丁</li>
+          <li>堆成模型——N 层块 + 输入嵌入 + 输出层,以及参数量从哪来</li>
+          <li>三种架构——只用解码器(GPT 类)/ 只用编码器 / 编解码器,各适合什么</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>注意力来自 <a href="D14-注意力机制逐步手算.html">D14</a>;输入向量来自 <a href="D13-Embedding与向量空间.html">D13</a>;残差/归一化的动机续 <a href="D10-优化器正则化与训练技巧.html">D10</a>(训练稳定性)。<b>通向后面:</b>这副骨架造好后要灌进海量数据才有能力——那是 <a href="D16-预训练微调与RLHF.html">D16 预训练与 RLHF</a>;它跑起来要花多少钱、怎么变快,是 <a href="D17-推理量化与部署成本.html">D17</a>。</p>
+      </div>
+
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>算过注意力、但没把整个模型串起来的人。</li>
+        <li>看模型卡片上写着"32 层 / 4096 维 / 32 头"却不知道在说什么的人。</li>
+        <li>想读懂论文结构图、以后能自己看懂新模型架构的人。</li>
+      </ul>
+      <p><b>不适合</b>:没算过注意力的人——先做 <a href="D14-注意力机制逐步手算.html">D14</a> 的手算,这一章默认那四步已经清楚。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>需要:<a href="D14-注意力机制逐步手算.html">D14</a>(注意力四步、多头、掩码)、<a href="../基础课程/07-神经网络入门.html">第 7 章</a>(层、激活)、<a href="D10-优化器正则化与训练技巧.html">D10</a>(为什么深网络难训)。没有新数学。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>画出一个 Transformer 块里的四个部件和它们的顺序。</li>
+        <li>说清前馈层干什么、为什么注意力之外还需要它。</li>
+        <li>解释残差连接和层归一化各解决什么问题。</li>
+        <li>看懂"层数 / 隐藏维度 / 头数"这几个配置在说什么。</li>
+        <li>区分三种架构,并说出 GPT 属于哪种、为什么。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">Transformer:<b>把「注意力(词与词交流)+ 前馈(每个词各自消化)」打包成一个块,加上残差和归一化让它能被堆得很深,然后堆 N 层。</b>每往上一层,每个词的表示就被全句信息刷新一次、再自己加工一次;几十层之后,最后那个位置的向量已经浓缩了理解全文所需的一切,拿去预测下一个词。</p>
+      <p>为什么是"交流 + 消化"这个节奏:注意力擅长<b>横向搬运信息</b>(把相关词的内容汇进来),但它本质是加权平均,<b>表达能力有限</b>——一堆加权平均叠起来还是线性的。前馈层补的正是这一块:它对每个位置<b>单独</b>做一次"放大 → 非线性 → 压回"的变换,给模型真正的非线性拟合能力。于是一层的节奏是:<b>先横着交流一次,再各自纵向想一想</b>。这个"交流—消化"的循环重复几十次,信息就在词与词之间充分混合、逐层抽象——浅层的块处理语法和邻近关系,深层的块处理语义和长程指代,这与 <a href="D08-卷积神经网络CNN.html">CNN 的层级特征</a>是同一种思想,只是从"局部像素"换成了"全句词元"。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="Transformer 五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="640" y1="168" x2="480" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="540" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="220" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="120" y1="168" x2="280" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">交流 + 消化,</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">重复几十层</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="box-acc"/>
+          <text x="380" y="60" text-anchor="middle" class="nl-acc">① 一个块的四件套</text>
+          <rect x="596" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="674" y="150" text-anchor="middle" class="nl">② 前馈层 FFN</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ 残差 + 归一化</text>
+          <rect x="146" y="330" width="174" height="46" rx="8" class="d-ink nf"/>
+          <text x="233" y="358" text-anchor="middle" class="nl">④ 堆成模型</text>
+          <rect x="8" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="86" y="150" text-anchor="middle" class="nl">⑤ 三种架构</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。①(蓝)是核心积木,②③是块里除注意力之外的三个部件,④讲怎么堆、参数从哪来,⑤讲这套积木的三种搭法。</figcaption>
+      </figure>
+
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <div class="callout go">
+        <span class="label">默认主线 · 逐块对照结构图 · 约 3–4 小时</span>
+        <p><b>《The Illustrated Transformer》后半 + 论文图 1 对照读。</b>做法:先看本章第 7–10 节把块拆清,再打开图解文的编码器/解码器部分,<b>最后把论文第 1 页那张结构图逐框认一遍</b>——能指着每个框说出它是本章哪一件,这一章就通了。链接:<a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">Illustrated Transformer</a>、<a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">原论文</a>。</p>
+      </div>
+      <table class="tbl">
+        <caption>表 1 · 本章骨架 ↔ 主线对应</caption>
+        <thead><tr><th>本章骨架</th><th>主线精读</th></tr></thead>
+        <tbody>
+          <tr><td>第 7 节 · 一个块的四件套</td><td>Illustrated Transformer:The Encoder Side</td></tr>
+          <tr><td>第 8 节 · 前馈层</td><td>同上:Position-wise Feed-Forward</td></tr>
+          <tr><td>第 9 节 · 残差 + 归一化</td><td>同上:The Residuals</td></tr>
+          <tr><td>第 10–11 节 · 堆叠与三种架构</td><td>论文图 1 + Decoder Side;各家模型卡片的配置表</td></tr>
+        </tbody>
+      </table>
+
+      <p class="handoff">先把一个块拆开看清楚:四件套,固定顺序。</p>
+      <h2 id="block"><span class="no">7</span><span>一个块的四件套</span></h2>
+      <p class="one-liner">一个 Transformer 块 = <b>多头注意力 → 残差+归一化 → 前馈层 → 残差+归一化</b>。数据进来先横向交流(注意力),接一次残差和归一化;再纵向各自加工(前馈),再接一次残差和归一化。<b>进去什么形状,出来还是什么形状</b>——所以能一层叠一层。</p>
+      <p>"形状不变"这一点很关键:每个块的输入是 <code>[词数 × 维度]</code>,输出也是 <code>[词数 × 维度]</code>,于是可以像搭积木一样无限堆。每一层都在做同一件事,只是<b>参数不同、关注的东西不同</b>。另外注意顺序细节:原论文把归一化放在残差之后(Post-LN),现在主流大模型多改成<b>放在每个子层之前</b>(Pre-LN,即 <code>x + Attn(LN(x))</code>)——因为 Pre-LN 训练更稳、更容易堆到几十上百层。看新模型代码时若发现 LN 位置和论文图不同,不是画错了,是这个改良。</p>
+      <figure>
+        <svg viewBox="0 0 620 330" role="img" aria-label="一个 Transformer 块的四件套">
+          <defs><marker id="m-bk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#14181f"/></marker>
+          <marker id="m-res" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="176" y="290" width="200" height="30" rx="6" class="d-ink nf"/>
+          <text x="276" y="310" text-anchor="middle" class="nl">输入 [词数 × 维度]</text>
+          <line x1="276" y1="290" x2="276" y2="266" class="d-ink" marker-end="url(#m-bk)"/>
+          <rect x="156" y="216" width="240" height="48" rx="8" class="box-acc"/>
+          <text x="276" y="238" text-anchor="middle" class="nl-acc">① 多头注意力</text>
+          <text x="276" y="255" text-anchor="middle" class="el-acc">词与词横向交流(D14)</text>
+          <line x1="276" y1="216" x2="276" y2="196" class="d-ink" marker-end="url(#m-bk)"/>
+          <rect x="176" y="160" width="200" height="34" rx="6" class="d-ink nf"/>
+          <text x="276" y="182" text-anchor="middle" class="nl">② 残差 + 层归一化</text>
+          <line x1="276" y1="160" x2="276" y2="138" class="d-ink" marker-end="url(#m-bk)"/>
+          <rect x="156" y="88" width="240" height="48" rx="8" class="d-ink nf"/>
+          <text x="276" y="110" text-anchor="middle" class="nl">③ 前馈层 FFN</text>
+          <text x="276" y="127" text-anchor="middle" class="el">每个位置各自消化</text>
+          <line x1="276" y1="88" x2="276" y2="68" class="d-ink" marker-end="url(#m-bk)"/>
+          <rect x="176" y="32" width="200" height="34" rx="6" class="d-ink nf"/>
+          <text x="276" y="54" text-anchor="middle" class="nl">④ 残差 + 层归一化</text>
+          <!-- 残差旁路 -->
+          <path d="M 150 288 C 90 288, 90 190, 150 178" class="d-acc" marker-end="url(#m-res)"/>
+          <text x="72" y="240" text-anchor="middle" class="el-acc">残差:原样</text>
+          <text x="72" y="256" text-anchor="middle" class="el-acc">抄一份加回</text>
+          <path d="M 150 158 C 90 158, 90 60, 150 50" class="d-acc" marker-end="url(#m-res)"/>
+          <text x="470" y="60" text-anchor="middle" class="el">输出形状 = 输入形状</text>
+          <text x="470" y="80" text-anchor="middle" class="el">所以能一层层堆</text>
+          <text x="470" y="240" text-anchor="middle" class="el">堆 N 层(常见 12 / 32 / 80)</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>一个 Transformer 块:注意力(横向交流)→ 残差归一化 → 前馈(各自消化)→ 残差归一化。进出形状相同,因而可以无限堆叠。</figcaption>
+      </figure>
+
+      <p class="handoff">四件套里,前馈层最容易被忽略,但它占了大部分参数。</p>
+      <h2 id="ffn"><span class="no">8</span><span>前馈层:各自消化</span></h2>
+      <p class="one-liner"><b>前馈层(FFN)</b>= 对<b>每个位置各自独立</b>做的一个两层小网络:先把维度放大(通常 4 倍),过一次非线性激活,再压回原维度。它不看别的词——横向交流是注意力的活,它只负责<b>把这个位置刚收到的信息加工一遍</b>。</p>
+      <p>三个要点。<b>一、为什么必需</b>:注意力本质是加权平均,叠再多层表达力也有限;FFN 提供真正的非线性变换(<a href="../基础课程/07-神经网络入门.html">第 7 章</a>的激活函数),模型的"拟合能力"主要来自这里。<b>二、为什么放大 4 倍</b>:先升到更高维空间做变换、再压回来,能表达更复杂的函数——类似先摊开再折叠。<b>三、参数大户</b>:一个块里,FFN 的参数量通常是注意力部分的两倍左右,<b>整个大模型一大半参数在前馈层里</b>。所以谈"这个模型多少 B 参数",主要就是在谈这些前馈矩阵有多大。近年很流行的 <b>MoE(混合专家)</b>正是在这里做文章:准备很多套 FFN(专家),每个词只激活其中一两套——参数总量巨大但每次只算一小部分,这是当下把模型做大又不让推理成本爆炸的主流路子。</p>
+
+      <p class="handoff">还剩两个"补丁"——没有它们,几十层根本训不动。</p>
+      <h2 id="res"><span class="no">9</span><span>残差连接与层归一化</span></h2>
+      <p class="one-liner"><b>残差连接</b>:把子层的输入<b>原样抄一份加到输出上</b>(<code>输出 = x + 子层(x)</code>)。好处是梯度可以顺着这条"高速公路"直接传回浅层,深网络不再因为梯度消失而训不动(<a href="D09-序列模型RNN到注意力.html">D09</a> 说的那堵墙)。<b>层归一化</b>:把每个位置的向量重新拉回"均值 0、方差 1"的规整状态,让每层拿到的数据分布稳定、训练更快更稳。</p>
+      <p>把残差想成"<b>保底</b>":这一层就算什么都没学好(子层输出接近 0),信息也能原封不动传下去,不会越传越糟——这让"加深"变成一件安全的事,是能从几层堆到上百层的直接原因。层归一化则是 <a href="D10-优化器正则化与训练技巧.html">D10 里 BatchNorm</a> 的近亲,区别是它<b>按每个样本自己的那一行做归一化</b>(不跨样本),因此不受批大小影响,更适合长度不一的文本。这两个补丁本身不"学知识",却是深层 Transformer 能训出来的前提——<b>它们是脚手架,不是发动机,但没有脚手架楼盖不起来。</b></p>
+
+      <p class="handoff">四件套齐了,把它堆起来,顺便看清参数从哪来。</p>
+      <h2 id="stack"><span class="no">10</span><span>堆成模型:配置表怎么读</span></h2>
+      <p class="one-liner">完整模型 = <b>Embedding(D13)+ N 个块 + 输出层</b>。模型卡片上的三个数正好对应:<b>层数 N</b>(堆几个块)、<b>隐藏维度 d</b>(每个词向量多长)、<b>头数 h</b>(每层注意力开几个头)。输出层把最后一层的向量映射回词表大小,softmax 后就是"下一个词的概率表"(<a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>第 ⑤ 站)。</p>
+      <p>拿一组典型配置感受一下:早期 GPT-2 小号是 <b>12 层 / 768 维 / 12 头</b>,约 1.2 亿参数;大一些的开源模型常见 <b>32 层 / 4096 维 / 32 头</b>,约 70 亿参数。参数大头在两处:每层的<b>前馈矩阵</b>(约 8d² 每层)和<b>注意力的四个投影矩阵</b>(约 4d² 每层),再加上<b>嵌入矩阵</b>(词表 × d,几万×几千也是上亿)。<b>一个实用的估算</b>:总参数 ≈ 12 × N × d²。用 32 层、4096 维代进去:12×32×4096² ≈ 64 亿,和"7B"这个标称量级对得上。<b>会这个估算,以后看到任何模型的配置,心里就有数了。</b></p>
+
+      <p class="handoff">同一套积木,有三种搭法,对应三类模型。</p>
+      <h2 id="arch"><span class="no">11</span><span>三种架构</span></h2>
+      <p class="one-liner"><b>只用解码器(decoder-only)</b>:带因果掩码、专做"续写下一个词"——<b>GPT、Claude 等所有主流大语言模型都是这一类</b>。<b>只用编码器(encoder-only)</b>:双向看全句、擅长理解与分类(BERT 类,也是很多 <a href="../应用工程/A03-RAG检索增强生成.html">RAG</a> 里 embedding 模型的底子)。<b>编码器-解码器</b>:一半读原文、一半写译文,适合翻译摘要这类"输入输出成对"的任务(原论文就是这种)。</p>
+      <table class="tbl">
+        <caption>表 2 · 三种架构对照</caption>
+        <thead><tr><th>架构</th><th>怎么看句子</th><th>擅长</th><th>代表</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td>只用解码器</td><td>只能看左边(因果掩码)</td><td>生成、对话、续写</td><td>GPT / Claude 等主流 LLM</td></tr>
+          <tr><td>只用编码器</td><td>双向看全句</td><td>分类、检索、句向量</td><td>BERT 及各类 embedding 模型</td></tr>
+          <tr><td>编码器 + 解码器</td><td>编码器读全文,解码器带掩码生成</td><td>翻译、摘要</td><td>原论文、T5</td></tr>
+        </tbody>
+      </table>
+      <p>为什么生成式模型选了"只用解码器":任务本身就是"根据前文写下一个词",不需要一个单独的编码器;而且结构简单、易于扩大规模——事实证明,把 decoder-only 堆大 + 喂海量数据,能力就会持续上涨(这正是 <a href="D16-预训练微调与RLHF.html">D16</a> 讲的规模化路线)。<b>所以今天用的每一个大模型,几乎都是"带掩码的注意力块堆几十层"这一个东西。</b></p>
+
+      <p class="handoff">最后用一段代码把整块装出来——真的就这么短。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:一个块 + 一个迷你模型</span></h2>
+      <p>把四件套写成代码,再堆成一个能预测下一个词的迷你 GPT 骨架。<b>注意它有多短</b>——大模型的复杂在规模和数据,不在结构:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">mini_transformer.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch.nn </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> nn</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">class</span><span style="color:#14181F"> Block(nn.Module):</span></span>
+<span class="line"><span style="color:#557089">    """一个 Transformer 块:注意力 → 残差归一 → 前馈 → 残差归一(Pre-LN 写法)"""</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    def</span><span style="color:#14181F"> __init__(self, d, heads):</span></span>
+<span class="line"><span style="color:#14181F">        super().__init__()</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.ln1  </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.LayerNorm(d)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.attn </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.MultiheadAttention(d, heads, batch_first</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)  </span><span style="color:#8B95A8;font-style:italic"># D14 的四步</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.ln2  </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.LayerNorm(d)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.ffn  </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.Sequential(          </span><span style="color:#8B95A8;font-style:italic"># 前馈:放大 4 倍 → 非线性 → 压回</span></span>
+<span class="line"><span style="color:#14181F">            nn.Linear(d, 4 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> d), nn.GELU(), nn.Linear(4 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> d, d),</span></span>
+<span class="line"><span style="color:#14181F">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    def</span><span style="color:#14181F"> forward(self, x, mask</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">None):</span></span>
+<span class="line"><span style="color:#14181F">        h </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F;font-weight:bold"> self</span><span style="color:#14181F">.ln1(x)</span></span>
+<span class="line"><span style="color:#14181F">        x </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> x </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F;font-weight:bold"> self</span><span style="color:#14181F">.attn(h, h, h, attn_mask</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">mask, need_weights</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">False)[0]  </span><span style="color:#8B95A8;font-style:italic"># ①+② 残差</span></span>
+<span class="line"><span style="color:#14181F">        x </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> x </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F;font-weight:bold"> self</span><span style="color:#14181F">.ffn(</span><span style="color:#14181F;font-weight:bold">self</span><span style="color:#14181F">.ln2(x))                                      </span><span style="color:#8B95A8;font-style:italic"># ③+④ 残差</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        return</span><span style="color:#14181F"> x                            </span><span style="color:#8B95A8;font-style:italic"># 形状不变,所以能继续往上堆</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">class</span><span style="color:#14181F"> MiniGPT(nn.Module):</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    def</span><span style="color:#14181F"> __init__(self, vocab</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">50000, d</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">768, heads</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">12, layers</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">12, maxlen</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">1024):</span></span>
+<span class="line"><span style="color:#14181F">        super().__init__()</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.tok </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.Embedding(vocab, d)          </span><span style="color:#8B95A8;font-style:italic"># D13:词 → 向量</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.pos </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.Embedding(maxlen, d)         </span><span style="color:#8B95A8;font-style:italic"># D13:位置编码</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.blocks </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.ModuleList([Block(d, heads) </span><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> _ </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> range(layers)])</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.lnf </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.LayerNorm(d)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.head </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.Linear(d, vocab)            </span><span style="color:#8B95A8;font-style:italic"># 输出层 → 词表上的分数</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    def</span><span style="color:#14181F"> forward(self, ids):                        </span><span style="color:#8B95A8;font-style:italic"># ids: [批, 词数]</span></span>
+<span class="line"><span style="color:#14181F">        n </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> ids.shape[1]</span></span>
+<span class="line"><span style="color:#14181F">        x </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F;font-weight:bold"> self</span><span style="color:#14181F">.tok(ids) </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F;font-weight:bold"> self</span><span style="color:#14181F">.pos(torch.arange(n, device</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">ids.device))</span></span>
+<span class="line"><span style="color:#14181F">        mask </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> torch.triu(torch.ones(n, n, device</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">ids.device) </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> float(</span><span style="color:#557089">'-inf'</span><span style="color:#14181F">), 1)  </span><span style="color:#8B95A8;font-style:italic"># 因果掩码</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        for</span><span style="color:#14181F"> blk </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F;font-weight:bold"> self</span><span style="color:#14181F">.blocks:</span></span>
+<span class="line"><span style="color:#14181F">            x </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> blk(x, mask)                       </span><span style="color:#8B95A8;font-style:italic"># 交流 + 消化,重复 N 次</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        return</span><span style="color:#14181F;font-weight:bold"> self</span><span style="color:#14181F">.head(</span><span style="color:#14181F;font-weight:bold">self</span><span style="color:#14181F">.lnf(x))              </span><span style="color:#8B95A8;font-style:italic"># softmax 后就是「下一个词的概率表」</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">m </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> MiniGPT()</span></span>
+<span class="line"><span style="color:#14181F">print(sum(p.numel() </span><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> p </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> m.parameters()) </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> 1e6, </span><span style="color:#557089">"M 参数"</span><span style="color:#14181F">)   </span><span style="color:#8B95A8;font-style:italic"># 约 1.2 亿,和 GPT-2 小号同量级</span></span></code></pre>
+      </div>
+      <p>逐块对照本章:<code>Block</code> 就是图 2 的四件套(两处 <code>x = x + …</code> 正是残差);<code>MiniGPT</code> 里 <code>tok+pos</code> 是 <a href="D13-Embedding与向量空间.html">D13</a>,<code>blocks</code> 是堆叠,<code>head</code> 是输出层;<code>triu(…, 1)</code> 那行是 <a href="D14-注意力机制逐步手算.html">D14</a> 的因果掩码。<b>整个 GPT 骨架不到 40 行</b>——真正难的是后面两章的事:用什么数据、花多少钱训它(<a href="D16-预训练微调与RLHF.html">D16</a>),以及怎么让它跑得起、跑得便宜(<a href="D17-推理量化与部署成本.html">D17</a>)。训练它?还是 <a href="D07-PyTorch与完整训练循环.html">D07</a> 那五步循环。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战 · 把结构图认全</span>
+        <h3>指着论文图 1 说出每个框</h3>
+        <p>①打开<a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">原论文</a>第 1 页那张结构图,逐个框对应到本章的四件套(Multi-Head Attention / Add &amp; Norm / Feed Forward / Positional Encoding),能全部认出来就算读懂了。②把代码里的 <code>layers=12</code> 改成 <code>24</code>、<code>d=768</code> 改成 <code>1024</code>,看参数量怎么变,再用第 10 节的 <code>12Nd²</code> 估算法核对。③把 <code>mask</code> 那行去掉,想想模型会"作弊"成什么样(提示:训练时它能看见答案)。④对比一下 encoder-only 少了什么(答案:掩码)。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;下列链接均于 2026-08-20 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">The Illustrated Transformer</a></span><span class="spine">默认主线</span><span class="tags">图解博客 · 英文 · 2h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">把编码器/解码器每个部件逐图拆开的经典长文。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章按"块"讲结构,它按"数据怎么流过整张图"讲,两个视角合起来最完整。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">The Encoder Side、The Residuals、The Decoder Side 三段。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§7–9;§11 看 Decoder Side。</span></div>
+        </div>
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=kCc8FmEb1nY" target="_blank" rel="noopener">Karpathy · Let's build GPT from scratch</a></span><span class="spine">并列主线 · 动手</span><span class="tags">视频 · 英文(可开字幕) · 2h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">从空白文件一行行写出一个能训练的 GPT 的完整实录。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章第 12 节给了骨架,它把这副骨架真的训起来——"看懂"到"做出来"的那一步。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全片;从实现 self-attention 到堆 block 那一段最关键。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 12 节代码跟着敲。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://nlp.seas.harvard.edu/annotated-transformer/" target="_blank" rel="noopener">The Annotated Transformer</a></span><span class="tags">代码精读 · 英文 · 深读 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">论文逐段配 PyTorch 实现的注解版。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想把论文和代码一一对上时最好用。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Model Architecture 整节。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§7–11 的代码对照。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need</a></span><span class="tags">奠基论文 · 英文 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">Transformer 原论文。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">学到这里已经能读懂图 1 和第 3 节了,值得亲自读一次原文。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">图 1 结构图 + 第 3 节 Model Architecture。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配进阶挑战①逐框认图。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 3 · 五个常见误区</caption>
+        <thead><tr><th>常见理解</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>Transformer = 注意力</td><td>注意力只是块里的一件。没有前馈层就没有非线性表达力,没有残差和归一化就堆不深。</td></tr>
+          <tr><td>模型参数主要在注意力里</td><td>大头在前馈层(约占每块参数的三分之二),这也是 MoE 专挑 FFN 下手的原因。</td></tr>
+          <tr><td>层数越多一定越强</td><td>要和数据量、算力匹配;层数、维度、数据三者失衡时,加层只是更贵更难训。</td></tr>
+          <tr><td>GPT 用的是编码器-解码器</td><td>主流大语言模型是 decoder-only(带因果掩码);编解码结构多见于翻译类任务。</td></tr>
+          <tr><td>结构很复杂,普通人写不出来</td><td>骨架不到 40 行(第 12 节)。难的是数据、算力和训练技巧,不是结构本身。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>四件套。</b>一个块里有哪四个部件、什么顺序?<details><summary>参考答案</summary><p>多头注意力 → 残差+层归一化 → 前馈层 → 残差+层归一化。进出形状相同,故可堆叠。</p></details></li>
+        <li><b>前馈层。</b>有了注意力为什么还要它?<details><summary>参考答案</summary><p>注意力是加权平均、表达力有限;FFN 对每个位置单独做"放大→非线性→压回",提供真正的非线性拟合能力,并且是参数大头。</p></details></li>
+        <li><b>两个补丁。</b>残差和层归一化各解决什么?<details><summary>参考答案</summary><p>残差:给梯度一条高速公路、保底不丢信息,让深堆变安全;层归一化:稳定每层输入分布,训练更快更稳(按每个样本自己归一,不跨批)。</p></details></li>
+        <li><b>配置表。</b>"32 层 / 4096 维 / 32 头"什么意思?参数量大概多少?<details><summary>参考答案</summary><p>堆 32 个块、词向量 4096 维、每层 32 个注意力头。按 12Nd² 估算:12×32×4096²≈64 亿,即 7B 量级。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上就读懂了大模型的骨架(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能画出一个块的四件套和顺序</li>
+          <li><input type="checkbox"> 我能说清前馈层的作用和它是参数大头</li>
+          <li><input type="checkbox"> 我理解残差和层归一化各解决什么</li>
+          <li><input type="checkbox"> 我知道"进出形状相同"为什么重要</li>
+          <li><input type="checkbox"> 我会读层数/维度/头数,并能估参数量</li>
+          <li><input type="checkbox"> 我能区分三种架构、知道 GPT 属于哪种</li>
+          <li><input type="checkbox"> 我能指着论文图 1 认出每个框</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>骨架造好了,但此刻它<b>什么也不会</b>——所有参数都还是随机数。要让这副骨架变成会写代码、会聊天的模型,得往里灌进海量文本反复训练,再教它"听话"。<a href="D16-预训练微调与RLHF.html">D16 · 预训练、微调与 RLHF</a> 讲的就是这三个阶段:<b>预训练</b>(读半个互联网,学会语言本身)、<b>微调</b>(学会按指令做事)、<b>RLHF/DPO</b>(学会给出人类更喜欢的回答)。它还会算清一笔账:哪一段是几千万美元的事、哪一段是自己也碰得到的。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="D14-注意力机制逐步手算.html"><span class="lb">上一章</span><span class="tt">D14 · 注意力机制逐步手算</span></a>
+        <a href="D16-预训练微调与RLHF.html" class="next"><span class="lb">下一章</span><span class="tt">D16 · 预训练、微调与 RLHF</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D15 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="block" href="#block"><i>7</i>一个块的四件套</a>
+        <a data-toc-target="ffn" href="#ffn"><i>8</i>前馈层</a>
+        <a data-toc-target="res" href="#res"><i>9</i>残差与归一化</a>
+        <a data-toc-target="stack" href="#stack"><i>10</i>堆成模型</a>
+        <a data-toc-target="arch" href="#arch"><i>11</i>三种架构</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>迷你 GPT 代码</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D15" data-kind="chapter" data-title="Transformer 完整结构"></script>
+</body>
+</html>

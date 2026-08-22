@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-reshelled="2026-08-21">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实验 01 · 规则 vs 学习</title>
+<style data-inlined="course.css">
+/* ============================================================
+   人工智能-系统学习 · 公共样式
+   主题「冷靛蓝图」: 冷灰蓝纸面 / 群青主色 / 深青辅色 / 石墨代码块
+   所有页面共用; 修改前先在浏览器里验证对比度。
+   ============================================================ */
+
+:root {
+  --bg: #eef1f6;          /* 页面底色: 冷灰蓝纸面 */
+  --card: #ffffff;        /* 卡片底色 */
+  --ink: #1d2733;         /* 正文字色 */
+  --muted: #55617a;       /* 次要文字 */
+  --line: #d8dee9;        /* 分隔线 */
+  --acc: #2743c7;         /* 主色: 群青 */
+  --acc-dark: #1d33a0;    /* 主色加深(链接/hover) */
+  --acc-soft: #e8ecfb;    /* 主色浅底 */
+  --teal: #0c6e63;        /* 辅色: 深青 */
+  --teal-soft: #e3f0ee;   /* 辅色浅底 */
+  --warn: #9a3412;        /* 警示: 深橙棕 */
+  --warn-soft: #fdeee4;   /* 警示浅底 */
+  --danger: #b42318;      /* 错误红 */
+  --code-bg: #111826;     /* 代码块底 */
+  --code-ink: #dfe6f3;    /* 代码块字 */
+  --inline-code-bg: #e7ebf4;
+  --mono: "Cascadia Code", Consolas, "SFMono-Regular", Menlo, monospace;
+  --sans: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(29, 39, 51, .06), 0 4px 16px rgba(29, 39, 51, .05);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.75;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- 顶部进度条(course.js 驱动) ---------- */
+#readbar {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0;
+  background: linear-gradient(90deg, var(--acc), var(--teal));
+  z-index: 99;
+}
+
+/* ---------- 页头 ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(238, 241, 246, .92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-inner {
+  max-width: 920px; margin: 0 auto; padding: 10px 20px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.topbar a { color: var(--acc-dark); text-decoration: none; font-size: 14px; }
+.topbar a:hover { text-decoration: underline; }
+.topbar .crumb-sep { color: var(--muted); font-size: 13px; }
+.topbar .here { color: var(--muted); font-size: 14px; }
+
+/* ---------- 版心 ---------- */
+.wrap { max-width: 920px; margin: 0 auto; padding: 28px 20px 110px; }
+.wrap-narrow { max-width: 820px; }
+
+/* ---------- 章头 ---------- */
+.hero {
+  background:
+    radial-gradient(circle at 1px 1px, rgba(39, 67, 199, .13) 1px, transparent 0) 0 0 / 22px 22px,
+    linear-gradient(135deg, #ffffff 0%, #f2f5fb 100%);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 30px 32px 26px;
+  margin: 18px 0 26px;
+  box-shadow: var(--shadow);
+}
+.hero .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.hero h1 { font-size: 30px; line-height: 1.3; margin: 0 0 8px; letter-spacing: .3px; }
+.hero .lede { color: var(--muted); font-size: 16px; margin: 0; max-width: 640px; }
+
+.chip {
+  display: inline-block; font-family: var(--mono); font-size: 12px;
+  background: var(--acc-soft); color: var(--acc-dark);
+  border: 1px solid #c9d3f2; border-radius: 999px; padding: 2px 11px;
+}
+.chip.teal { background: var(--teal-soft); color: var(--teal); border-color: #bcd9d4; }
+.chip.gray { background: #eceff5; color: var(--muted); border-color: var(--line); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); border-color: #f0cdb4; }
+
+/* ---------- 标题 ---------- */
+h2 {
+  font-size: 22px; margin: 46px 0 14px; padding-top: 8px;
+  display: flex; align-items: baseline; gap: 10px;
+}
+h2 .no {
+  font-family: var(--mono); font-size: 14px; color: var(--acc);
+  border: 1.5px solid var(--acc); border-radius: 8px; padding: 0 8px;
+  flex: none; transform: translateY(-2px);
+}
+h3 { font-size: 17.5px; margin: 28px 0 10px; }
+h4 { font-size: 15.5px; margin: 20px 0 8px; }
+
+p { margin: 10px 0; }
+ul, ol { padding-left: 24px; margin: 10px 0; }
+li { margin: 5px 0; }
+b, strong { font-weight: 650; }
+
+a { color: var(--acc-dark); }
+a:hover { color: var(--acc); }
+
+/* ---------- 卡片与栏目 ---------- */
+.card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 18px 22px; margin: 14px 0;
+  box-shadow: var(--shadow);
+}
+.card > :first-child { margin-top: 0; }
+.card > :last-child { margin-bottom: 0; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 760px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+
+/* ---------- 提示框 ---------- */
+.note {
+  border-left: 4px solid var(--acc); background: var(--acc-soft);
+  border-radius: 0 10px 10px 0; padding: 12px 16px; margin: 14px 0; font-size: 15px;
+}
+.note.good { border-color: var(--teal); background: var(--teal-soft); }
+.note.warn { border-color: var(--warn); background: var(--warn-soft); }
+.note > :first-child { margin-top: 0; }
+.note > :last-child { margin-bottom: 0; }
+.note .note-t { font-weight: 700; display: block; margin-bottom: 4px; }
+.note.warn .note-t { color: var(--warn); }
+.note.good .note-t { color: var(--teal); }
+.note:not(.good):not(.warn) .note-t { color: var(--acc-dark); }
+
+/* ---------- 术语首现 ---------- */
+.term { font-weight: 650; border-bottom: 2px dotted var(--acc); cursor: help; }
+.term-def {
+  display: block; font-size: 14px; color: var(--muted);
+  background: #f4f6fb; border: 1px dashed #c9d3f2; border-radius: 8px;
+  padding: 8px 12px; margin: 6px 0 10px;
+}
+.term-def::before { content: "白话: "; color: var(--acc-dark); font-weight: 700; }
+
+/* ---------- 3W 块 ---------- */
+.w3 { display: grid; grid-template-columns: 84px 1fr; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 12px 0; background: var(--card); }
+.w3 > dt {
+  background: #f0f3fa; border-bottom: 1px solid var(--line);
+  font-family: var(--mono); font-weight: 700; color: var(--acc-dark);
+  padding: 10px 12px; font-size: 13.5px;
+}
+.w3 > dd { margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 15px; }
+.w3 > dt:nth-last-of-type(1), .w3 > dd:last-child { border-bottom: none; }
+@media (max-width: 600px) { .w3 { grid-template-columns: 64px 1fr; } }
+
+/* ---------- 代码 ---------- */
+pre {
+  background: var(--code-bg); color: var(--code-ink);
+  border-radius: 10px; padding: 15px 18px; overflow-x: auto;
+  font-family: var(--mono); font-size: 13.5px; line-height: 1.65;
+  margin: 12px 0; position: relative;
+}
+pre .cm { color: #7e8ba3; }          /* 注释 */
+pre .kw { color: #86b3ff; }          /* 关键词 */
+pre .st { color: #9fd8a4; }          /* 字符串 */
+pre .nb { color: #f2c078; }          /* 数字/内置 */
+pre .hl { background: rgba(39, 67, 199, .35); border-radius: 3px; padding: 0 2px; }
+code:not(pre code) {
+  font-family: var(--mono); font-size: .88em;
+  background: var(--inline-code-bg); color: #253352;
+  border-radius: 5px; padding: 1px 6px;
+}
+.copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  background: #273147; color: #aeb9d0; border: 1px solid #3a4763;
+  border-radius: 7px; font-size: 12px; padding: 3px 10px; cursor: pointer;
+  font-family: var(--sans);
+}
+.copy-btn:hover { background: #32405d; color: #e2e8f4; }
+
+/* 终端输出块 */
+pre.out { background: #f4f6fb; color: #303b52; border: 1px dashed #c4cde0; }
+pre.out::before { content: "预期输出"; display: block; font-size: 11.5px; color: var(--acc-dark); margin-bottom: 6px; font-family: var(--sans); font-weight: 700; }
+
+/* ---------- 表格 ---------- */
+.tbl-scroll { overflow-x: auto; margin: 14px 0; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; background: var(--card); border-radius: 10px; overflow: hidden; }
+th, td { border: 1px solid var(--line); padding: 9px 13px; text-align: left; vertical-align: top; }
+th { background: #f0f3fa; font-weight: 700; white-space: nowrap; }
+
+/* ---------- 步骤列表 ---------- */
+.steps { counter-reset: step; list-style: none; padding-left: 0; }
+.steps > li {
+  counter-increment: step; position: relative;
+  padding: 12px 16px 12px 52px; margin: 10px 0;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+}
+.steps > li::before {
+  content: counter(step); position: absolute; left: 14px; top: 12px;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--acc); color: #fff; font-weight: 700; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.steps > li > :first-child { margin-top: 0; }
+.steps > li > :last-child { margin-bottom: 0; }
+
+/* ---------- 折叠问答 / 提示 ---------- */
+details {
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 0 16px; margin: 10px 0;
+}
+details summary {
+  cursor: pointer; font-weight: 650; padding: 12px 0; list-style: none;
+  display: flex; align-items: center; gap: 8px;
+}
+details summary::before { content: "▸"; color: var(--acc); transition: transform .15s; }
+details[open] summary::before { transform: rotate(90deg); }
+details[open] { padding-bottom: 12px; }
+details.hint summary { color: var(--teal); }
+details.answer summary { color: var(--acc-dark); }
+
+/* ---------- 自查清单 ---------- */
+.checklist { list-style: none; padding-left: 0; }
+.checklist li {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--card); border: 1px solid var(--line); border-radius: 9px;
+  padding: 9px 14px; margin: 7px 0; cursor: pointer;
+}
+.checklist input[type="checkbox"] { margin-top: 5px; accent-color: var(--teal); width: 16px; height: 16px; flex: none; }
+.checklist li.done { border-color: #bcd9d4; background: var(--teal-soft); }
+
+/* ---------- SVG 图 ---------- */
+.fig { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin: 16px 0; overflow-x: auto; }
+.fig svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.fig .figcap { text-align: center; color: var(--muted); font-size: 13.5px; margin: 10px 0 0; }
+
+/* ---------- 目录 ---------- */
+.toc { columns: 2; column-gap: 28px; }
+.toc a { display: block; padding: 3px 0; text-decoration: none; font-size: 14.5px; break-inside: avoid; }
+.toc a:hover { text-decoration: underline; }
+.toc .toc-group { font-family: var(--mono); font-size: 12px; color: var(--muted); margin: 8px 0 2px; break-inside: avoid; }
+@media (max-width: 700px) { .toc { columns: 1; } }
+
+/* ---------- 按钮 ---------- */
+.btn {
+  display: inline-block; background: var(--acc); color: #fff !important;
+  border: none; border-radius: 9px; padding: 9px 20px; font-size: 14.5px;
+  cursor: pointer; text-decoration: none; font-family: var(--sans);
+}
+.btn:hover { background: var(--acc-dark); }
+.btn.ghost { background: transparent; color: var(--acc-dark) !important; border: 1.5px solid var(--acc); }
+.btn.ghost:hover { background: var(--acc-soft); }
+.btn.teal { background: var(--teal); }
+.btn.sm { padding: 5px 14px; font-size: 13px; }
+
+/* ---------- 模拟器 / 实验控件 ---------- */
+.sim {
+  border: 1.5px solid #c9d3f2; border-radius: var(--radius);
+  background: linear-gradient(180deg, #fbfcff, #f3f6fd);
+  padding: 18px 20px; margin: 16px 0;
+}
+.sim-tag {
+  display: inline-block; font-family: var(--mono); font-size: 11.5px;
+  border-radius: 5px; padding: 2px 8px; margin-bottom: 10px; font-weight: 700;
+}
+.sim-tag.mock { background: var(--warn-soft); color: var(--warn); border: 1px solid #f0cdb4; }
+.sim-tag.real { background: var(--teal-soft); color: var(--teal); border: 1px solid #bcd9d4; }
+.sim label { font-size: 14px; color: var(--muted); }
+.sim input[type="range"] { width: 100%; accent-color: var(--acc); }
+.sim svg { max-width: 100%; height: auto; }
+.sim .readout { font-family: var(--mono); font-size: 14px; color: var(--acc-dark); }
+
+/* ---------- 页脚 ---------- */
+.pagefoot {
+  margin-top: 60px; padding-top: 18px; border-top: 1px solid var(--line);
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  color: var(--muted); font-size: 14px;
+}
+.pagefoot a { text-decoration: none; }
+
+/* ---------- 首页专用 ---------- */
+.stage-band {
+  font-family: var(--mono); font-size: 13px; letter-spacing: 1px;
+  color: var(--acc-dark); margin: 40px 0 6px;
+}
+.course-list { list-style: none; padding: 0; margin: 10px 0; }
+.course-list li {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 11px 16px; margin: 8px 0;
+}
+.course-list .no { font-family: var(--mono); color: var(--muted); font-size: 13px; width: 30px; flex: none; }
+.course-list a { text-decoration: none; font-weight: 600; }
+.course-list .desc { color: var(--muted); font-size: 13.5px; flex: 1; }
+.course-list .st { flex: none; font-size: 12px; font-family: var(--mono); border-radius: 999px; padding: 2px 10px; }
+.st.ok { background: var(--teal-soft); color: var(--teal); border: 1px solid #bcd9d4; }
+.st.wip { background: var(--acc-soft); color: var(--acc-dark); border: 1px solid #c9d3f2; }
+.st.plan { background: #eceff5; color: var(--muted); border: 1px solid var(--line); }
+.course-list li.locked { opacity: .62; }
+.course-list li.locked .title { font-weight: 600; color: var(--ink); }
+@media (max-width: 640px) {
+  .course-list li { flex-wrap: wrap; }
+  .course-list .desc { flex-basis: 100%; order: 3; }
+}
+
+/* ---------- 返回顶部 ---------- */
+#totop {
+  position: fixed; right: 22px; bottom: 26px; z-index: 40;
+  background: var(--card); border: 1px solid var(--line); border-radius: 50%;
+  width: 42px; height: 42px; font-size: 18px; cursor: pointer; color: var(--acc-dark);
+  box-shadow: var(--shadow); display: none;
+}
+#totop.show { display: block; }
+
+/* ---------- 打印 ---------- */
+@media print {
+  .topbar, #totop, #readbar, .copy-btn { display: none !important; }
+  body { background: #fff !important; background-image: none !important; }
+}
+
+/* ===== 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)===== */
+:root{ --card: #f6f8fc; }                          /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color: #e6eaf1;
+  background-image: url("paper-linen-v3.jpg");
+  background-repeat: repeat;
+  background-size: 230px 230px;
+}
+.reslist{ margin:16px 0 6px; display:flex; flex-direction:column; gap:14px; }
+.res{ border:1px solid var(--line); border-radius:8px; background:var(--card); padding:13px 16px 11px; }
+.res.spine-card{ border-color:var(--acc); border-left-width:3px; }
+.res .rh{ display:flex; align-items:baseline; gap:9px; flex-wrap:wrap; margin-bottom:8px; }
+.res .rt2{ font-weight:600; font-size:15px; }
+.res .rt2 a{ color:var(--acc-dark); text-decoration:none; }
+.res .rt2 a:hover{ text-decoration:underline; }
+.res .spine{ font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:var(--acc); border:1px solid var(--acc); border-radius:3px; padding:1px 7px; }
+.res .tags{ font-family:var(--mono); font-size:11px; letter-spacing:.02em; color:var(--muted); margin-left:auto; }
+.res .rrow{ display:grid; grid-template-columns:78px 1fr; gap:10px; font-size:13px; line-height:1.62; padding:5px 0; border-top:1px solid var(--line); }
+.res .rk{ color:var(--muted); font-weight:600; }
+.res .rv b{ color:var(--ink); font-weight:600; }
+@media(max-width:520px){ .res .rrow{ grid-template-columns:1fr; gap:1px; } .res .tags{ margin-left:0; } }
+
+</style>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style>
+/* 实验页专用:代码运行器 */
+.runner { border: 1.5px solid #c9d3f2; border-radius: 12px; overflow: hidden; margin: 14px 0; background: #fff; }
+.runner-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 8px 12px; background: #f0f3fa; border-bottom: 1px solid var(--line); }
+.runner-bar .fname { font-family: var(--mono); font-size: 12.5px; color: var(--muted); margin-right: auto; }
+.runner textarea {
+  display: block; width: 100%; border: none; resize: vertical; min-height: 120px;
+  background: var(--code-bg); color: var(--code-ink); padding: 14px 16px;
+  font-family: var(--mono); font-size: 13.5px; line-height: 1.6; tab-size: 4;
+}
+.runner textarea:focus { outline: 2px solid var(--acc); outline-offset: -2px; }
+.runner .runout {
+  margin: 0; border: none; border-top: 1px dashed #c4cde0; border-radius: 0;
+  background: #f4f6fb; color: #303b52; min-height: 44px; white-space: pre-wrap;
+}
+.runner .runout.err { color: var(--danger); }
+#pystatus { font-size: 12.5px; color: var(--muted); }
+</style>
+<style data-reshell-fix>
+/* 改造收尾:旧页面的外壳类在两栏版式里让位 */
+.wrap,.wrap-narrow{max-width:none;margin:0;padding:0;}
+.topbar,#readbar,#totop{display:none!important;}
+.hero{border:0;padding:0;margin:0;}
+.pagefoot{margin-top:34px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span><a href="../基础课程/01-人工智能全景与学习环境.html">第 1 章讲义</a><span class="sep">—</span><a href="../题库/quiz-01.html">� 本章题库</a><span class="sep">—</span><span class="current">规则 vs 学习</span>
+      <span class="spacer"></span>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验 01 · 配套第 1 章 · 约 40 分钟</p>
+        <h1>规则 vs 学习:跑通第一个机器学习程序</h1>
+        <p class="recap">四步走:验证环境 → 写规则版 → 分两步搭出学习版 → 改参数做破坏性实验。
+    每一步都有预期输出,对不上就查页尾排错表。</p>
+      </header>
+
+
+  <!-- 运行方式 -->
+  <div class="note">
+    <span class="note-t">先说清楚:两种运行方式,都是真实运行</span>
+    <p style="margin:6px 0"><b>方式 A · 本地终端(推荐)</b>:在自己的电脑上运行 <code>python xxx.py</code>。这是真实工作流,必须练会。</p>
+    <p style="margin:6px 0"><b>方式 B · 页面内运行器</b>:每段代码旁有「▶ 运行」按钮,用的是 Pyodide——一个跑在浏览器里的<b>真实 Python</b>(不是模拟输出)。
+    首次点击需联网加载(约 10–20 秒),之后离线也能用直到关页面。</p>
+    <p style="margin:6px 0 0">两者的差别:运行器内置的是 Pyodide 自带的 Python 3.12,本地是 3.10——第 1 步会亲眼看到这个差别,这本身就是一课:<b>同一份代码,环境不同,输出可以不同。</b></p>
+  </div>
+
+  <!-- 环境 -->
+  <h2 id="sec1"><span class="no">1</span><span>运行环境与准备</span></h2>
+  <div class="card">
+    <p>前提:已完成<a href="../基础课程/01-人工智能全景与学习环境.html#env">讲义第 8 节</a>的环境安装。快速核对:</p>
+    <pre>cd ~\ai-lab
+.venv\Scripts\Activate.ps1
+python --version</pre>
+    <pre class="out">Python 3.10.x   ← 行首带 (.venv) 前缀</pre>
+    <p>本实验<b>不需要安装任何库</b>,全部用 Python 标准库完成。</p>
+    <p style="margin-bottom:0">要新建的文件(建议亲手敲一遍;实在想偷懒,现成文件在课程目录 <code>实验室\code\lab01\</code> 里):</p>
+    <div class="tbl-scroll">
+      <table>
+        <tr><th>文件</th><th>作用</th></tr>
+        <tr><td><code>step1_check_env.py</code></td><td>验证环境</td></tr>
+        <tr><td><code>step2_rule.py</code></td><td>规则法(对照组)</td></tr>
+        <tr><td><code>step3_learn.py</code></td><td>学习法(本体,分两小步搭出来)</td></tr>
+        <tr><td><code>step4_experiments.py</code></td><td>改参数做实验</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- STEP 1 -->
+  <h2 id="sec2"><span class="no">2</span><span>验证环境:第一个 Python 文件</span></h2>
+  <ol class="steps">
+    <li>
+      <p>在 <code>ai-lab</code> 目录里新建文件 <code>step1_check_env.py</code>(VS Code:文件 → 新建文件,保存时选好目录和文件名)。</p>
+    </li>
+    <li>
+      <p>输入以下代码(或在下方运行器里直接改着玩):</p>
+      <div class="runner">
+        <div class="runner-bar">
+          <span class="fname">step1_check_env.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button>
+        </div>
+        <textarea class="code" spellcheck="false" rows="8">import sys        # sys:和 Python 解释器本身对话的模块
+import platform   # platform:查询操作系统信息的模块
+
+print("Python 版本:", sys.version.split()[0])
+print("运行平台:", platform.system())
+print("如果能看到上面两行,说明 Python 已经跑起来了")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+    </li>
+    <li>
+      <p>本地终端运行:</p>
+      <pre>python step1_check_env.py</pre>
+      <pre class="out">Python 版本: 3.10.11
+运行平台: Windows
+如果你能看到上面两行,说明 Python 已经在为你干活了</pre>
+      <p style="font-size:14px;color:var(--muted)">小版本号(3.10.<b>11</b>)不同没关系。注意:同一段代码在页面运行器里会打印 3.12.x 和 Emscripten——环境不同,输出不同,这正是要建立的意识。</p>
+    </li>
+  </ol>
+
+  <!-- STEP 2 -->
+  <h2 id="sec3"><span class="no">3</span><span>规则法:把规律写死(对照组)</span></h2>
+  <ol class="steps">
+    <li>
+      <p>新建 <code>step2_rule.py</code>,输入:</p>
+      <div class="runner">
+        <div class="runner-bar">
+          <span class="fname">step2_rule.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button>
+        </div>
+        <textarea class="code" spellcheck="false" rows="9">PRICE_PER_KG = 4      # ← 这就是“规则”:每公斤 4 元。谁定的?人定的。
+
+def price(weight):
+    """按写死的规则算运费"""
+    return PRICE_PER_KG * weight
+
+print("规则法预测 5kg 运费:", price(5), "元")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <pre class="out">规则法预测 5kg 运费: 20 元</pre>
+    </li>
+    <li>
+      <p><b>体会问题所在:</b>把 <code>PRICE_PER_KG</code> 改成 <code>4.5</code> 再跑一次。预测变了——但这次修改是<b>人</b>做的。
+      如果账单数据每周都变,谁来每周改代码?这就是规则法的死穴,也是学习法存在的理由。</p>
+    </li>
+  </ol>
+
+  <!-- STEP 3 -->
+  <h2 id="sec4"><span class="no">4</span><span>学习法:让数据自己定参数(本体)</span></h2>
+  <p>不要一次抄完,分两小步搭,每步都跑通再往下。</p>
+
+  <h3>3a · 先只搭「数据 + 损失函数」</h3>
+  <ol class="steps">
+    <li>
+      <p>新建 <code>step3_learn.py</code>,先只写这些——目标是验证损失函数算得和讲义 12.3 节的手算表一致:</p>
+      <div class="runner">
+        <div class="runner-bar">
+          <span class="fname">step3_learn.py(最小版本)</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button>
+        </div>
+        <textarea class="code" spellcheck="false" rows="13">weights = [1, 2, 3]           # 数据:重量(kg)
+prices  = [4.2, 7.9, 12.1]    # 数据:实付运费(元)
+
+def loss(w):
+    """算参数 w 的损失:预测越离谱,返回值越大"""
+    total = 0
+    for x, y in zip(weights, prices):   # 每次取一对 (重量, 运费)
+        error = y - w * x               # 误差 = 真实 − 预测
+        total += error ** 2             # 平方后累加
+    return total / len(weights)         # 取平均
+
+print(f"L(3.5) = {loss(3.5):.4f}")
+print(f"L(4)   = {loss(4):.4f}")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <pre class="out">L(3.5) = 1.2867
+L(4)   = 0.0200</pre>
+      <p style="font-size:14px;color:var(--muted)">和手算表对上了(1.287 / 0.020)就继续。顺带一提:如果去掉 <code>:.4f</code> 直接打印,会看到
+      <code>0.019999999999999983</code> 这样的长尾巴——这是计算机存小数的精度特性,不是算错了,第 3 章会讲。</p>
+    </li>
+  </ol>
+
+  <h3>3b · 补上「搜索最优参数」的循环</h3>
+  <ol class="steps">
+    <li>
+      <p>在文件末尾<b>删掉两行 print</b>,补上搜索循环和新的输出。先自己试着写(提示在下面),写不出再点「填入参考答案」:</p>
+      <div class="runner" data-answer="ans-3b">
+        <div class="runner-bar">
+          <span class="fname">step3_learn.py(补全中)</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button>
+          <button class="btn ghost sm fill" type="button">填入参考答案</button>
+        </div>
+        <textarea class="code" spellcheck="false" rows="18">weights = [1, 2, 3]
+prices  = [4.2, 7.9, 12.1]
+
+def loss(w):
+    total = 0
+    for x, y in zip(weights, prices):
+        error = y - w * x
+        total += error ** 2
+    return total / len(weights)
+
+# TODO ① 造两个变量 best_w、best_loss,初始值:0 和 loss(0)
+# TODO ② 写一个循环,让 w 依次取 0.000, 0.001, ..., 20.000
+#         (提示:range(20001) 配合 w = i * 0.001)
+# TODO ③ 循环里:如果 loss(w) 比 best_loss 小,就更新 best_w 和 best_loss
+# TODO ④ 循环结束后,打印 best_w(3 位小数)和对 5kg 的预测(2 位小数)</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <details class="hint"><summary>显示提示</summary>
+        <p>骨架长这样,填空即可:</p>
+        <pre>best_w, best_loss = 0, loss(0)
+for i in range(____):
+    w = i * ____
+    if loss(w) &lt; ____:
+        best_w, best_loss = ____, ____
+
+print(f"学到的参数 w = {best_w:.3f},损失 = {best_loss:.4f}")
+print(f"预测 5kg 运费:{best_w * 5:.2f} 元")</pre>
+      </details>
+      <pre class="out">学到的参数 w = 4.021,损失 = 0.0179
+预测 5kg 运费:20.11 元</pre>
+    </li>
+    <li>
+      <p><b>逐行核对参考答案</b>(点上面「填入参考答案」后对照;每行注释都解释了它对应公式的哪一部分)。
+      然后回答一个问题:这个程序里,「学习」发生在哪几行?
+      <b>答:搜索循环那 4 行</b>——其余都是准备工作。scikit-learn 的 <code>model.fit()</code> 干的就是这几行的活(只是用公式解,不用暴力搜)。</p>
+    </li>
+  </ol>
+
+  <h3>3c · 代码执行链</h3>
+  <div class="fig">
+    <svg viewBox="0 0 720 176" width="720" height="176" role="img" aria-label="step3 执行链">
+      <defs>
+        <marker id="arrL" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#0c6e63"/>
+        </marker>
+      </defs>
+      <g font-size="12.5">
+        <rect x="10" y="20" width="150" height="58" rx="9" fill="#fff" stroke="#d8dee9" stroke-width="1.5"/>
+        <text x="85" y="44" text-anchor="middle" font-weight="700">① 建数据列表</text>
+        <text x="85" y="63" text-anchor="middle" fill="#55617a" font-size="11.5">形状:各长 3</text>
+        <rect x="196" y="20" width="150" height="58" rx="9" fill="#fff" stroke="#d8dee9" stroke-width="1.5"/>
+        <text x="271" y="44" text-anchor="middle" font-weight="700">② 定义 loss</text>
+        <text x="271" y="63" text-anchor="middle" fill="#55617a" font-size="11.5">此刻不执行</text>
+        <rect x="382" y="20" width="150" height="58" rx="9" fill="#e3f0ee" stroke="#0c6e63" stroke-width="1.8"/>
+        <text x="457" y="44" text-anchor="middle" font-weight="700" fill="#0c6e63">③ 搜索循环</text>
+        <text x="457" y="63" text-anchor="middle" fill="#3c5b56" font-size="11.5">调 loss() 20002 次</text>
+        <rect x="568" y="20" width="142" height="58" rx="9" fill="#fff" stroke="#d8dee9" stroke-width="1.5"/>
+        <text x="639" y="44" text-anchor="middle" font-weight="700">④ print 到终端</text>
+        <text x="639" y="63" text-anchor="middle" fill="#55617a" font-size="11.5">best_w → 屏幕</text>
+        <line x1="160" y1="49" x2="192" y2="49" stroke="#0c6e63" stroke-width="2" marker-end="url(#arrL)"/>
+        <line x1="346" y1="49" x2="378" y2="49" stroke="#0c6e63" stroke-width="2" marker-end="url(#arrL)"/>
+        <line x1="532" y1="49" x2="564" y2="49" stroke="#0c6e63" stroke-width="2" marker-end="url(#arrL)"/>
+        <text x="360" y="130" text-anchor="middle" fill="#55617a" font-size="12.5">每次调用:标量 w 进 → 遍历 3 对数据 → 标量损失出;返回值回到 if 比较处,决定要不要更新 best_w</text>
+        <path d="M 457 82 L 457 108" stroke="#0c6e63" stroke-width="1.6" marker-end="url(#arrL)"/>
+      </g>
+    </svg>
+    <p class="figcap">图 · step3_learn.py 的执行顺序:数据形状从头到尾只有「长度 3 的列表」和标量</p>
+  </div>
+
+  <!-- STEP 4 -->
+  <h2 id="sec5"><span class="no">5</span><span>破坏性实验:改参数,看会发生什么</span></h2>
+  <ol class="steps">
+    <li>
+      <p>把 <code>step3_learn.py</code> 另存为 <code>step4_experiments.py</code>(或用 <code>实验室\code\lab01\</code> 里带 TODO 注释的现成版)。<b>一次只做一个实验,记下结果,改回去,再做下一个:</b></p>
+      <div class="tbl-scroll">
+        <table>
+          <tr><th>实验</th><th>改动</th><th>预期结果</th><th>它证明了什么</th></tr>
+          <tr><td>A 脏数据</td><td>两列表各加一个元素:<code>weights=[1,2,3,3]</code>、<code>prices=[4.2,7.9,12.1,50]</code></td><td>w ≈ 8.970,预测 5kg ≈ 44.85 元</td><td>一条错误记录就能把模型拉偏一倍多——数据质量 ≥ 算法</td></tr>
+          <tr><td>B 搜索范围</td><td><code>range(20001)</code> → <code>range(3001)</code></td><td>w 卡在 3.000</td><td>候选范围不覆盖答案,数据再好也学不到</td></tr>
+          <tr><td>C 搜索粒度</td><td><code>0.001</code> → <code>0.5</code></td><td>w 只能取到 4.000</td><td>粒度决定精度</td></tr>
+        </table>
+      </div>
+    </li>
+    <li>
+      <p>在运行器里当场试实验 A(已填好脏数据版,直接点运行,再自己改回干净数据对比):</p>
+      <div class="runner">
+        <div class="runner-bar">
+          <span class="fname">step4_experiments.py(实验 A:脏数据版)</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button>
+        </div>
+        <textarea class="code" spellcheck="false" rows="17">weights = [1, 2, 3, 3]            # ← 混入了一条错误记录
+prices  = [4.2, 7.9, 12.1, 50]    # ← 3kg 收了 50 元?!
+
+def loss(w):
+    total = 0
+    for x, y in zip(weights, prices):
+        error = y - w * x
+        total += error ** 2
+    return total / len(weights)
+
+best_w, best_loss = 0, loss(0)
+for i in range(20001):
+    w = i * 0.001
+    if loss(w) < best_loss:
+        best_w, best_loss = w, loss(w)
+
+print(f"学到的参数 w = {best_w:.3f},损失 = {best_loss:.4f}")
+print(f"预测 5kg 运费:{best_w * 5:.2f} 元")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+    </li>
+  </ol>
+
+  <!-- 排错 -->
+  <h2 id="sec6"><span class="no">6</span><span>常见报错与排查</span></h2>
+  <div class="tbl-scroll">
+    <table>
+      <tr><th>报错 / 现象</th><th>原因</th><th>解法</th></tr>
+      <tr><td><code>SyntaxError: invalid character '“'</code></td><td>用了中文引号(输入法没切英文)</td><td>把 <code>“ ” ‘ ’</code> 全换成英文 <code>" '</code>;冒号、逗号、括号同理</td></tr>
+      <tr><td><code>IndentationError: expected an indented block</code></td><td><code>def</code>/<code>for</code>/<code>if</code> 的下一行没缩进,或空格和 Tab 混用</td><td>统一用 4 个空格缩进;VS Code 右下角可查看缩进设置</td></tr>
+      <tr><td><code>NameError: name 'weigths' is not defined</code></td><td>变量名拼错(报错信息里会写出那个错名字)</td><td>对照定义处逐字检查;VS Code 里变量名打错会有波浪线</td></tr>
+      <tr><td><code>can't open file ... step3_learn.py</code></td><td>终端当前目录里没有这个文件</td><td>先 <code>cd ~\ai-lab</code>(~ = 当前用户主目录);用 <code>dir</code> 确认文件在</td></tr>
+      <tr><td><code>ZeroDivisionError: division by zero</code></td><td><code>weights</code> 改成了空列表,<code>len()</code> 为 0</td><td>数据列表至少留一条记录</td></tr>
+      <tr><td>输出是 <code>学到的参数 w = 0.000</code></td><td>循环里忘了更新 <code>best_w</code>,或 if 条件写反了</td><td>对照参考答案检查 TODO ③ 那两行</td></tr>
+      <tr><td>页面运行器一直显示「加载中」</td><td>Pyodide 需要联网下载(仅首次)</td><td>检查网络;或干脆全用本地方式跑,不影响任何实验目标</td></tr>
+    </table>
+  </div>
+
+  <!-- 完成标准 -->
+  <h2 id="sec7"><span class="no">7</span><span>完成标准</span></h2>
+  <ul class="checklist">
+    <li><input type="checkbox">step1 在<b>本地终端</b>跑通,打印出 3.10.x + Windows</li>
+    <li><input type="checkbox">step2 跑通,且我改过 PRICE_PER_KG 并理解了「规则要人来改」的死穴</li>
+    <li><input type="checkbox">step3a 的两个损失值和讲义手算表对上了</li>
+    <li><input type="checkbox">step3b 我先自己尝试了 TODO,再对照参考答案,最终输出 w = 4.021</li>
+    <li><input type="checkbox">step4 三个实验至少做了 A 和 B,并把观察写进了注释</li>
+  </ul>
+  <div class="note good">
+    <span class="note-t">下一步</span>
+    去 <a href="../题库/quiz-01.html">第 1 章题库</a> 自测。正确率 70% 以上 + 讲义自查清单勾满 8 条 = 第 1 章通关。
+  </div>
+
+  <div class="pagefoot">
+    <a href="../基础课程/01-人工智能全景与学习环境.html">← 回第 1 章讲义</a>
+    <a href="../题库/quiz-01.html">去做题库 →</a>
+  </div>
+
+
+
+<!-- 3b 参考答案(逐行注释) -->
+
+
+
+
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本页目录">
+      <p class="toc-label">规则 vs 学习 · 目录</p>
+      <div class="toc-group">
+        <a data-toc-target="sec1" href="#sec1"><i>1</i>运行环境与准备</a>
+        <a data-toc-target="sec2" href="#sec2"><i>2</i>验证环境:第一个 Python 文件</a>
+        <a data-toc-target="sec3" href="#sec3"><i>3</i>规则法:把规律写死(对照组)</a>
+        <a data-toc-target="sec4" href="#sec4"><i>4</i>学习法:让数据自己定参数(本体)</a>
+        <a data-toc-target="sec5" href="#sec5"><i>5</i>破坏性实验:改参数,看会发生什么</a>
+        <a data-toc-target="sec6" href="#sec6"><i>6</i>常见报错与排查</a>
+        <a data-toc-target="sec7" href="#sec7"><i>7</i>完成标准</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script type="text/x-python" id="ans-3b">weights = [1, 2, 3]           # 数据:重量(kg),长度为 3 的列表
+prices  = [4.2, 7.9, 12.1]    # 数据:实付运费(元),一一对应
+
+def loss(w):
+    """算参数 w 的损失(均方误差):预测越离谱,返回值越大"""
+    total = 0                           # 累加器,从 0 开始
+    for x, y in zip(weights, prices):   # zip:每轮取一对 (重量, 运费)
+        error = y - w * x               # 公式 yᵢ − w·xᵢ:真实值减预测值
+        total += error ** 2             # 平方(** 2)再累加,对应 Σ(…)²
+    return total / len(weights)         # 除以样本数 n = 3,取平均
+
+best_w, best_loss = 0, loss(0)          # TODO①:先假设 w=0 最好,作为起点
+for i in range(20001):                  # TODO②:i 取 0..20000,共 20001 个候选
+    w = i * 0.001                       #        i=4021 时 w=4.021
+    if loss(w) < best_loss:             # TODO③:这个 w 更好吗?
+        best_w, best_loss = w, loss(w)  #        是,就记住它
+
+print(f"学到的参数 w = {best_w:.3f},损失 = {best_loss:.4f}")   # TODO④
+print(f"预测 5kg 运费:{best_w * 5:.2f} 元")                    # 用学到的 w 预测新输入
+</script>
+<script src="../assets/course.js"></script>
+<script>
+/* ===== 页面内 Python 运行器(Pyodide,真实 Python,首次需联网) ===== */
+(function () {
+  'use strict';
+  var PYODIDE_URL = 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js';
+  var pyodideReady = null;
+
+  function loadPyodideOnce() {
+    if (pyodideReady) return pyodideReady;
+    pyodideReady = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = PYODIDE_URL;
+      s.onload = function () {
+        window.loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.26.2/full/' })
+          .then(resolve, reject);
+      };
+      s.onerror = function () { reject(new Error('无法加载 Pyodide(需要联网)。请改用本地终端方式运行。')); };
+      document.head.appendChild(s);
+    });
+    return pyodideReady;
+  }
+
+  document.querySelectorAll('.runner').forEach(function (runner) {
+    var ta = runner.querySelector('textarea.code');
+    var out = runner.querySelector('.runout');
+    var initial = ta.value;
+
+    runner.querySelector('.run').addEventListener('click', function () {
+      out.classList.remove('err');
+      out.textContent = '⏳ 正在加载浏览器内 Python(首次约 10–20 秒,请稍候)…';
+      loadPyodideOnce().then(function (py) {
+        out.textContent = '▶ 运行中…';
+        var lines = [];
+        py.setStdout({ batched: function (s) { lines.push(s); } });
+        py.setStderr({ batched: function (s) { lines.push(s); } });
+        try {
+          var ns = py.globals.get('dict')();
+          py.runPython(ta.value, { globals: ns });
+          ns.destroy();
+          out.textContent = lines.length ? lines.join('\n') : '(程序运行完毕,没有任何输出——是不是忘了 print?)';
+        } catch (e) {
+          var msg = String(e.message || e);
+          var idx = msg.lastIndexOf('File "<exec>"');
+          out.classList.add('err');
+          out.textContent = (lines.length ? lines.join('\n') + '\n' : '') +
+            '✗ 程序报错(这很正常,对照下面的排错表):\n' + (idx >= 0 ? msg.slice(idx) : msg);
+        }
+      }, function (e) {
+        out.classList.add('err');
+        out.textContent = '✗ ' + e.message;
+      });
+    });
+
+    runner.querySelector('.reset').addEventListener('click', function () {
+      ta.value = initial;
+      out.classList.remove('err');
+      out.textContent = '已重置为初始代码';
+    });
+
+    var fillBtn = runner.querySelector('.fill');
+    if (fillBtn) {
+      fillBtn.addEventListener('click', function () {
+        var ansEl = document.getElementById(runner.dataset.answer);
+        if (!ansEl) return;
+        ta.value = ansEl.textContent.trim() + '\n';
+        out.classList.remove('err');
+        out.textContent = '已填入带逐行注释的参考答案,点「▶ 运行」验证';
+      });
+    }
+  });
+})();
+</script>
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="lab-01" data-kind="lab" data-title="规则 vs 学习:跑通第一个机器学习程序"></script>
+</body>
+</html>

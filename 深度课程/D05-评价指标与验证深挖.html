@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D05 · 评价指标与验证深挖</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="D04-聚类与降维.html">D04 聚类与降维</a><span class="sep">—</span>
+      <a href="D05-评价指标与验证深挖.html" class="current">D05 评价与验证</a><span class="sep">—</span>
+      <a href="D06-特征工程与数据预处理.html">D06 特征工程</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D05.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track A · Chapter D05</p>
+        <h1>评价指标与验证深挖</h1>
+        <p class="recap">前面学了各种模型,但有个要命的问题一直没答:<b>怎么知道一个模型到底好不好?</b>只看"准确率"经常被骗——100 封邮件里 99 封不是垃圾,一个"全判不是垃圾"的废物模型准确率也有 99%,却一封垃圾都拦不住。这一章讲<b>科学地评价模型</b>:混淆矩阵、精确率/召回率、ROC/AUC,以及"别用训练集给自己打分"的验证纪律(交叉验证、超参搜索)。学完它,才敢相信模型——也才敢动手做项目 <a href="../index.html">P2</a>。</p>
+      </header>
+
+      <p>图解骨架约 45 分钟,动手 + 精读约 5~7 小时。这一章不引入新模型,而是讲<b>怎么审判</b>前面所有模型。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>准确率的陷阱——数据不平衡时,高准确率可能毫无意义</li>
+          <li>混淆矩阵——TP/FP/FN/TN 四格,一切分类指标的源头</li>
+          <li>精确率与召回率——"判对的里多少真对" vs "真的里抓回多少";F1 折中</li>
+          <li>ROC/AUC 与阈值——调阈值的全景,AUC 一个数概括</li>
+          <li>验证纪律——训练/验证/测试、交叉验证、超参搜索、别数据泄露</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>评的就是 D01–D04 的模型;阈值调整直接续 <a href="D02-逻辑回归与分类边界.html">D02</a> 的"0.5 不是铁律";过拟合概念来自 <a href="../基础课程/05-机器学习核心概念.html">第 5 章</a>。<b>通向后面:</b>"用评测集 + 分数驱动改进"的思想,和应用工程 <a href="../应用工程/A06-评估幻觉安全成本.html">A06 的 evals</a> 一脉相承(只是对象从传统模型变成 LLM)。<b>学完这章就能做项目 <a href="../index.html">P2 第一个预测模型</a>。</b></p>
+      </div>
+
+      <!-- ===== 模块 A ===== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>训练出模型、但<b>不确定它到底行不行、不敢上线</b>的人。</li>
+        <li>被"准确率很高但实际很烂"坑过、想搞懂原因的人。</li>
+        <li>要在多个模型/参数里<b>科学地选一个</b>的人。</li>
+      </ul>
+      <p><b>不适合</b>:已经熟练用交叉验证 + F1/AUC 选模型的人——扫一遍确认口径即可,直接看 D06。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>会 <a href="D02-逻辑回归与分类边界.html">D02</a>(分类、概率、阈值)和 <a href="../基础课程/05-机器学习核心概念.html">第 5 章</a>(过拟合、训练/测试)即可。这一章数学负担很轻,重在"想清楚每个数字到底在说什么"。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清为什么"准确率"在不平衡数据上会骗人。</li>
+        <li>看懂混淆矩阵,并从它推出精确率、召回率。</li>
+        <li>根据场景(宁可错杀 / 宁可放过)选对指标、调对阈值。</li>
+        <li>解释 ROC/AUC 概括了什么。</li>
+        <li>用交叉验证 + 网格搜索科学地评估和选模型,并避开数据泄露。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">评价模型的两条铁律:<b>①一个数字(尤其准确率)会骗人,要看清它把哪种错误藏起来了;②永远在"模型没见过的数据"上打分,别用训练集给自己发奖状。</b>前者靠混淆矩阵拆出精确率/召回率等,后者靠训练/验证/测试划分和交叉验证。</p>
+      <p>为什么这章比模型本身还重要:一个模型再花哨,如果用错了尺子去量,就会自信地把烂模型推上线、把好模型误杀。两类典型翻车:一是<b>被单一指标骗</b>——只看准确率,没发现它在关键的少数类上全错(垃圾邮件、癌症筛查、欺诈检测,少数类才是要抓的);二是<b>自己给自己打分</b>——用训练过的数据评估,分数虚高,一上线就现原形(过拟合的表现)。这一章就是给出一套"审判模型"的工具和纪律,让人的判断可信。这套思维,和应用工程 A06 评估 LLM 是同一种科学精神。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="评价与验证五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">别被一个数骗,</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">科学地评估</text>
+          <rect x="288" y="32" width="184" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 准确率的陷阱</text>
+          <rect x="600" y="122" width="152" height="46" rx="8" class="d-ink nf"/>
+          <text x="676" y="150" text-anchor="middle" class="nl">② 混淆矩阵</text>
+          <rect x="440" y="330" width="176" height="46" rx="8" class="d-ink nf"/>
+          <text x="528" y="358" text-anchor="middle" class="nl">③ 精确率 / 召回率</text>
+          <rect x="150" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="232" y="358" text-anchor="middle" class="nl">④ ROC / AUC</text>
+          <rect x="8" y="122" width="152" height="46" rx="8" class="d-ink nf"/>
+          <text x="84" y="150" text-anchor="middle" class="nl">⑤ 验证纪律</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。①~④讲"选对尺子看清错误",⑤讲"在没见过的数据上量"。合起来=可信的评估。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 B ===== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <div class="callout go">
+        <span class="label">默认主线 · 直觉优先</span>
+        <p><b>StatQuest 的混淆矩阵 / 敏感度特异度 / ROC-AUC 三支 + Google ML 速成课「分类指标」章。</b>为什么:这些指标最怕"背定义",StatQuest 用具体例子讲清每个数在说什么、什么时候看哪个;Google 速成课配阈值滑块的交互演示。链接:<a href="https://www.youtube.com/watch?v=Kdsp6soqA7o" target="_blank" rel="noopener">StatQuest · Confusion Matrix</a>、<a href="https://www.youtube.com/watch?v=4jRBRDbJemM" target="_blank" rel="noopener">ROC and AUC</a>、<a href="https://developers.google.com/machine-learning/crash-course/classification/accuracy-precision-recall" target="_blank" rel="noopener">Google ML · 分类指标</a>。</p>
+      </div>
+      <p><b>再配两件:</b></p>
+      <ul>
+        <li><b>scikit-learn 文档</b> — <a href="https://scikit-learn.org/stable/modules/model_evaluation.html" target="_blank" rel="noopener">Metrics</a> 与 <a href="https://scikit-learn.org/stable/modules/cross_validation.html" target="_blank" rel="noopener">Cross-validation</a>,动手一手参考。</li>
+        <li><b>数据泄露(data leakage)科普</b> — <a href="https://scikit-learn.org/stable/common_pitfalls.html" target="_blank" rel="noopener">scikit-learn 常见陷阱</a>,专门讲怎么别把"未来信息"偷偷喂给模型。</li>
+      </ul>
+
+      <!-- ===== 模块 C ===== -->
+      <p class="handoff">先看那个最常见、最坑人的陷阱:唯准确率论。</p>
+      <h2 id="trap"><span class="no">7</span><span>准确率的陷阱</span></h2>
+      <p class="one-liner">准确率 = 判对的样本占比。它在<b>类别不平衡</b>时会严重误导:如果 99% 的样本是同一类,一个"永远猜多数类"的废物模型准确率就有 99%——数字很漂亮,却对真正要抓的那 1% 毫无用处。</p>
+      <p>现实里最重要的问题往往<b>天然不平衡</b>:垃圾邮件是少数、欺诈交易是少数、癌症患者是少数——而这些少数恰恰是最想抓住的。这时准确率就成了糖衣:模型只要"随大流全判多数类"就能刷出高分,却把关键的少数类全漏了。<b>所以看到高准确率,第一反应应该是警惕:它是不是把少数类的错误藏起来了?</b>要拆穿它,得把"判对/判错"按类别摊开看——这就是混淆矩阵。</p>
+
+      <p class="handoff">拆穿准确率的工具,是一张四格表。</p>
+      <h2 id="confusion"><span class="no">8</span><span>混淆矩阵:一切指标的源头</span></h2>
+      <p class="one-liner">混淆矩阵把预测结果摊成<b>四格</b>:真的正、判成正(<b>TP</b>);真的负、判成正(<b>FP,误报</b>);真的正、判成负(<b>FN,漏报</b>);真的负、判成负(<b>TN</b>)。所有分类指标都是从这四个数算出来的。</p>
+      <p>记住两个"错"最关键:<b>FP(误报)= 把好的当坏的抓了</b>(把正常邮件扔进垃圾箱、把好人当欺诈拦下);<b>FN(漏报)= 把坏的放过了</b>(垃圾邮件溜进收件箱、真欺诈没拦住)。不同场景里这两种错的代价天差地别:垃圾邮件过滤最怕 FP(误删重要邮件),癌症筛查最怕 FN(漏诊)。准确率把这两种错混在一起、还被大量的 TN 稀释,所以看不清;混淆矩阵把它们分开摆出来,才知道模型到底错在哪、错得起不起。<b>先看混淆矩阵,再谈任何单一指标</b>——这是评估分类模型的第一动作。</p>
+      <figure>
+        <svg viewBox="0 0 520 240" role="img" aria-label="混淆矩阵四格">
+          <text x="260" y="24" text-anchor="middle" class="el">预测 →</text>
+          <text x="24" y="130" text-anchor="middle" class="el" transform="rotate(-90 24 130)">真实 →</text>
+          <text x="180" y="48" text-anchor="middle" class="el">判为正</text><text x="360" y="48" text-anchor="middle" class="el">判为负</text>
+          <text x="70" y="100" text-anchor="middle" class="el">真的正</text><text x="70" y="180" text-anchor="middle" class="el">真的负</text>
+          <rect x="110" y="60" width="160" height="70" class="box-acc"/><text x="190" y="92" text-anchor="middle" class="nl-acc">TP</text><text x="190" y="112" text-anchor="middle" class="el">抓对了</text>
+          <rect x="270" y="60" width="160" height="70" class="box"/><text x="350" y="92" text-anchor="middle" class="nl">FN 漏报</text><text x="350" y="112" text-anchor="middle" class="el">坏的放过了</text>
+          <rect x="110" y="130" width="160" height="70" class="box"/><text x="190" y="162" text-anchor="middle" class="nl">FP 误报</text><text x="190" y="182" text-anchor="middle" class="el">好的错抓了</text>
+          <rect x="270" y="130" width="160" height="70" class="box-acc"/><text x="350" y="162" text-anchor="middle" class="nl-acc">TN</text><text x="350" y="182" text-anchor="middle" class="el">放对了</text>
+          <text x="260" y="228" text-anchor="middle" class="el">对角线(TP/TN)=判对;另两格是两种不同的错</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>混淆矩阵:对角线是判对(TP/TN),另两格是两种代价不同的错——FP(误报,好的错抓)与 FN(漏报,坏的放过)。所有指标都由这四个数推出。</figcaption>
+      </figure>
+
+      <p class="handoff">从四格里,拆出最实用的两个指标。</p>
+      <h2 id="pr"><span class="no">9</span><span>精确率与召回率</span></h2>
+      <p class="one-liner"><b>精确率</b><span class="en">precision</span>=在"判为正"的里面,有多少真的是正(<b>抓得准不准</b>);<b>召回率</b><span class="en">recall</span>=在"真的是正"的里面,有多少被抓回来了(<b>抓得全不全</b>)。两者常此消彼长,<b>F1</b> 是它们的调和平均,给一个折中的单数。</p>
+      <p>用垃圾邮件记:<b>精确率高</b>=扔进垃圾箱的,基本都真是垃圾(很少误删好邮件,FP 少);<b>召回率高</b>=真正的垃圾邮件,基本都被拦住了(很少漏网,FN 少)。它俩通常拉扯:把判定标准放宽(逮住更多垃圾,recall↑),就容易误伤好邮件(precision↓);反之收紧标准,precision↑ 但会漏掉一些 recall↓。<b>选哪个看代价</b>:癌症筛查要 recall 高(宁可多召回去复查,绝不能漏诊 FN);垃圾拦截要 precision 高(宁可放过几封垃圾,也别误删老板的邮件 FP)。拿不准就看 <b>F1</b>(precision 和 recall 都高时才高)。这直接续上 D02 的"阈值不是铁律"——调阈值,本质就是在 precision 和 recall 之间滑动。</p>
+
+      <p class="handoff">不想只盯一个阈值?ROC/AUC 给出全景。</p>
+      <h2 id="roc"><span class="no">10</span><span>ROC / AUC:阈值的全景</span></h2>
+      <p class="one-liner"><b>ROC 曲线</b>把阈值从严到松滑一遍,画出"抓得全(召回)"与"误报率"如何此消彼长的整条曲线;<b>AUC</b>(曲线下面积)用<b>一个 0~1 的数</b>概括模型整体的分辨能力:越接近 1 越强,0.5 相当于瞎猜。</p>
+      <p>为什么有用:precision/recall 是<b>某一个阈值</b>下的表现,而 ROC 一次性展示<b>所有阈值</b>下的权衡——让看清"这个模型在各种松紧设定下都表现如何",再据此挑一个合适的工作点。<b>AUC</b> 则把整条曲线压成一个数,方便快速比较两个模型谁整体更能分(且不受阈值和类别比例影响,常用于不平衡数据)。直觉解读:AUC=0.9 意思约等于"随便拿一个正样本和一个负样本,模型给正样本打更高分的概率是 90%"。<b>用法</b>:比较模型整体能力看 AUC;真要上线定一个阈值,回到 precision/recall 按业务代价选。</p>
+
+      <p class="handoff">最后,也是最容易被忽视的:在哪份数据上打分。</p>
+      <h2 id="validation"><span class="no">11</span><span>验证纪律:别用训练集打分</span></h2>
+      <p class="one-liner">铁律:<b>永远在模型"没见过"的数据上评估</b>。基本做法是把数据切成<b>训练 / 验证 / 测试</b>三份——训练集学、验证集调参和选模型、测试集最后只用一次报告真实水平。更稳的是<b>交叉验证</b>:轮流拿不同片段当验证,取平均,少受"恰好切得好/坏"的运气影响。</p>
+      <p>为什么必须如此:用训练过的数据评估,等于<b>开卷考自己出的题</b>,分数虚高、毫无参考价值(过拟合的模型尤其能骗人)。<b>交叉验证(K 折)</b>把数据分成 K 份,每次留一份当验证、其余训练,轮 K 次取平均——既充分利用数据,又让评分更稳。<b>超参搜索</b>(网格搜索/随机搜索)则在交叉验证的框架里,自动试很多组参数(如树的深度、正则强度)挑最好的。还有个隐形杀手叫<b>数据泄露</b>:不小心让"未来的信息"或"测试集的信息"渗进训练(比如在划分前就对全量数据做标准化、或用了含答案的特征),会让离线分数好得离谱、上线却崩——务必<b>先划分、再在训练集上拟合预处理</b>。这套纪律,就是让人的评估数字"上线后还作数"的保证。</p>
+      <figure>
+        <svg viewBox="0 0 560 210" role="img" aria-label="K 折交叉验证">
+          <text x="280" y="22" text-anchor="middle" class="el">5 折交叉验证:每轮换一份当验证(蓝),其余训练,取平均</text>
+          <g>
+            <rect x="60" y="40" width="88" height="22" class="box-acc"/><rect x="148" y="40" width="88" height="22" class="box"/><rect x="236" y="40" width="88" height="22" class="box"/><rect x="324" y="40" width="88" height="22" class="box"/><rect x="412" y="40" width="88" height="22" class="box"/>
+            <text x="524" y="56" class="el">轮1</text>
+          </g>
+          <g>
+            <rect x="60" y="68" width="88" height="22" class="box"/><rect x="148" y="68" width="88" height="22" class="box-acc"/><rect x="236" y="68" width="88" height="22" class="box"/><rect x="324" y="68" width="88" height="22" class="box"/><rect x="412" y="68" width="88" height="22" class="box"/>
+            <text x="524" y="84" class="el">轮2</text>
+          </g>
+          <g>
+            <rect x="60" y="96" width="88" height="22" class="box"/><rect x="148" y="96" width="88" height="22" class="box"/><rect x="236" y="96" width="88" height="22" class="box-acc"/><rect x="324" y="96" width="88" height="22" class="box"/><rect x="412" y="96" width="88" height="22" class="box"/>
+            <text x="524" y="112" class="el">轮3</text>
+          </g>
+          <g>
+            <rect x="60" y="124" width="88" height="22" class="box"/><rect x="148" y="124" width="88" height="22" class="box"/><rect x="236" y="124" width="88" height="22" class="box"/><rect x="324" y="124" width="88" height="22" class="box-acc"/><rect x="412" y="124" width="88" height="22" class="box"/>
+            <text x="524" y="140" class="el">轮4</text>
+          </g>
+          <g>
+            <rect x="60" y="152" width="88" height="22" class="box"/><rect x="148" y="152" width="88" height="22" class="box"/><rect x="236" y="152" width="88" height="22" class="box"/><rect x="324" y="152" width="88" height="22" class="box"/><rect x="412" y="152" width="88" height="22" class="box-acc"/>
+            <text x="524" y="168" class="el">轮5</text>
+          </g>
+          <text x="280" y="196" text-anchor="middle" class="el-acc">蓝=验证 · 白=训练;5 轮的分数取平均更稳</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>5 折交叉验证:数据分 5 份,每轮换一份当验证(蓝)、其余训练,轮 5 次取平均。比单次划分更稳,少受切分运气影响。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 D ===== -->
+      <p class="handoff">把这套评估落到代码:一份报告 + 交叉验证 + 调参。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:科学地评估一个模型</span></h2>
+      <p>scikit-learn 把这套流程收得很顺——一份分类报告看清各指标,交叉验证 + 网格搜索科学选参:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">evaluate.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.datasets </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> load_breast_cancer</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.model_selection </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> train_test_split, cross_val_score, GridSearchCV</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.ensemble </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> RandomForestClassifier</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.metrics </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> classification_report, confusion_matrix</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">X, y </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> load_breast_cancer(return_X_y</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)</span></span>
+<span class="line"><span style="color:#14181F">X_tr, X_te, y_tr, y_te </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> train_test_split(X, y, test_size</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0.2, random_state</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0)   </span><span style="color:#8B95A8;font-style:italic"># ⑪ 先划分</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">clf </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> RandomForestClassifier(random_state</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0).fit(X_tr, y_tr)</span></span>
+<span class="line"><span style="color:#14181F">pred </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> clf.predict(X_te)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(confusion_matrix(y_te, pred))          </span><span style="color:#8B95A8;font-style:italic"># ⑧ 四格:先看错在哪</span></span>
+<span class="line"><span style="color:#14181F">print(classification_report(y_te, pred))     </span><span style="color:#8B95A8;font-style:italic"># ③ 精确率/召回率/F1 一次看全</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># ⑪ 交叉验证:不靠一次划分的运气,看平均 + 波动</span></span>
+<span class="line"><span style="color:#14181F">scores </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> cross_val_score(clf, X_tr, y_tr, cv</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">5, scoring</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"f1"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"5 折 F1:"</span><span style="color:#14181F">, scores.mean().round(3), </span><span style="color:#557089">"±"</span><span style="color:#14181F">, scores.std().round(3))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># ⑪ 超参搜索:在交叉验证框架里自动挑最佳参数</span></span>
+<span class="line"><span style="color:#14181F">grid </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> GridSearchCV(RandomForestClassifier(random_state</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0),</span></span>
+<span class="line"><span style="color:#14181F">                    {</span><span style="color:#557089">"n_estimators"</span><span style="color:#14181F">: [100, 300], </span><span style="color:#557089">"max_depth"</span><span style="color:#14181F">: [None, 5, 10]},</span></span>
+<span class="line"><span style="color:#14181F">                    cv</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">5, scoring</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"f1"</span><span style="color:#14181F">).fit(X_tr, y_tr)</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"最佳参数:"</span><span style="color:#14181F">, grid.best_params_, </span><span style="color:#557089">" 最佳 F1:"</span><span style="color:#14181F">, grid.best_score_.round(3))</span></span></code></pre>
+      </div>
+      <p>逐块对照:<code>confusion_matrix</code> 先摊开四格看错在哪(⑧);<code>classification_report</code> 一次给出每类的精确率/召回率/F1(③),比单看准确率诚实得多;<code>cross_val_score(..., cv=5)</code> 用 5 折交叉验证给出平均分和波动(⑪,±后面的数越小越稳);<code>GridSearchCV</code> 在交叉验证里自动试参数组合、挑最佳(⑪)。关键纪律:<code>train_test_split</code> <b>一开始就把测试集隔离</b>,调参全程只在训练集内的交叉验证上做,<b>测试集留到最后report一次</b>——这样报出的分数才"上线后还作数"。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战</span>
+        <h3>改改看</h3>
+        <p>①把 <code>scoring</code> 从 <code>"f1"</code> 换成 <code>"precision"</code> 和 <code>"recall"</code>,看最佳参数会不会变——体会"用什么尺子,就选出什么模型"。②人为制造不平衡(只留 5% 的正类),对比"准确率"和"F1/召回率"谁还看得出模型好坏。③用 <code>roc_auc_score(y_te, clf.predict_proba(X_te)[:,1])</code> 算 AUC。④故意在 <code>train_test_split</code> 之前对全量数据做标准化,想想这为什么算数据泄露、会带来什么假象。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;下列链接均于 2026-08-17 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=Kdsp6soqA7o" target="_blank" rel="noopener">StatQuest · Confusion Matrix</a></span><span class="spine">默认主线</span><span class="tags">视频 · 英文(可开字幕) · 20min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">把混淆矩阵和由它派生的精确率/召回率/敏感度讲透的经典视频。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">这一章的一切指标都从混淆矩阵长出来;它把这张表钉进脑子。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">混淆矩阵 + 敏感度/特异度那段。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「混淆矩阵」「精确率/召回率」节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=4jRBRDbJemM" target="_blank" rel="noopener">StatQuest · ROC and AUC</a></span><span class="tags">视频 · 英文(可开字幕) · 15min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">用动画把 ROC 曲线和 AUC 讲清的短片。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">ROC/AUC 是最容易背公式却不懂的地方;它让人真看懂那条曲线在权衡什么。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全片。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「ROC/AUC」节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://scikit-learn.org/stable/common_pitfalls.html" target="_blank" rel="noopener">scikit-learn · 常见陷阱</a></span><span class="tags">官方 · 必读 · 30min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">官方专门讲"用 sklearn 最容易踩的坑",其中数据泄露一节最关键。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章把数据泄露列为头号纪律;这页给出官方的"怎么避"清单。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Data leakage 一节。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「数据泄露」节 + <a href="D06-特征工程与数据预处理.html">D06</a> 的防泄露流水线。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://scikit-learn.org/stable/modules/model_evaluation.html" target="_blank" rel="noopener">scikit-learn · Metrics</a></span><span class="tags">官方 · 当字典查 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">所有评价指标的一手文档。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">用 <code>classification_report</code>/<code>cross_val_score</code> 时想查指标含义来这里。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Classification metrics。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配本章的交叉验证/网格搜索代码。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>准确率高就是好模型</td><td>不平衡数据上高准确率可能毫无意义。要看混淆矩阵和精确率/召回率。</td></tr>
+          <tr><td>精确率和召回率能同时拉满</td><td>通常此消彼长。按业务代价取舍,或看折中的 F1。</td></tr>
+          <tr><td>AUC 高就万事大吉</td><td>AUC 概括整体分辨力;真上线要按代价定阈值,回到 precision/recall。</td></tr>
+          <tr><td>用全部数据训练+评估最充分</td><td>那是开卷考自己出的题,分数虚高。必须在没见过的数据上评估。</td></tr>
+          <tr><td>标准化/填充在划分前做省事</td><td>数据泄露!会把测试信息渗进训练,离线虚高上线崩。先划分,再在训练集上拟合。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>陷阱。</b>为什么 99% 准确率可能是废物模型?<details><summary>参考答案</summary><p>数据不平衡时(99% 一类),"全猜多数类"就有 99% 准确率,却漏掉全部要抓的少数类。</p></details></li>
+        <li><b>两种错。</b>FP 和 FN 分别是什么、各怕在什么场景?<details><summary>参考答案</summary><p>FP 误报=好的错抓(垃圾过滤最怕,误删好邮件);FN 漏报=坏的放过(癌症筛查最怕,漏诊)。</p></details></li>
+        <li><b>P vs R。</b>精确率和召回率各答什么问题?<details><summary>参考答案</summary><p>精确率:判为正的里多少真对(准不准);召回率:真的正里抓回多少(全不全)。常此消彼长,F1 折中。</p></details></li>
+        <li><b>验证。</b>为什么不能用训练集打分?交叉验证好在哪?<details><summary>参考答案</summary><p>训练集打分是开卷考自己出题,虚高。交叉验证轮流留验证取平均,更稳、少受切分运气影响。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上再进 D06 / 动手做 P2(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清准确率在不平衡数据上为什么骗人</li>
+          <li><input type="checkbox"> 我看得懂混淆矩阵、能分清 FP 和 FN</li>
+          <li><input type="checkbox"> 我能从场景选对精确率还是召回率优先</li>
+          <li><input type="checkbox"> 我理解 ROC/AUC 概括了整体分辨能力</li>
+          <li><input type="checkbox"> 我知道要在没见过的数据上评估、会用交叉验证</li>
+          <li><input type="checkbox"> 我知道数据泄露是什么、怎么避(先划分再预处理)</li>
+          <li><input type="checkbox"> 我能用 classification_report + GridSearchCV 科学选模型</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>会评估之后,Track A 只剩最后一块拼图。前面反复出现一句话:"垃圾进,垃圾出"——再好的模型,喂进去的特征是烂的,结果也好不了。<a href="D06-特征工程与数据预处理.html">D06 · 特征工程与数据预处理</a>讲喂模型<b>之前</b>那些决定成败的功夫:缺失值怎么补、类别怎么编码、数值要不要缩放、怎么选出有用的特征。它也会呼应本章的"数据泄露"——预处理必须放进正确的流程里做。学完 D06,Track A 经典机器学习就全通了,手握做 <a href="../index.html">P2 预测项目</a>的全部工具。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="D04-聚类与降维.html"><span class="lb">上一章</span><span class="tt">D04 · 聚类与降维</span></a>
+        <a href="D06-特征工程与数据预处理.html" class="next"><span class="lb">下一章</span><span class="tt">D06 · 特征工程与数据预处理</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D05 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="trap" href="#trap"><i>7</i>准确率的陷阱</a>
+        <a data-toc-target="confusion" href="#confusion"><i>8</i>混淆矩阵</a>
+        <a data-toc-target="pr" href="#pr"><i>9</i>精确率/召回率</a>
+        <a data-toc-target="roc" href="#roc"><i>10</i>ROC/AUC</a>
+        <a data-toc-target="validation" href="#validation"><i>11</i>验证纪律</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>科学评估</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D05" data-kind="chapter" data-title="评价指标与验证深挖"></script>
+</body>
+</html>

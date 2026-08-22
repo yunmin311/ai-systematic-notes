@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D16 · 预训练、微调与 RLHF</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="D15-Transformer完整结构.html">D15 Transformer</a><span class="sep">—</span>
+      <a href="D16-预训练微调与RLHF.html" class="current">D16 预训练与 RLHF</a><span class="sep">—</span>
+      <a href="D17-推理量化与部署成本.html">D17 推理与成本</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D16.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track C · Chapter D16 · 骨架怎么变成 ChatGPT</p>
+        <h1>预训练、微调与 RLHF</h1>
+        <p class="recap"><a href="D15-Transformer完整结构.html">D15</a> 造好了骨架,但那时它的参数全是随机数——什么也不会。从"一堆随机数"到"能聊天、会写码、还挺听话"的模型,中间是<b>三个阶段</b>:<b>预训练</b>(读海量文本,学会语言本身)、<b>微调</b>(学会照指令做事)、<b>对齐</b>(学会给出人更满意、更安全的回答)。这一章把三个阶段拆清,并算一笔实在的账:<b>哪一段是几千万美元级、只有大厂能做,哪一段是几百块钱、自己就能上手。</b></p>
+      </header>
+
+      <p>图解骨架约 30 分钟,精读约 3~4 小时。这一章几乎没有数学,重点是<b>看清整条生产链和每段的成本</b>——它直接决定"想做一个自己的模型"时,该从哪一环切入。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>阶段一 · 预训练——用"预测下一个词"读海量文本,学到语言与世界知识</li>
+          <li>阶段二 · 指令微调(SFT)——用高质量示范,把"续写"变成"照做"</li>
+          <li>阶段三 · 对齐(RLHF / DPO)——用人类偏好,教它选人更满意的答法</li>
+          <li>三段的成本——从几千万美元到几百块,差了五六个数量级</li>
+          <li>参数高效微调(LoRA)——只训极小一部分参数,个人也能微调大模型</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>被训练的对象就是 <a href="D15-Transformer完整结构.html">D15</a> 那副骨架;训练循环还是 <a href="D07-PyTorch与完整训练循环.html">D07</a> 那五步;"预训练+微调"这个范式在 <a href="D11-迁移学习与微调.html">D11</a> 已经用图像见过一次。<b>通向后面:</b>训好的模型怎么跑得起、跑得便宜,是 <a href="D17-推理量化与部署成本.html">D17</a>;而"对齐"这一段正是 <a href="../应用工程/A06-评估幻觉安全成本.html">A06 安全与评估</a>在模型侧的源头。</p>
+      </div>
+
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>想知道"ChatGPT 到底是怎么被造出来的"的人。</li>
+        <li>纠结"该微调一个模型,还是写好提示词/做 RAG"的人(第 11 节给判据)。</li>
+        <li>关心 AI 治理的人——"对齐"这一段正是治理在技术侧的落点。</li>
+      </ul>
+      <p><b>不适合</b>:还没看过模型结构的人——先过 <a href="D15-Transformer完整结构.html">D15</a>,否则"训练什么"没有着落。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>需要:<a href="D15-Transformer完整结构.html">D15</a>(模型骨架)、<a href="D07-PyTorch与完整训练循环.html">D07</a>(训练循环)、<a href="D11-迁移学习与微调.html">D11</a>(预训练+微调的思想)。<a href="../基础课程/05-机器学习核心概念.html">第 5 章</a>的监督学习概念够用,没有新数学。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清三个阶段各用什么数据、各解决什么问题。</li>
+        <li>解释"预测下一个词"这一个任务为什么能学出这么多能力。</li>
+        <li>说清指令微调和预训练的区别。</li>
+        <li>用大白话讲清 RLHF 的三步,以及 DPO 简化了什么。</li>
+        <li>判断一个需求该用提示词、RAG 还是微调。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">三个阶段可以概括成三句话:<b>预训练——读遍海量文本,学会"语言长什么样、世界是怎么回事";指令微调——看少量高质量示范,学会"别人问我,我该照着做";对齐——根据人类的偏好打分,学会"同样一件事,人更喜欢哪种答法"。</b>能力主要来自第一段,好用与安全主要来自后两段。</p>
+      <p>为什么必须分三段:预训练出来的"基座模型"其实<b>只会续写</b>——给它"如何煮鸡蛋",它可能续出"如何煮鸡蛋?如何煎鸡蛋?如何蒸鸡蛋?"(因为语料里这样的列表很常见),而不是作答。它有知识,但没有"被问就答"的习惯。指令微调用几万条"指令—优质回答"的示范,把这个习惯教给它。但示范只能告诉它"什么是对的",没告诉它"两个都对的回答里,哪个更好"——于是第三段用人类对回答的<b>排序偏好</b>再训一次,让它学会选更清楚、更有帮助、更安全的那种。<b>三段的关系:预训练给能力,微调给形式,对齐给分寸。</b></p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="三阶段五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="640" y1="168" x2="480" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="540" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="220" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="120" y1="168" x2="280" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">随机参数 →</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">能聊天的模型</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 预训练</text>
+          <rect x="596" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="674" y="150" text-anchor="middle" class="nl">② 指令微调 SFT</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ 对齐 RLHF/DPO</text>
+          <rect x="146" y="330" width="174" height="46" rx="8" class="d-ink nf"/>
+          <text x="233" y="358" text-anchor="middle" class="nl">④ 三段成本账</text>
+          <rect x="8" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="86" y="150" text-anchor="middle" class="nl">⑤ LoRA 与选型</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。①②③是生产链上的三道工序,④是每道工序的价钱,⑤是"以我的条件该切哪一环"。</figcaption>
+      </figure>
+
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <div class="callout go">
+        <span class="label">默认主线 · 先看全景再看细节 · 约 3 小时</span>
+        <p><b>Karpathy《State of GPT》(把三阶段流水线讲得最清楚的一次演讲)+ Hugging Face RLHF 图解博客。</b>顺序:先看演讲拿到整条流水线的全景与直觉,再读 HF 那篇把 RLHF 三步的细节补上。链接:<a href="https://www.youtube.com/watch?v=bZQun8Y4L2A" target="_blank" rel="noopener">State of GPT</a>、<a href="https://huggingface.co/blog/rlhf" target="_blank" rel="noopener">Illustrating RLHF</a>。</p>
+      </div>
+      <table class="tbl">
+        <caption>表 1 · 本章骨架 ↔ 主线对应</caption>
+        <thead><tr><th>本章骨架</th><th>主线精读</th></tr></thead>
+        <tbody>
+          <tr><td>第 7 节 · 预训练</td><td>State of GPT:Pretraining 段</td></tr>
+          <tr><td>第 8 节 · 指令微调</td><td>State of GPT:Supervised Finetuning 段</td></tr>
+          <tr><td>第 9 节 · 对齐 RLHF/DPO</td><td>State of GPT:RM + RLHF 段;HF 图解博客全文</td></tr>
+          <tr><td>第 11 节 · LoRA 与选型</td><td>HF PEFT 文档的 LoRA 概念页</td></tr>
+        </tbody>
+      </table>
+
+      <p class="handoff">第一段最贵、也最决定能力上限。</p>
+      <h2 id="pretrain"><span class="no">7</span><span>阶段一 · 预训练:读遍互联网</span></h2>
+      <p class="one-liner"><b>任务只有一个:预测下一个词。</b>把海量文本(网页、书籍、代码,常以万亿 Token 计)喂进 <a href="D15-Transformer完整结构.html">D15</a> 那副骨架,每次遮住后文、让它猜下一个 Token,猜错就调参数(<a href="D07-PyTorch与完整训练循环.html">D07</a> 的五步循环)。重复上万亿次之后,它为了把这个游戏玩好,<b>被迫学会了语法、事实、推理套路、代码规则</b>——能力是"顺带"学到的。</p>
+      <p>为什么一个这么朴素的任务能学出这么多:因为要准确预测下一个词,模型必须理解上下文。"法国的首都是__"——要填对就得知道事实;"这段代码报错是因为__"——要填对就得懂代码逻辑;"他很生气,因为__"——要填对就得懂因果和情绪。<b>预测下一个词是一个"考试题库无限大、且涵盖人类所有书面知识"的任务</b>,把它做到极致,就顺带学会了几乎一切。这也是<b>规模化(scaling)</b>路线的根据:模型更大、数据更多、算力更足,这个预测就更准,能力也随之上涨。代价是极其昂贵——大模型的预训练动辄<b>几千万美元、数千张顶级 GPU 跑数月</b>,这一段基本只有大厂做得起。产物叫<b>基座模型(base model)</b>:知识渊博,但只会续写、不会"听话"。</p>
+
+      <p class="handoff">第二段便宜得多,但决定了它像不像个助手。</p>
+      <h2 id="sft"><span class="no">8</span><span>阶段二 · 指令微调:学会照做</span></h2>
+      <p class="one-liner"><b>指令微调(SFT,Supervised Fine-Tuning)</b>:准备几万条<b>高质量的"指令 → 理想回答"示范</b>(多由人工撰写或精选),继续用同样的"预测下一个词"训练,只不过这次预测的是<b>示范里的标准答案</b>。训练后,模型的行为习惯从"续写文本"变成"回答问题"。</p>
+      <p>关键是理解<b>它没有获得新知识,只是换了个说话方式</b>。知识早在预训练阶段就有了;SFT 教的是格式和习惯:被问就答、答完就停、按要求分点、拒绝不该做的事。所以这一段的<b>数据质量远比数量重要</b>——几千条精心写的示范,常胜过几十万条凑数的。成本上它比预训练便宜好几个数量级(几千到几万美元级,用 <a href="#lora">LoRA</a> 甚至能压到几百块),这也是开源社区能在别人的基座模型上做出各种专用助手的原因:<b>基座别人出钱训,微调自己来。</b></p>
+
+      <p class="handoff">第三段解决的是"两个都对,选哪个"。</p>
+      <h2 id="rlhf"><span class="no">9</span><span>阶段三 · 对齐:RLHF 与 DPO</span></h2>
+      <p class="one-liner"><b>RLHF(基于人类反馈的强化学习)</b>三步:①让模型对同一问题生成几个回答,请人<b>排序</b>哪个更好;②用这些排序训练一个<b>奖励模型</b>(它学会给回答打分,相当于把人的偏好压缩成一个打分器);③用强化学习调整模型,<b>让它倾向于生成奖励模型打高分的回答</b>。<b>DPO</b> 是近年的简化版:跳过奖励模型,直接用偏好数据一步优化,更简单也更稳。</p>
+      <p>为什么需要这一段:SFT 的示范只给了"一个正确答案",但现实里同一问题有无数种答法,好坏是<b>程度问题</b>——哪个更清楚、更有帮助、更少废话、更不容易被诱导做坏事。这些很难写成示范,却<b>容易比较</b>:给人看两个回答,他能立刻说出哪个更好。RLHF 正是利用了这一点:<b>把"难以定义的好"转化成"容易表达的偏好"</b>。这一段带来的提升非常直观——同一个基座模型,对齐前后的"好用程度"天差地别,ChatGPT 当年的惊艳很大程度就来自这里。同时,这也是<b>安全与价值观注入的主要环节</b>:模型该拒绝什么、该如何拒绝,大多在这一步塑造(直接对应 <a href="../应用工程/A06-评估幻觉安全成本.html">A06</a> 的安全话题,也是 AI 治理最实质的技术抓手之一)。<b>代价</b>:需要大量人工偏好标注,贵且慢;而且对齐过度会让模型变得啰嗦、过度拒绝——这就是所谓的"对齐税"。</p>
+      <figure>
+        <svg viewBox="0 0 720 250" role="img" aria-label="三阶段流水线与成本量级">
+          <defs><marker id="m-pipe" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#14181f"/></marker></defs>
+          <rect x="14" y="70" width="150" height="70" rx="8" class="d-ink nf"/>
+          <text x="89" y="95" text-anchor="middle" class="nl">① 预训练</text>
+          <text x="89" y="113" text-anchor="middle" class="el">万亿 Token</text>
+          <text x="89" y="130" text-anchor="middle" class="el">预测下一个词</text>
+          <rect x="200" y="70" width="150" height="70" rx="8" class="d-ink nf"/>
+          <text x="275" y="95" text-anchor="middle" class="nl">② 指令微调</text>
+          <text x="275" y="113" text-anchor="middle" class="el">几万条示范</text>
+          <text x="275" y="130" text-anchor="middle" class="el">学会照做</text>
+          <rect x="386" y="70" width="150" height="70" rx="8" class="box-acc"/>
+          <text x="461" y="95" text-anchor="middle" class="nl-acc">③ 对齐</text>
+          <text x="461" y="113" text-anchor="middle" class="el-acc">人类偏好排序</text>
+          <text x="461" y="130" text-anchor="middle" class="el-acc">学会分寸</text>
+          <rect x="572" y="70" width="134" height="70" rx="8" class="d-ink nf"/>
+          <text x="639" y="95" text-anchor="middle" class="nl">可用助手</text>
+          <text x="639" y="113" text-anchor="middle" class="el">每天用的</text>
+          <text x="639" y="130" text-anchor="middle" class="el">那个模型</text>
+          <line x1="164" y1="105" x2="196" y2="105" class="d-ink" marker-end="url(#m-pipe)"/>
+          <line x1="350" y1="105" x2="382" y2="105" class="d-ink" marker-end="url(#m-pipe)"/>
+          <line x1="536" y1="105" x2="568" y2="105" class="d-ink" marker-end="url(#m-pipe)"/>
+          <text x="89" y="176" text-anchor="middle" class="el">💰 几千万美元</text>
+          <text x="89" y="194" text-anchor="middle" class="el">数月 · 数千 GPU</text>
+          <text x="275" y="176" text-anchor="middle" class="el">💰 几千~几万美元</text>
+          <text x="275" y="194" text-anchor="middle" class="el">(LoRA 可压到几百元)</text>
+          <text x="461" y="176" text-anchor="middle" class="el">💰 贵在人工标注</text>
+          <text x="461" y="194" text-anchor="middle" class="el">DPO 让这段简化</text>
+          <text x="360" y="228" text-anchor="middle" class="el">能力来自①,形式来自②,分寸来自③——个人能碰的主要是②(和一点③)</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>三阶段流水线与成本量级。第一段决定能力上限、只有大厂做得起;后两段决定好用与安全,是开源社区和个人能真正参与的部分。</figcaption>
+      </figure>
+
+      <p class="handoff">把成本摊开看,就知道自己该切哪一环。</p>
+      <h2 id="cost"><span class="no">10</span><span>三段成本账</span></h2>
+      <p class="one-liner">三段的花费差<b>五六个数量级</b>:预训练以千万美元计,指令微调以千元到万元美元计(用 LoRA 可低至几百人民币),对齐则贵在人工标注而非算力。<b>结论很实际:从零训一个大模型不是个人选项;但在别人的基座上微调,今天已是消费级显卡就能做的事。</b></p>
+      <table class="tbl">
+        <caption>表 2 · 三阶段对照(数量级,非精确报价)</caption>
+        <thead><tr><th>阶段</th><th>数据</th><th>算力/成本量级</th><th>产物</th><th>个人能不能做</th></tr></thead>
+        <tbody>
+          <tr><td>预训练</td><td>万亿 Token 网页/书/代码</td><td>数千 GPU · 数月 · 千万美元级</td><td>基座模型(只会续写)</td><td>不能(只能用别人的)</td></tr>
+          <tr class="sel"><td>指令微调 SFT</td><td>几千~几万条优质示范</td><td>单机多卡 · 数小时~数天;LoRA 可单卡</td><td>会照指令做事的助手</td><td><b>能</b>,主战场</td></tr>
+          <tr><td>对齐 RLHF/DPO</td><td>人类偏好排序数据</td><td>算力中等,贵在标注人力</td><td>更有帮助、更安全的模型</td><td>小规模能(DPO 更可行)</td></tr>
+        </tbody>
+      </table>
+
+      <p class="handoff">最后一件最实用的事:什么时候才真该微调。</p>
+      <h2 id="lora"><span class="no">11</span><span>LoRA,与"该不该微调"的判据</span></h2>
+      <p class="one-liner"><b>LoRA(低秩适配)</b>:冻住原模型的全部权重,只在每层旁边插入两个很小的矩阵去学"改动量"——<b>可训练参数常常不到原模型的 1%</b>,显存和成本因此暴降,一张消费级显卡就能微调一个 7B 模型。这是把 <a href="D11-迁移学习与微调.html">D11</a> 的"冻结 + 只训一小部分"推到极致的做法。</p>
+      <p><b>但更重要的判断是:该不该微调。</b>实践中大多数需求<b>不需要</b>微调,顺序应该是:<b>①先把提示词写好</b>(<a href="../应用工程/A01-提示词工程与上下文.html">A01</a>)——最快最便宜,能解决很大一部分问题;<b>②需要它掌握私有资料 → 用 RAG</b>(<a href="../应用工程/A03-RAG检索增强生成.html">A03</a>)——资料随时可更新,不用重训;<b>③只有当要的是"固定的风格/格式/领域腔调",或要把大模型的能力压进一个小模型省钱时,才微调</b>。一句常用判据:<b>缺"知识"用 RAG,缺"行为方式"才微调。</b>把它记住,能省掉大量无谓的训练。</p>
+
+      <p class="handoff">用一段代码看看 LoRA 微调有多短。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:LoRA 微调的骨架</span></h2>
+      <p>用 Hugging Face 的 PEFT 库,给一个开源基座模型加 LoRA 并微调,核心就这几行:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">lora_sft.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> transformers </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> AutoModelForCausalLM, AutoTokenizer</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> peft </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> LoraConfig, get_peft_model</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">MODEL </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089"> "Qwen/Qwen2.5-1.5B"</span><span style="color:#8B95A8;font-style:italic">                      # 别人训好的基座(阶段①的产物)</span></span>
+<span class="line"><span style="color:#14181F">tok   </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> AutoTokenizer.from_pretrained(MODEL)</span></span>
+<span class="line"><span style="color:#14181F">model </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> AutoModelForCausalLM.from_pretrained(MODEL)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># LoRA:冻住原权重,只在注意力的投影矩阵旁插入小矩阵学"改动量"</span></span>
+<span class="line"><span style="color:#14181F">cfg </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> LoraConfig(</span></span>
+<span class="line"><span style="color:#14181F">    r</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">8,                                         </span><span style="color:#8B95A8;font-style:italic"># 插入矩阵的秩:越小越省、表达力越弱</span></span>
+<span class="line"><span style="color:#14181F">    lora_alpha</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">16,</span></span>
+<span class="line"><span style="color:#14181F">    target_modules</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">[</span><span style="color:#557089">"q_proj"</span><span style="color:#14181F">, </span><span style="color:#557089">"v_proj"</span><span style="color:#14181F">],         </span><span style="color:#8B95A8;font-style:italic"># 挂在 D14 的 Q/V 投影上</span></span>
+<span class="line"><span style="color:#14181F">    lora_dropout</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0.05,</span></span>
+<span class="line"><span style="color:#14181F">    task_type</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"CAUSAL_LM"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">model </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> get_peft_model(model, cfg)</span></span>
+<span class="line"><span style="color:#14181F">model.print_trainable_parameters()</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 输出类似:trainable params: 1.1M || all params: 1.5B || trainable%: 0.07</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># —— 只训 0.07% 的参数,单张消费级显卡就够</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 训练数据:几千条「指令 → 理想回答」示范(阶段②的原料),形如</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic">#   {"instruction": "把这段话改写得更简洁", "output": "……"}</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 之后照常用 Trainer 或 D07 的五步循环训几轮即可;产物只有几十 MB 的 LoRA 权重,</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 用的时候和基座模型一起加载。</span></span></code></pre>
+      </div>
+      <p>三点值得注意:①<code>trainable%</code> 那行是 LoRA 的全部魅力——<b>0.07% 的可训练参数</b>,却能显著改变模型行为;②产物是个几十 MB 的小文件(而不是几 GB 的完整模型),可以做很多个、按需切换;③<code>target_modules</code> 挂在 <a href="D14-注意力机制逐步手算.html">D14</a> 的 Q/V 投影上——学到这里,这个参数名不再是天书。<b>训练?还是 <a href="D07-PyTorch与完整训练循环.html">D07</a> 那五步循环</b>,从第一章到这里,那个循环一次都没变过。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战 · 想清楚再动手</span>
+        <h3>先做选型,再谈微调</h3>
+        <p>①拿自己真实想做的一个 AI 需求,按第 11 节的判据走一遍:提示词能解决吗?缺的是知识(→RAG)还是行为方式(→微调)?把结论写下来。②去 <a href="https://huggingface.co/models" target="_blank" rel="noopener">Hugging Face</a> 找一个 1.5B 左右的开源基座,看它的模型卡片写了哪些阶段(base / instruct / chat 分别对应本章哪一段)。③如果确实需要微调,按第 12 节配好 LoRA,先用 100 条示范跑通流程,再谈规模。④想想治理角度:如果"分寸"主要在对齐阶段被塑造,那么当使用别人的模型时,其实继承了谁的价值判断?</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;下列链接均于 2026-08-20 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=bZQun8Y4L2A" target="_blank" rel="noopener">Karpathy · State of GPT</a></span><span class="spine">默认主线</span><span class="tags">演讲 · 英文(可开字幕) · 45min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">把"基座 → SFT → 奖励模型 → RLHF"整条流水线讲清的经典演讲。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">同一张流水线图,业内引用最多;讲的正是本章第 7–9 节,还给了各阶段的实操直觉。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全片;前半的四阶段总览务必看。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§7–9;看完回来对照图 2。</span></div>
+        </div>
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://huggingface.co/blog/rlhf" target="_blank" rel="noopener">Illustrating RLHF(HF 博客)</a></span><span class="spine">并列主线</span><span class="tags">图解博客 · 英文 · 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">图解 RLHF 三步(示范微调 → 奖励模型 → 强化学习)的权威入门。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">对齐是本章最绕的一段,它的图把"偏好怎么变成训练信号"讲透了。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全文三步;强化学习细节看不懂可跳。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§9。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://huggingface.co/docs/peft/conceptual_guides/lora" target="_blank" rel="noopener">HF PEFT · LoRA 概念指南</a></span><span class="tags">官方文档 · 英文 · 30min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">LoRA 原理与参数(r、alpha、target_modules)的官方说明。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">真要微调时,第 12 节那几个参数怎么调都在这。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">概念页 + r/alpha 的取值建议。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§11–12。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://arxiv.org/abs/2305.18290" target="_blank" rel="noopener">DPO(Direct Preference Optimization)</a></span><span class="tags">论文·桥 · 英文 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">提出"跳过奖励模型、直接用偏好数据优化"的论文,现在很多开源模型都用它。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想知道 RLHF 之后业界怎么把这一段做简单了,看摘要就够。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">摘要 + 方法示意图。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§9 结尾的 DPO。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 3 · 五个常见误区</caption>
+        <thead><tr><th>常见理解</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>微调能给模型"补充新知识"</td><td>主要是改行为方式。要它掌握私有资料,RAG 通常更合适、更好更新(A03)。</td></tr>
+          <tr><td>预训练和微调是同一件事的大小版</td><td>目标不同:预训练学语言与世界知识(无标注海量文本),SFT 学"照指令做事"(少量高质量示范)。</td></tr>
+          <tr><td>RLHF 是让模型"更聪明"</td><td>是让它"更合人意、更安全"。能力上限主要由预训练决定,对齐甚至可能带来"对齐税"。</td></tr>
+          <tr><td>个人不可能碰模型训练</td><td>预训练不可能,但 LoRA 微调今天一张消费级显卡就能做,产物只有几十 MB。</td></tr>
+          <tr><td>基座模型就能直接当助手用</td><td>基座只会续写,不会"被问就答"。变成助手靠的是 SFT + 对齐。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>三阶段。</b>各用什么数据、各解决什么问题?<details><summary>参考答案</summary><p>预训练:海量无标注文本,预测下一个词,学语言与世界知识(给能力);SFT:几万条指令-回答示范,学会照做(给形式);对齐 RLHF/DPO:人类偏好排序,学会选更有帮助更安全的答法(给分寸)。</p></details></li>
+        <li><b>为什么这一个任务够用。</b>"预测下一个词"为什么能学出这么多能力?<details><summary>参考答案</summary><p>要准确预测就必须理解上下文——事实、逻辑、代码规则、情绪因果都会影响下一个词,于是把这个任务做到极致就顺带学会了这些。</p></details></li>
+        <li><b>RLHF。</b>三步是什么?DPO 简化了哪一步?<details><summary>参考答案</summary><p>①人对多个回答排序;②用排序训练奖励模型(打分器);③用强化学习让模型倾向高分回答。DPO 跳过奖励模型,直接用偏好数据一步优化。</p></details></li>
+        <li><b>选型。</b>什么时候该微调?<details><summary>参考答案</summary><p>先试提示词;缺私有知识用 RAG;只有需要固定风格/格式/领域行为,或要把能力压进小模型省钱时才微调。判据:缺知识用 RAG,缺行为方式才微调。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 5 条以上就可以进 D17(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清三个阶段各自的数据与目的</li>
+          <li><input type="checkbox"> 我理解"预测下一个词"为什么能学出通用能力</li>
+          <li><input type="checkbox"> 我知道基座模型和助手模型的区别</li>
+          <li><input type="checkbox"> 我能用大白话讲清 RLHF 三步</li>
+          <li><input type="checkbox"> 我知道三段的成本量级差多少</li>
+          <li><input type="checkbox"> 我理解 LoRA 为什么能让个人也微调</li>
+          <li><input type="checkbox"> 我能判断一个需求该用提示词/RAG/微调</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>模型造好、训好、也调听话了。最后一个问题最现实:<b>它跑起来要花多少钱、能有多快?</b><a href="D17-推理量化与部署成本.html">D17 · 推理、量化与部署成本</a>是 Track C 的收官章:自回归生成为什么一个词一个词地出、<b>KV cache</b> 怎么把重复计算省掉、上下文窗口的上限从哪来、<b>量化</b>怎么把模型压小几倍还能用,以及怎么估一次调用的真实成本。学完它,从 Token 到账单的整条链路就全通了。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="D15-Transformer完整结构.html"><span class="lb">上一章</span><span class="tt">D15 · Transformer 完整结构</span></a>
+        <a href="D17-推理量化与部署成本.html" class="next"><span class="lb">下一章</span><span class="tt">D17 · 推理、量化与部署成本(Track C 收官)</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D16 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="pretrain" href="#pretrain"><i>7</i>预训练</a>
+        <a data-toc-target="sft" href="#sft"><i>8</i>指令微调</a>
+        <a data-toc-target="rlhf" href="#rlhf"><i>9</i>对齐 RLHF/DPO</a>
+        <a data-toc-target="cost" href="#cost"><i>10</i>三段成本账</a>
+        <a data-toc-target="lora" href="#lora"><i>11</i>LoRA 与选型</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>LoRA 微调骨架</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D16" data-kind="chapter" data-title="预训练、微调与 RLHF"></script>
+</body>
+</html>

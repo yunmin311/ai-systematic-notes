@@ -1,0 +1,290 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人工智能 · 系统学习</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --measure:960px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+.wrap{max-width:var(--measure);margin:0 auto;padding:40px 40px 80px;}
+@media(max-width:640px){.wrap{padding:26px 20px 60px;}}
+
+/* hero */
+.hero{padding:8px 0 26px;border-bottom:1px solid var(--rule);margin-bottom:30px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+.chip{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);border:1px solid var(--rule);border-radius:3px;padding:3px 8px;}
+.chip.acc{color:var(--acc);border-color:var(--acc);}
+.hero h1{font-weight:700;font-size:var(--fs-h1);line-height:1.15;margin:0 0 14px;letter-spacing:-.01em;}
+@media(max-width:640px){.hero h1{font-size:26px;}}
+.hero .lede{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:720px;line-height:1.75;}
+
+/* 课程构成 */
+.now{border-left:3px solid var(--acc);padding:2px 0 2px 15px;margin:0 0 34px -18px;}
+.now .lb{font-family:var(--sans);font-size:var(--fs-small);font-weight:600;color:var(--acc);display:block;margin-bottom:4px;}
+.now p{margin:4px 0;color:var(--ink);}
+
+/* 阶段带 */
+.band{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);
+  margin:40px 0 6px;padding-top:16px;border-top:1px solid var(--rule);}
+.band .zh{color:var(--ink);font-size:var(--fs-h3);font-weight:700;letter-spacing:0;text-transform:none;display:block;margin-top:6px;}
+.band-note{color:var(--ink-soft);font-size:var(--fs-small);margin:6px 0 4px;}
+
+/* 课程清单 */
+.clist{list-style:none;padding:0;margin:10px 0 0;}
+.clist li{display:grid;grid-template-columns:52px 1fr auto;column-gap:14px;row-gap:3px;padding:14px 0;border-bottom:1px solid var(--rule);}
+.clist .no{grid-column:1;grid-row:1/3;align-self:center;font-family:var(--mono);font-weight:700;font-size:var(--fs-lead);color:var(--ink);}
+.clist .tt{grid-column:2;grid-row:1;font-weight:600;font-size:var(--fs-body);}
+.clist .tt a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;}
+.clist .tt a:hover{text-decoration-color:var(--acc);}
+.clist .st{grid-column:3;grid-row:1;justify-self:end;align-self:center;font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.06em;white-space:nowrap;}
+.clist .st.ok{color:var(--acc);font-weight:700;}
+.clist .st.plan{color:var(--ink-faint);}
+.clist .desc{grid-column:2/4;grid-row:2;color:var(--ink-soft);font-size:var(--fs-small);line-height:1.55;}
+.clist li.locked .tt{color:var(--ink-faint);font-weight:600;}
+.clist li.locked .no{color:var(--ink-faint);}
+.track{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);font-weight:700;margin:20px 0 2px;}
+
+/* 配套三栏 */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:14px;}
+@media(max-width:760px){.grid3{grid-template-columns:1fr;}}
+.card{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:16px 18px;}
+.card h3{margin:0 0 6px;font-size:var(--fs-h3);font-weight:600;}
+.card p{margin:0 0 10px;font-size:var(--fs-small);color:var(--ink-soft);}
+.card ul{list-style:none;padding:0;margin:0;}
+.card li{font-size:var(--fs-small);padding:3px 0;position:relative;padding-left:14px;}
+.card li::before{content:"—";position:absolute;left:0;color:var(--ink-faint);}
+.card a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.card a:hover{text-decoration-color:var(--acc);}
+
+/* 环境表 */
+.tbl{margin:16px 0 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl th{text-align:left;font-weight:600;color:var(--ink);padding:10px 12px;border-bottom:1.5px solid var(--ink);}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.6;}
+.tbl td code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);}
+.tbl-scroll{overflow-x:auto;}
+.machine-note{font-size:var(--fs-small);color:var(--ink-soft);margin:12px 0 0;}
+
+.foot{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:var(--fs-small);color:var(--ink-faint);}
+.foot a{color:var(--acc);text-decoration:none;}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="chip-row">
+      <span class="chip acc">AI Course</span>
+      <span class="chip">从零到 AI 应用开发</span>
+      <span class="chip">为设计背景定制</span>
+    </div>
+    <h1>人工智能 · 系统学习</h1>
+    <p class="lede">一套为设计 / 产品背景学习者定制的 AI 课程库。做法是<b>领读 + 索引 + 外链策展</b>:不重写全网已有的好教程,而是把该读的挑好、排好序、和一张清晰的骨架图对应上。目标是打透<b>不会变的底层逻辑</b>——底子扎实了,再新的模型出来也看得懂。</p>
+  </div>
+
+  <div class="now">
+    <span class="lb">课程构成</span>
+    <p>五个阶段,共 <b>46 章讲义 + 7 个项目 + 32 份题库</b>。<b>基础课程</b> 8 章是一条线:数据 → 学习 → 模型;<b>深度课程</b> 17 章把每个机制拆到底;<b>应用工程</b> 7 章讲怎么造东西;<b>项目</b> 7 个出产出;<b>AI 使用</b> 7 章讲怎么指挥 AI 干活。</p>
+    <p style="color:var(--ink-soft);font-size:var(--fs-small)">每章的结构相同:图解骨架 → 章内外链策展(配一套外部主线)→ 自查清单 → 对应题库。四条线互不阻塞。</p>
+  </div>
+
+  <!-- ============ STAGE 1 ============ -->
+  <div class="band">Stage 1 / 基础课程<span class="zh">建立全景与地基</span></div>
+  <p class="band-note">读完后,AI 领域的常见名词能放进同一张地图;本机能跑通 Python、NumPy、Pandas。每章约 1~2 小时阅读 + 1 小时动手。</p>
+  <ul class="clist">
+    <li><span class="no">01</span><span class="tt"><a href="基础课程/01-人工智能全景与学习环境.html">人工智能全景与学习环境</a></span><span class="st ok">✓ 可学</span><span class="desc">AI / 机器学习 / 深度学习 / 生成式 AI 的关系;装好并验证学习环境</span></li>
+    <li><span class="no">02</span><span class="tt"><a href="基础课程/02-Python基础.html">Python 基础:为 AI 准备的最小集</a></span><span class="st ok">✓ 可学</span><span class="desc">变量、列表与字典、循环、函数、读报错;外链策展该读哪几篇</span></li>
+    <li><span class="no">03</span><span class="tt"><a href="基础课程/03-NumPy数组与形状.html">NumPy:数组与形状</a></span><span class="st ok">✓ 可学</span><span class="desc">数组、形状、索引、向量化、广播——一切张量操作的地基</span></li>
+    <li><span class="no">04</span><span class="tt"><a href="基础课程/04-Pandas表格数据.html">Pandas:表格数据处理</a></span><span class="st ok">✓ 可学</span><span class="desc">Series/DataFrame、读写、选取、清洗、分组统计</span></li>
+    <li><span class="no">05</span><span class="tt"><a href="基础课程/05-机器学习核心概念.html">机器学习核心概念</a></span><span class="st ok">✓ 可学</span><span class="desc">监督/无监督、三大任务、训练/验证/测试、过拟合、评价指标</span></li>
+    <li><span class="no">06</span><span class="tt"><a href="基础课程/06-训练的本质.html">训练的本质</a></span><span class="st ok">✓ 可学</span><span class="desc">损失函数、梯度下降、学习率、训练循环——模型怎么一步步学出来</span></li>
+    <li><span class="no">07</span><span class="tt"><a href="基础课程/07-神经网络入门.html">神经网络入门</a></span><span class="st ok">✓ 可学</span><span class="desc">神经元、层与网络、前向、激活、反向传播——现代 AI 的地基</span></li>
+    <li><span class="no">08</span><span class="tt"><a href="基础课程/08-大语言模型鸟瞰.html">大语言模型鸟瞰</a></span><span class="st ok">✓ 可学</span><span class="desc">Token、Embedding、注意力、Transformer、预测下一词</span></li>
+  </ul>
+
+  <!-- ============ STAGE 2 ============ -->
+  <div class="band">Stage 2 / 深度课程<span class="zh">把每个机制拆到底</span></div>
+  <p class="band-note">基础是骨架,深度填血肉。分三条线:先补齐经典机器学习,再进深度学习,最后钻进大模型内部。每章「问题 → 直觉图 → 手算/手写 → 库写法 → 对照」。</p>
+
+  <div class="track">A · 经典机器学习</div>
+  <ul class="clist">
+    <li><span class="no">D01</span><span class="tt"><a href="深度课程/D01-线性回归全拆解.html">线性回归全拆解</a></span><span class="st ok">✓ 可学</span><span class="desc">模型-损失-训练三件套最干净的示范;手算 → 手写梯度下降 → scikit-learn 一行</span></li>
+    <li><span class="no">D02</span><span class="tt"><a href="深度课程/D02-逻辑回归与分类边界.html">逻辑回归与分类边界</a></span><span class="st ok">✓ 可学</span><span class="desc">线性回归 + sigmoid + 交叉熵 = 分类;决策边界、softmax(LLM 预测下一词的最后一步)</span></li>
+    <li><span class="no">D03</span><span class="tt"><a href="深度课程/D03-决策树随机森林与梯度提升.html">决策树、随机森林与梯度提升</a></span><span class="st ok">✓ 可学</span><span class="desc">树怎么分裂、为什么过拟合;森林(投票)vs 提升(接力);表格数据之王 XGBoost/LightGBM</span></li>
+    <li><span class="no">D04</span><span class="tt"><a href="深度课程/D04-聚类与降维.html">聚类与降维</a></span><span class="st ok">✓ 可学</span><span class="desc">无监督学习:K-Means/层次聚类分堆;PCA/t-SNE 压维可视化——通向 D13 Embedding</span></li>
+    <li><span class="no">D05</span><span class="tt"><a href="深度课程/D05-评价指标与验证深挖.html">评价指标与验证深挖</a></span><span class="st ok">✓ 可学</span><span class="desc">准确率的陷阱、混淆矩阵、精确率/召回率、ROC/AUC、交叉验证、超参搜索、数据泄露</span></li>
+    <li><span class="no">D06</span><span class="tt"><a href="深度课程/D06-特征工程与数据预处理.html">特征工程与数据预处理</a></span><span class="st ok">✓ 可学</span><span class="desc">缺失值、one-hot 编码、缩放、特征选择/构造、防泄露流水线——喂模型前的关键功夫(Track A 收官)</span></li>
+  </ul>
+
+  <div class="track">B · 深度学习</div>
+  <ul class="clist">
+    <li><span class="no">D07</span><span class="tt"><a href="深度课程/D07-PyTorch与完整训练循环.html">PyTorch 与完整训练循环</a></span><span class="st ok">✓ 可学</span><span class="desc">张量、自动求导、Dataset/DataLoader、训练循环五步落到代码——Track B 的底盘</span></li>
+    <li><span class="no">D08</span><span class="tt"><a href="深度课程/D08-卷积神经网络CNN.html">卷积神经网络 CNN</a></span><span class="st ok">✓ 可学</span><span class="desc">卷积、池化、感受野、参数共享——机器怎么「看」图像;可动手做 P3</span></li>
+    <li><span class="no">D09</span><span class="tt"><a href="深度课程/D09-序列模型RNN到注意力.html">序列模型:RNN 到注意力</a></span><span class="st ok">✓ 可学</span><span class="desc">RNN 带记忆逐个读、两堵墙,以及注意力为何取代它——通向大模型的转折</span></li>
+    <li><span class="no">D10</span><span class="tt"><a href="深度课程/D10-优化器正则化与训练技巧.html">优化器、正则化与训练技巧</a></span><span class="st ok">✓ 可学</span><span class="desc">看曲线诊断、Adam、Dropout、BatchNorm、早停、学习率调度——把模型训好</span></li>
+    <li><span class="no">D11</span><span class="tt"><a href="深度课程/D11-迁移学习与微调.html">迁移学习与微调</a></span><span class="st ok">✓ 可学</span><span class="desc">站在预训练模型肩上,冻结/微调、按数据量×相似度选策略——Track B 收官</span></li>
+  </ul>
+
+  <div class="track">C · 大模型内部</div>
+  <ul class="clist">
+    <li><span class="no">D12</span><span class="tt"><a href="深度课程/D12-Tokenizer与词表.html">Tokenizer 与词表</a></span><span class="st ok">✓ 可学</span><span class="desc">子词切分(BPE)、词表大小取舍、为什么中文更费 token、模型为什么数不清字母</span></li>
+    <li><span class="no">D13</span><span class="tt"><a href="深度课程/D13-Embedding与向量空间.html">Embedding 与向量空间</a></span><span class="st ok">✓ 可学</span><span class="desc">含义如何变成位置、余弦相似度、位置编码——RAG 语义检索的底层</span></li>
+    <li><span class="no">D14</span><span class="tt"><a href="深度课程/D14-注意力机制逐步手算.html">注意力机制逐步手算</a></span><span class="st ok">✓ 可学</span><span class="desc">Q/K/V、四步算术、多头与因果掩码——拿三个词的例子从头算到尾(核心章)</span></li>
+    <li><span class="no">D15</span><span class="tt"><a href="深度课程/D15-Transformer完整结构.html">Transformer 完整结构</a></span><span class="st ok">✓ 可学</span><span class="desc">块的四件套、前馈层、残差归一化、堆成模型;40 行写出 GPT 骨架</span></li>
+    <li><span class="no">D16</span><span class="tt"><a href="深度课程/D16-预训练微调与RLHF.html">预训练、微调与 RLHF</a></span><span class="st ok">✓ 可学</span><span class="desc">三阶段各在做什么、成本差五六个数量级、LoRA 与「该不该微调」的判据</span></li>
+    <li><span class="no">D17</span><span class="tt"><a href="深度课程/D17-推理量化与部署成本.html">推理、量化与部署成本</a></span><span class="st ok">✓ 可学</span><span class="desc">自回归、KV cache、量化、算一笔真实的账——Track C 收官</span></li>
+  </ul>
+
+  <!-- ============ STAGE 3 ============ -->
+  <div class="band">Stage 3 / 应用工程<span class="zh">做出能用的 AI 应用</span></div>
+  <p class="band-note">从「懂原理」到「做出东西」。这一段和「把 AI 用起来、把 agent 治理好」最相关——尤其 A05 直指 AI agent 的底层框架。</p>
+  <ul class="clist">
+    <li><span class="no">A01</span><span class="tt"><a href="应用工程/A01-提示词工程与上下文.html">提示词工程与上下文窗口</a></span><span class="st ok">✓ 可学</span><span class="desc">提示词骨架、上下文窗口、few-shot、分步思考、迭代——把任务讲清、让输出稳定</span></li>
+    <li><span class="no">A02</span><span class="tt"><a href="应用工程/A02-结构化输出与函数调用.html">结构化输出与函数调用</a></span><span class="st ok">✓ 可学</span><span class="desc">让模型稳定吐 JSON、调用工具——把「聊天」升级成「驱动程序」,Agent 的地基</span></li>
+    <li><span class="no">A03</span><span class="tt"><a href="应用工程/A03-RAG检索增强生成.html">RAG:检索增强生成</a></span><span class="st ok">✓ 可学</span><span class="desc">向量检索、切块、拼上下文、检索质量——给模型一个随身可更新的资料库,少编</span></li>
+    <li><span class="no">A04</span><span class="tt"><a href="应用工程/A04-Agent基础.html">Agent 基础:工具、记忆、工作流</a></span><span class="st ok">✓ 可学</span><span class="desc">模型-工具-状态循环(ReAct);什么时候该用 Agent、什么时候用固定工作流</span></li>
+    <li><span class="no">A05</span><span class="tt"><a href="应用工程/A05-Agent的harness底层框架.html">AI Agent 的 harness / 底层框架</a></span><span class="st ok">✓ 可学</span><span class="desc">agent loop、上下文管理、工具调用协议 MCP、多 agent 编排——AI 治理与安全的底层知识(旗舰章)</span></li>
+    <li><span class="no">A06</span><span class="tt"><a href="应用工程/A06-评估幻觉安全成本.html">评估、幻觉、安全与成本</a></span><span class="st ok">✓ 可学</span><span class="desc">怎么知道应用「变好了」;评测集+模型当裁判、幻觉三道防线、注入防护、成本控制</span></li>
+    <li><span class="no">A07</span><span class="tt"><a href="应用工程/A07-工程化与部署.html">工程化与部署</a></span><span class="st ok">✓ 可学</span><span class="desc">后端封装与密钥安全、流式输出、缓存限流、上线与监控四块表——从 demo 到能用的产品(收官)</span></li>
+  </ul>
+
+  <!-- ============ STAGE 4 ============ -->
+  <div class="band">Stage 4 / 项目<span class="zh">从练习到完整应用</span></div>
+  <p class="band-note">每个项目产出一个能给别人看的东西。前几个不需要 GPU 和付费 API,后面进入大模型应用开发。</p>
+  <ul class="clist">
+    <li><span class="no">P1</span><span class="tt"><a href="项目/P1-数据体检报告.html">数据体检报告</a></span><span class="st ok">✓ 可做</span><span class="desc">六步体检真实脏数据(规模/缺失/类型/分布/异常/关系),导出可交付的 HTML 报告(学完 04 可做)</span></li>
+    <li><span class="no">P2</span><span class="tt"><a href="项目/P2-第一个预测模型.html">第一个预测模型</a></span><span class="st ok">✓ 可做</span><span class="desc">防泄露流水线 → 交叉验证比模型 → 混淆矩阵评估 → 特征重要性解释(学完 D05 可做)</span></li>
+    <li><span class="no">P3</span><span class="tt"><a href="项目/P3-手写数字识别.html">手写数字识别</a></span><span class="st ok">✓ 可做</span><span class="desc">PyTorch + CNN 训到 99%,看训练曲线与错例;CPU 十分钟可跑(学完 D08 可做)</span></li>
+    <li><span class="no">P4</span><span class="tt"><a href="项目/P4-命令行AI助手.html">命令行 AI 助手</a></span><span class="st ok">✓ 可做</span><span class="desc">调用 LLM API、多轮对话、流式输出、错误处理——一百行做出终端版助手(学完 A02 可做)</span></li>
+    <li><span class="no">P5</span><span class="tt"><a href="项目/P5-个人知识库问答.html">个人知识库问答</a></span><span class="st ok">✓ 可做</span><span class="desc">把自己的笔记做成 RAG 问答——从零手写切块/向量/检索/带出处生成(学完 A03 可做)</span></li>
+    <li><span class="no">P6</span><span class="tt"><a href="项目/P6-一个小Agent.html">一个小 Agent</a></span><span class="st ok">✓ 可做</span><span class="desc">工具调用 + ReAct 循环 + max_steps 兜底,手写一个会自己调工具的 agent(学完 A05 可做)</span></li>
+    <li><span class="no">P7</span><span class="tt"><a href="项目/P7-完整AI应用.html">完整 AI 应用</a></span><span class="st ok">✓ 可做</span><span class="desc">前端 + 后端(密钥/限流/缓存/日志)+ 引擎 + 部署监控,把 P4–P6 拼成能上线的产品(收官)</span></li>
+  </ul>
+
+  <!-- ============ STAGE 5 ============ -->
+  <div class="band">Stage 5 / AI 使用<span class="zh">指挥一群 AI 干活,这件事本身的学问</span></div>
+  <p class="band-note">前四个阶段讲 AI 是什么、怎么造。这个阶段讲第三件事:面对一个跑几十步、带工具、有记忆、还会自作主张的 agent,要它干几小时的活。每章前半讲机制、后半讲技巧;出了事现查去<b>排障台</b>。</p>
+  <ul class="clist">
+    <li><span class="no">U01</span><span class="tt"><a href="AI使用/U01-它到底在干什么.html">它到底在干什么</a></span><span class="st ok">✓ 可读</span><span class="desc">六个怪现象一个根因:说「已完成」文件没动、自贬漏报、编造、默认脸、MVP 倾向、前提错还往下做</span></li>
+    <li><span class="no">U02</span><span class="tt"><a href="AI使用/U02-上下文经济学.html">上下文经济学</a></span><span class="st ok">✓ 可读</span><span class="desc">越聊越笨与烧钱是同一件事;缓存前缀失效、中段衰减;压缩 / 开新对话 / 落成文件怎么选</span></li>
+    <li><span class="no">U03</span><span class="tt"><a href="AI使用/U03-指令为什么不生效.html">指令为什么不生效</a></span><span class="st ok">✓ 可读</span><span class="desc">复述得出 ≠ 照着做;三层失效与规则的五级强度阶梯;把规则改造成机械机制</span></li>
+    <li><span class="no">U04</span><span class="tt"><a href="AI使用/U04-派活与成本.html">派活与成本</a></span><span class="st ok">✓ 可读</span><span class="desc">一份活的三个属性;子 agent 真正的用途;「小改」变大工程的机制与裁范围的做法</span></li>
+    <li><span class="no">U05</span><span class="tt"><a href="AI使用/U05-让它照着参考做.html">让它照着参考做</a></span><span class="st ok">✓ 可读</span><span class="desc">映射表 → 核心样本先行 → 每轮回归对照;把「像不像」变成能被判定的事</span></li>
+    <li><span class="no">U06</span><span class="tt"><a href="AI使用/U06-多对话协作.html">多对话协作</a></span><span class="st ok">✓ 可读</span><span class="desc">按可写面判不按身份判;编号池也是一个面;交接失真三形态与转发块三条硬规矩</span></li>
+    <li><span class="no">U07</span><span class="tt"><a href="AI使用/U07-验收AI的产出.html">验收 AI 的产出</a></span><span class="st ok">✓ 可读</span><span class="desc">四级证据、假绿灯三来源、形式全绿 ≠ 内容正确、待验单;附一张可直接用的自查清单</span></li>
+  </ul>
+
+  <!-- ============ 配套 ============ -->
+  <div class="band">Support / 配套<span class="zh">学习台账 · 排障台 · 实验室 · 题库 · 资料</span></div>
+  <div class="grid3" style="margin-bottom:16px;grid-template-columns:1fr 1fr;">
+    <div class="card">
+      <h3>📊 学习台账</h3>
+      <p>记的不是「哪篇写完了」,是读过哪几篇、做没做题、错了哪几道、<b>哪个概念回头查过第二次</b>。数据自动采集,不用填表。</p>
+      <ul>
+        <li><a href="台账/学习台账.html"><b>★ 学习台账(阅读 / 回查排行 / 题库错题 / 动手记录)</b></a></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>🔧 排障台</h3>
+      <p>不是讲义,是出事之后按症状来查的。每条四段:症状 / 底下发生了什么 / 当场怎么办 / 怎么让它别再犯。</p>
+      <ul>
+        <li><a href="排障台/症状索引.html"><b>★ 症状索引(17 条,不编号、随时增补)</b></a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="grid3">
+    <div class="card">
+      <h3>🧪 实验室</h3>
+      <p><b>9 个 · 分步跑</b>。八个可以直接在页面里跑真实 Python(Pyodide),代码同时放在 <code>实验室\code\</code> 下,本机也能跑。每一步都标了「应该看到」什么。</p>
+      <ul>
+        <li><a href="实验室/index.html"><b>★ 实验室入口(9 个,按阶段分组)</b></a></li>
+        <li><a href="实验室/lab-01-规则与学习.html">lab-01 · 规则 vs 学习</a>——配 第 1 章</li>
+        <li><a href="实验室/lab-02-数组与表.html">lab-02 · 数组与表</a>——配 03 / 04,故意制造一次形状报错</li>
+        <li><a href="实验室/lab-03-第一个分类器.html">lab-03 · 第一个分类器</a>——配 05 / D02 / D05,准确率怎么骗人</li>
+        <li><a href="实验室/lab-04-过拟合现场.html">lab-04 · 过拟合现场</a>——配 D05 / D10,看两条曲线分叉</li>
+        <li><a href="实验室/lab-05-数据泄露现场.html">lab-05 · 数据泄露现场</a>——配 D06,从纯噪声里「学」出 87%</li>
+        <li><a href="实验室/lab-06-五步循环.html">lab-06 · 五步循环</a>——配 D07,手写版与 PyTorch 版并排(本机跑)</li>
+        <li><a href="实验室/lab-07-手算注意力.html">lab-07 · 手算注意力</a>——配 D14,和纸笔对答案</li>
+        <li><a href="实验室/lab-08-Token与账单.html">lab-08 · Token 与账单</a>——配 D12 / D17,一次功能多少钱</li>
+        <li><a href="实验室/lab-09-最小harness.html">lab-09 · 最小 harness</a>——配 A05,治理的五个抓手</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>📝 题库</h3>
+      <p><b>32 份 · 每章一份</b>,九种题型混合,答完出分。</p>
+      <ul>
+        <li><a href="题库/quiz.html"><b>★ 题库入口(按模块分组)</b></a></li>
+        <li><a href="题库/quiz-D14.html">D14 注意力手算</a>——核心章,建议反复做</li>
+        <li><a href="题库/quiz-D05.html">D05 评价指标</a>——最容易错、也最值钱</li>
+        <li><a href="题库/quiz-A05.html">A05 harness</a>——直指 agent 治理</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>📚 资料</h3>
+      <p>策展资源库、路线图、术语表、论文清单。</p>
+      <ul>
+        <li><a href="资料/AI学习资源库.html"><b>★ AI 学习资源库(策展)</b></a>——全网最好的免费课/书/可视化/论文,分层精选</li>
+        <li><a href="资料/学习路线与计划.html">学习路线与计划</a></li>
+        <li><a href="资料/术语表.html">术语表</a></li>
+        <li><a href="资料/官方文档导航.html">官方文档导航</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ 环境档案 ============ -->
+  <div class="band">Machine / 环境自检<span class="zh">在任何一台电脑上核对(换机也不用改这张表)</span></div>
+  <p class="band-note">这份课程会在不同电脑上打开。所以这里<b>不写死"某台机器的版本号"</b>(那换机就过时了)——而是提供<b>在任意机器上自检的命令</b>:换机后照着跑一遍、看输出对不对,就知道环境齐不齐。想一次全跑完,见表格下方的自检脚本。</p>
+  <div class="tbl-scroll">
+    <table class="tbl">
+      <tr><th>工具</th><th>跑这条命令看看</th><th>期望 / 说明</th></tr>
+      <tr><td>Python 3.10</td><td><code>py -3.10 --version</code></td><td>打印 <code>Python 3.10.x</code> 即可——<b>本课程统一用它建虚拟环境</b>,AI 库兼容性最好(最关键的一条)</td></tr>
+      <tr><td>系统 Python</td><td><code>python --version</code></td><td>打印某个 3.x 都行;太新的(如 3.14)别拿来建环境,只用 3.10</td></tr>
+      <tr><td>pip</td><td><code>py -3.10 -m pip --version</code></td><td>能打印版本 = 能装库(numpy / pandas / scikit-learn …)</td></tr>
+      <tr><td>Node.js</td><td><code>node --version</code></td><td>打印 v18+ 即可;<b>只有</b>做前端 / 跑笔记的 Shiki 流水线时才需要,前期没有也不挡</td></tr>
+      <tr><td>Git</td><td><code>git --version</code></td><td>能打印版本 = 已装;到项目阶段才用</td></tr>
+    </table>
+  </div>
+  <p class="machine-note">💡 <b>一次跑完:</b>打开终端,<code>cd</code> 到 <code>assets</code> 文件夹,运行 <code>python 检查环境.py</code>,它会把上面几项一次性打印出来、并列出缺什么。<b>换电脑后只需跑这一下</b>,不用回来改这个首页。缺哪个到 python.org / nodejs.org / git-scm.com 装。详细的装法与排错见 <a href="基础课程/01-人工智能全景与学习环境.html">第 1 章第 8 节</a>。</p>
+
+  <div class="foot">
+    <span>人工智能 · 系统学习 — 本地知识库,持续更新;外链均标注核实日期</span>
+    <a href="README.md">README(维护说明)</a>
+  </div>
+
+</div>
+
+</body>
+</html>

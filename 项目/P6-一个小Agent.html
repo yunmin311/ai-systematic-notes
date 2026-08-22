@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P6 · 一个小 Agent</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg,.term .thead{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0;}
+.badge{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.04em;color:var(--ink-soft);border:1px solid var(--rule);border-radius:20px;padding:4px 12px;background:var(--surface);}
+.badge b{color:var(--acc);font-weight:700;}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.milestone{border-left:3px solid var(--acc);padding:2px 0 2px 15px;margin:18px 0 18px -18px;}
+.milestone .label{display:block;font-family:var(--sans);font-size:var(--fs-small);font-weight:600;color:var(--acc);margin:0 0 4px;}
+.milestone p{margin:4px 0;}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.term{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:#12151b;}
+.term .thead{display:flex;align-items:center;gap:8px;padding:7px 14px;background:#1b1f27;border-bottom:1px solid #2a2f3a;color:#8b95a8;}
+.term .dots{display:flex;gap:5px;}
+.term .dots i{width:9px;height:9px;border-radius:50%;display:block;background:#3a4150;}
+.term pre{margin:0;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;color:#d7dce5;}
+.term .u{color:#8fa7ff;} .term .a{color:#e6e9f0;} .term .c{color:#6b7688;} .term .p{color:#5fd39a;} .term .t{color:#e0b072;}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="P5-个人知识库问答.html">P5 知识库问答</a><span class="sep">—</span>
+      <a href="P6-一个小Agent.html" class="current">P6 小 Agent</a><span class="sep">—</span>
+      <a href="P7-完整AI应用.html">P7 完整应用</a>
+      <span class="spacer"></span>
+      <a href="#build" class="jump">开始搭建</a>
+      <a href="#run" class="jump">跑起来</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">项目 · Project P6</p>
+        <h1>一个小 Agent</h1>
+        <p class="recap">前面的程序,路径都是写死的。这个项目造一个真正的 <b>Agent</b>:给模型几个<b>工具</b>(算数、查时间、查知识库),让它<b>自己在循环里决定该调哪个</b>、看到结果再决定下一步,直到把任务办完——这就是 <a href="../应用工程/A04-Agent基础.html">A04 的 ReAct 循环</a> + <a href="../应用工程/A05-Agent的harness底层框架.html">A05 的 harness</a> 落成代码。会亲手写出那个"想 → 做 → 看 → 再想"的引擎,还会给它装上防跑飞的 <code>max_steps</code> 闸。</p>
+        <div class="badges">
+          <span class="badge">难度 <b>中级</b></span>
+          <span class="badge">语言 <b>Python</b></span>
+          <span class="badge">用时 <b>4~6 小时</b></span>
+          <span class="badge">前置 <b>A04 · A05 · P4</b></span>
+          <span class="badge">产出 <b>会用工具的 agent</b></span>
+        </div>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">做完这个项目,会有 / 会做</p>
+        <ul>
+          <li>一个能自己调工具、多步完成任务的命令行 agent</li>
+          <li>亲手写出 agent loop:模型选工具 → 执行 → 结果喂回 → 再想</li>
+          <li>会用 JSON schema 描述工具、让模型看得懂怎么调(A02)</li>
+          <li>会写工具分发:按模型的选择跑对应函数、把结果还回去</li>
+          <li>会用 max_steps 兜底防死循环(A05 harness 的关键闸)</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">这个项目用到哪些章</span>
+        <p>骨架是 <a href="../应用工程/A04-Agent基础.html">A04</a>(ReAct 循环、工具、状态)+ <a href="../应用工程/A05-Agent的harness底层框架.html">A05</a>(loop 工程化、max_steps 兜底);工具描述用 <a href="../应用工程/A02-结构化输出与函数调用.html">A02</a> 的函数调用;对话循环复用 <a href="P4-命令行AI助手.html">P4</a>;还能把 <a href="P5-个人知识库问答.html">P5 的检索</a>包成一个工具接进来。</p>
+      </div>
+
+      <!-- ===== 模块 A ===== -->
+      <h2 id="target"><span class="no">1</span><span>成品长什么样</span></h2>
+      <p>跑起来后,给它一个<b>需要动手才能答</b>的任务,它会自己一步步调工具——中间的"想/做/看"我们打印出来,让看清它在循环里怎么推进:</p>
+      <div class="term">
+        <div class="thead"><span class="dots"><i></i><i></i><i></i></span><span>终端 · python agent.py</span></div>
+<pre><span class="p">小 Agent 就绪(工具:calculator、get_time)。输入任务:</span>
+<span class="u">任务 ›</span> <span class="a">现在几点?再帮我算 1200 除以 100 等于几小时</span>
+<span class="c">  · 想:先查时间          → 调 get_time()</span>
+<span class="t">  · 看:2026-08-16 15:40</span>
+<span class="c">  · 想:再算 1200/100     → 调 calculator("1200/100")</span>
+<span class="t">  · 看:12.0</span>
+<span class="c">  · 想:两个都拿到了,可以答了</span>
+<span class="u">答 ›</span> <span class="a">现在是 15:40;1200 除以 100 等于 12,也就是 12 小时。</span></pre>
+      </div>
+      <p class="one-liner">Agent 的本质:一个 <b>循环</b>。每轮把整段历史发给模型,模型要么<b>说"调某个工具"</b>(程序就去执行、把结果塞回历史)、要么<b>直接给最终答案</b>(循环结束)。模型是决策的脑子,代码是让它能行动的手脚和轨道。</p>
+      <figure>
+        <svg viewBox="0 0 600 260" role="img" aria-label="agent loop:模型决定工具、执行、结果喂回、循环">
+          <defs><marker id="m-p6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="220" y="20" width="160" height="44" rx="8" class="box"/><text x="300" y="41" text-anchor="middle" class="nl">任务</text><text x="300" y="57" text-anchor="middle" class="el">用户给的目标</text>
+          <line x1="300" y1="64" x2="300" y2="90" class="d-acc" marker-end="url(#m-p6)"/>
+          <rect x="210" y="92" width="180" height="54" rx="8" class="box-acc"/><text x="300" y="114" text-anchor="middle" class="nl-acc">模型这一轮</text><text x="300" y="132" text-anchor="middle" class="el">想:调工具?还是能答了?</text>
+          <line x1="390" y1="119" x2="452" y2="119" class="d-ink" marker-end="url(#m-p6)"/>
+          <text x="500" y="108" text-anchor="middle" class="el">能答了</text>
+          <rect x="452" y="98" width="96" height="42" rx="8" class="box"/><text x="500" y="124" text-anchor="middle" class="el">输出答案 ✓</text>
+          <line x1="300" y1="146" x2="300" y2="176" class="d-acc" marker-end="url(#m-p6)"/>
+          <text x="360" y="166" text-anchor="middle" class="el-acc">要调工具</text>
+          <rect x="200" y="178" width="200" height="46" rx="8" class="box"/><text x="300" y="200" text-anchor="middle" class="nl">程序执行工具</text><text x="300" y="217" text-anchor="middle" class="el">calculator / get_time / 检索…</text>
+          <path d="M200 201 C 90 201, 90 119, 208 119" class="d-acc" marker-end="url(#m-p6)"/>
+          <text x="95" y="235" text-anchor="middle" class="el-acc">↻ 结果喂回历史 → 模型再想下一步</text>
+          <text x="300" y="250" text-anchor="middle" class="el">(每轮都留痕;max_steps 到了强制收尾)</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>Agent loop:模型每轮"想"——要调工具就执行、把结果喂回历史再想下一步;判断能答了就跳出循环。这就是 A04 的 ReAct 引擎。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 B ===== -->
+      <h2 id="prep"><span class="no">2</span><span>动手前的准备</span></h2>
+      <p>接着 P4 的环境即可,只需 <code>openai</code> 库(工具调用是它内置的能力):</p>
+      <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span></span></div><pre>pip install openai</pre></div>
+      <p>确认密钥已在环境变量(<a href="P4-命令行AI助手.html">P4 第 2 节</a>)。这个项目不需要新库——agent 的"自主"不来自什么魔法框架,就来自下面要写的那个循环(A05:自主来自 harness,不是模型)。</p>
+
+      <!-- ===== 模块 C ===== -->
+      <p class="handoff" id="build">分四步:先备好工具,再写循环,接上执行,最后兜底。对着图 1 看。</p>
+
+      <h2 id="s1"><span class="no">3</span><span>第 1 步 · 定义工具</span></h2>
+      <p>工具有两面:一面是<b>真正干活的 Python 函数</b>,另一面是<b>给模型看的说明书</b>(JSON schema,A02)——模型靠说明书决定"这个任务该调哪个、传什么参数":</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">agent.py · 工具</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> datetime </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> datetime</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># —— 干活的函数 ——</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> calculator(expr):</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> str(eval(expr))            </span><span style="color:#8B95A8;font-style:italic"># 教学用;生产别直接 eval(A06 安全:见常见坑)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> get_time():</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> datetime.now().strftime(</span><span style="color:#557089">"%Y-%m-%d %H:%M"</span><span style="color:#14181F">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># —— 给模型看的说明书(A02 的 schema)——</span></span>
+<span class="line"><span style="color:#14181F">tools </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [</span></span>
+<span class="line"><span style="color:#14181F">    {</span><span style="color:#557089">"type"</span><span style="color:#14181F">: </span><span style="color:#557089">"function"</span><span style="color:#14181F">, </span><span style="color:#557089">"function"</span><span style="color:#14181F">: {</span></span>
+<span class="line"><span style="color:#557089">        "name"</span><span style="color:#14181F">: </span><span style="color:#557089">"calculator"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#557089">        "description"</span><span style="color:#14181F">: </span><span style="color:#557089">"计算一个数学表达式,例如 1200/100"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#557089">        "parameters"</span><span style="color:#14181F">: {</span><span style="color:#557089">"type"</span><span style="color:#14181F">: </span><span style="color:#557089">"object"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#557089">            "properties"</span><span style="color:#14181F">: {</span><span style="color:#557089">"expr"</span><span style="color:#14181F">: {</span><span style="color:#557089">"type"</span><span style="color:#14181F">: </span><span style="color:#557089">"string"</span><span style="color:#14181F">, </span><span style="color:#557089">"description"</span><span style="color:#14181F">: </span><span style="color:#557089">"要计算的表达式"</span><span style="color:#14181F">}},</span></span>
+<span class="line"><span style="color:#557089">            "required"</span><span style="color:#14181F">: [</span><span style="color:#557089">"expr"</span><span style="color:#14181F">]}}},</span></span>
+<span class="line"><span style="color:#14181F">    {</span><span style="color:#557089">"type"</span><span style="color:#14181F">: </span><span style="color:#557089">"function"</span><span style="color:#14181F">, </span><span style="color:#557089">"function"</span><span style="color:#14181F">: {</span></span>
+<span class="line"><span style="color:#557089">        "name"</span><span style="color:#14181F">: </span><span style="color:#557089">"get_time"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#557089">        "description"</span><span style="color:#14181F">: </span><span style="color:#557089">"返回当前日期和时间"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#557089">        "parameters"</span><span style="color:#14181F">: {</span><span style="color:#557089">"type"</span><span style="color:#14181F">: </span><span style="color:#557089">"object"</span><span style="color:#14181F">, </span><span style="color:#557089">"properties"</span><span style="color:#14181F">: {}}}},</span></span>
+<span class="line"><span style="color:#14181F">]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 名字 → 函数 的对照表,执行时按名字找(第 3 步用)</span></span>
+<span class="line"><span style="color:#14181F">REGISTRY </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> {</span><span style="color:#557089">"calculator"</span><span style="color:#14181F">: calculator, </span><span style="color:#557089">"get_time"</span><span style="color:#14181F">: get_time}</span></span></code></pre>
+      </div>
+      <p><code>description</code> 写得好不好,直接决定模型选得对不对(A02/A01)。<code>REGISTRY</code> 是"工具注册表"(A05 harness 的一部分):模型只会说"我要调 calculator",真正去跑函数的是代码,靠这张表按名字找。</p>
+      <div class="milestone"><span class="label">✓ 里程碑</span><p>单独调 <code>calculator("1200/100")</code> 返回 <code>"12.0"</code>、<code>get_time()</code> 返回当前时间,两个函数本身没问题,就可以进循环了。</p></div>
+
+      <h2 id="s2"><span class="no">4</span><span>第 2 步 · 写 agent loop</span></h2>
+      <p>心脏来了。一个 <code>for</code> 循环给模型多步机会:每轮把历史 + 工具说明发过去,模型要么要求调工具,要么给最终答案(图 1):</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">agent.py · 循环</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> os, json</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> openai </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> OpenAI</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">client </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> OpenAI(api_key</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">os.environ[</span><span style="color:#557089">"OPENAI_API_KEY"</span><span style="color:#14181F">])</span></span>
+<span class="line"><span style="color:#14181F">MAX_STEPS </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 6                                    </span><span style="color:#8B95A8;font-style:italic"># A05:防死循环的闸</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> run_agent(task):</span></span>
+<span class="line"><span style="color:#14181F">    messages </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [{</span><span style="color:#557089">"role"</span><span style="color:#14181F">: </span><span style="color:#557089">"user"</span><span style="color:#14181F">, </span><span style="color:#557089">"content"</span><span style="color:#14181F">: task}]     </span><span style="color:#8B95A8;font-style:italic"># 状态:一路累积(A04)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    for</span><span style="color:#14181F"> step </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> range(MAX_STEPS):                       </span><span style="color:#8B95A8;font-style:italic"># 循环:给它多步机会</span></span>
+<span class="line"><span style="color:#14181F">        resp </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> client.chat.completions.create(</span></span>
+<span class="line"><span style="color:#14181F">            model</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"gpt-4o-mini"</span><span style="color:#14181F">, messages</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">messages, tools</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">tools,</span></span>
+<span class="line"><span style="color:#14181F">        )</span></span>
+<span class="line"><span style="color:#14181F">        msg </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> resp.choices[0].message</span></span>
+<span class="line"><span style="color:#14181F">        messages.append(msg)                            </span><span style="color:#8B95A8;font-style:italic"># 把这轮的决定记进历史</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        if</span><span style="color:#14181F;font-weight:bold"> not</span><span style="color:#14181F"> msg.tool_calls:                          </span><span style="color:#8B95A8;font-style:italic"># 模型不调工具了 = 能答了</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">            return</span><span style="color:#14181F"> msg.content                          </span><span style="color:#8B95A8;font-style:italic"># 输出最终答案,跳出循环</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">        run_tool_calls(msg.tool_calls, messages)        </span><span style="color:#8B95A8;font-style:italic"># 要调工具 → 第 3 步处理</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#557089"> "(超过步数上限,没能完成)"</span><span style="color:#8B95A8;font-style:italic">                    # 兜底:防跑飞</span></span></code></pre>
+      </div>
+      <p>对照图 1:<code>for step</code> 是循环;<code>tools=tools</code> 把说明书递给模型;<code>msg.tool_calls</code> 有没有,就是模型在"想:该调工具还是能答了"。没有 → 返回答案(跳出);有 → 去执行(下一步)。<code>MAX_STEPS</code> 那道闸不能省——工具老失败或模型绕不出来时,它强制收尾,不然会无限烧钱(A05/A06)。</p>
+      <div class="milestone"><span class="label">✓ 里程碑</span><p>这一步还跑不完整(<code>run_tool_calls</code> 下一步才写),但代码能读懂:循环、发消息、判断要不要调工具、兜底,四件事齐了。</p></div>
+
+      <h2 id="s3"><span class="no">5</span><span>第 3 步 · 执行工具,把结果喂回</span></h2>
+      <p>模型说"调 calculator,参数 expr=1200/100",现在轮到代码<b>真正去跑</b>它,再把结果作为一条 <code>tool</code> 消息塞回历史,模型下一轮才能"看"到:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">agent.py · 执行工具</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> run_tool_calls(tool_calls, messages):</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    for</span><span style="color:#14181F"> call </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> tool_calls:</span></span>
+<span class="line"><span style="color:#14181F">        name </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> call.function.name</span></span>
+<span class="line"><span style="color:#14181F">        args </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> json.loads(call.function.arguments)      </span><span style="color:#8B95A8;font-style:italic"># 模型给的参数(JSON 字符串)</span></span>
+<span class="line"><span style="color:#14181F">        print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"  · 做:调 </span><span style="color:#557089">{</span><span style="color:#14181F">name</span><span style="color:#557089">}</span><span style="color:#557089">(</span><span style="color:#557089">{</span><span style="color:#14181F">args</span><span style="color:#557089">}</span><span style="color:#557089">)"</span><span style="color:#14181F">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        try</span><span style="color:#14181F">:</span></span>
+<span class="line"><span style="color:#14181F">            result </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> REGISTRY[name](</span><span style="color:#14181F;font-weight:bold">**</span><span style="color:#14181F">args)             </span><span style="color:#8B95A8;font-style:italic"># 按名字找函数、真正执行</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        except</span><span style="color:#14181F"> Exception </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> e:</span></span>
+<span class="line"><span style="color:#14181F">            result </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F;font-weight:bold"> f</span><span style="color:#557089">"工具出错:</span><span style="color:#557089">{</span><span style="color:#14181F">e</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#8B95A8;font-style:italic">                     # 出错也告诉模型,让它换招</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">        print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"  · 看:</span><span style="color:#557089">{</span><span style="color:#14181F">result</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">        messages.append({                                </span><span style="color:#8B95A8;font-style:italic"># 结果喂回历史 ← 关键</span></span>
+<span class="line"><span style="color:#557089">            "role"</span><span style="color:#14181F">: </span><span style="color:#557089">"tool"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#557089">            "tool_call_id"</span><span style="color:#14181F">: call.id,                     </span><span style="color:#8B95A8;font-style:italic"># 对应上是哪次调用</span></span>
+<span class="line"><span style="color:#557089">            "content"</span><span style="color:#14181F">: str(result),</span></span>
+<span class="line"><span style="color:#14181F">        })</span></span></code></pre>
+      </div>
+      <p>三个要点:<code>**args</code> 把模型给的参数解包传进函数;<code>REGISTRY[name]</code> 按名字找到真函数(第 1 步那张表);最关键是把结果作为 <code>role:"tool"</code> 消息 <code>append</code> 回去——这就是图 1 里"结果喂回历史",没有它模型下一轮就"看"不到工具结果,循环就断了。<code>tool_call_id</code> 是把结果和刚才那次调用对上号,别漏。</p>
+      <div class="milestone"><span class="label">✓ 里程碑</span><p>把三步拼起来跑本章开头那个任务,终端里能看到"做/看"一步步打印、最后给出综合答案,agent 就活了。</p></div>
+
+      <h2 id="s4"><span class="no">6</span><span>第 4 步 · 接上对话、收尾</span></h2>
+      <p>最后套上 P4 的对话循环,让人能连续给它派活:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">agent.py · 主程序</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"小 Agent 就绪(工具:calculator、get_time)。输入任务:"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">while</span><span style="color:#14181F"> True:</span></span>
+<span class="line"><span style="color:#14181F">    task </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> input(</span><span style="color:#557089">"任务 › "</span><span style="color:#14181F">).strip()</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F"> task </span><span style="color:#14181F;font-weight:bold">==</span><span style="color:#557089"> "exit"</span><span style="color:#14181F">:</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        break</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    try</span><span style="color:#14181F">:</span></span>
+<span class="line"><span style="color:#14181F">        print(</span><span style="color:#557089">"答 ›"</span><span style="color:#14181F">, run_agent(task))</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    except</span><span style="color:#14181F"> Exception </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> e:</span></span>
+<span class="line"><span style="color:#14181F">        print(</span><span style="color:#557089">"[出错了,再试一次]"</span><span style="color:#14181F">, e)</span></span></code></pre>
+      </div>
+      <p>到这,一个能自己规划、调工具、多步完成任务的小 agent 就做完了。它虽小,但结构和真正的 agent 系统(包括正在用的 Claude Code)完全一致:<b>循环 + 工具注册 + 结果喂回 + 步数兜底</b>(A05)。</p>
+      <div class="milestone"><span class="label">✓ 里程碑 · 完成</span><p>给一个要两步的任务(先查时间、再算数),它能自己拆成两次工具调用、最后综合作答——本章开头那段效果达成。</p></div>
+
+      <!-- ===== 模块 D ===== -->
+      <h2 id="run"><span class="no">7</span><span>跑起来</span></h2>
+      <p>把四步代码按序放进一个 <code>agent.py</code>,然后:</p>
+      <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span></span></div><pre>python agent.py</pre></div>
+      <p>试试这些任务,感受它自己选工具:「现在几点」(只调 get_time)、「算 (23+19)*7」(只调 calculator)、「现在几点,再算 1200/100 是几小时」(两个都调)。会看到它<b>按需</b>决定调几次、调哪个——这就是 agent 和写死流程的本质区别。</p>
+
+      <h2 id="pitfalls"><span class="no">8</span><span>常见坑</span></h2>
+      <table class="tbl">
+        <caption>表 1 · 排错速查</caption>
+        <thead><tr><th>症状</th><th>多半是</th><th>怎么办</th></tr></thead>
+        <tbody>
+          <tr><td>它不调工具、硬答(还算错)</td><td>工具 description 太模糊</td><td>把 description 写清楚:什么时候用、参数是什么</td></tr>
+          <tr><td>报错找不到工具结果 / 消息顺序错</td><td>漏了把 tool 结果 append 回去,或缺 <code>tool_call_id</code></td><td>照第 3 步补全</td></tr>
+          <tr><td>转圈到 max_steps 也答不完</td><td>任务太难 / 工具不够 / 模型绕不出</td><td>加工具、拆小任务;闸本身是对的,别去掉</td></tr>
+          <tr><td><code>eval</code> 有风险</td><td>用户可传恶意表达式(A06 注入)</td><td>生产改用受限解析(如 <code>ast.literal_eval</code> 或数学库),别裸 eval</td></tr>
+          <tr><td>一个任务花了好几次调用,有点贵</td><td>agent 每轮一次模型调用(A06)</td><td>能写死的用工作流(A04);限 max_steps;简单活别上 agent</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="extend"><span class="no">9</span><span>进阶扩展</span></h2>
+      <div class="challenge">
+        <span class="label">再往上加(选做)</span>
+        <h3>把它变强</h3>
+        <p>①<b>接上 P5 的知识库</b>:把 <a href="P5-个人知识库问答.html">P5 的 <code>retrieve()</code></a> 包成一个 <code>search_notes</code> 工具加进 <code>tools</code> 和 <code>REGISTRY</code>——agent 就能<b>需要时自己去查笔记</b>(A03 检索成了 agent 的一件工具)。②<b>加记忆</b>:把每轮任务的 <code>messages</code> 存盘,做成能续聊的 agent。③<b>加危险动作确认</b>:给"写文件/发消息"这类工具加一步人工确认(A06 幻觉第三道防线)。④<b>限制权限</b>:只把该给的工具放进 <code>REGISTRY</code>(A05 工具白名单=治理抓手)。</p>
+      </div>
+
+      <h2 id="learned"><span class="no">10</span><span>到底学到了什么</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 概念 → 代码</caption>
+        <thead><tr><th>哪一章的概念</th><th>在这个项目里变成了</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td><a href="../应用工程/A04-Agent基础.html">A04</a> ReAct 循环</td><td><code>for step in range(MAX_STEPS)</code> + 想/做/看</td></tr>
+          <tr class="sel"><td><a href="../应用工程/A02-结构化输出与函数调用.html">A02</a> 工具 / 函数调用</td><td><code>tools</code> 的 JSON schema + <code>tool_calls</code></td></tr>
+          <tr class="sel"><td><a href="../应用工程/A04-Agent基础.html">A04</a> 状态 / 记忆</td><td>一路 append 的 <code>messages</code>(含 tool 结果)</td></tr>
+          <tr class="sel"><td><a href="../应用工程/A05-Agent的harness底层框架.html">A05</a> 工具注册 / 兜底</td><td><code>REGISTRY</code> 分发 + <code>MAX_STEPS</code> 闸</td></tr>
+          <tr class="sel"><td><a href="../应用工程/A06-评估幻觉安全成本.html">A06</a> 安全 / 成本</td><td>不裸 eval + 限步数 + 危险动作确认</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="reflist"><span class="no">11</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本项目页只给搭建的骨架;真正的参数细节在下面这些一手文档里。每条注明:是什么、为什么选它、精确看哪段、对应哪一步。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;均于 2026-08-16 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" rel="noopener">OpenAI · 函数调用指南</a></span><span class="spine">本项目主文档</span><span class="tags">官方 · 当字典查 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">让模型请求调用已定义的工具的一手文档。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">这项目的 agent 靠函数调用驱动;工具定义格式和返回怎么接都在这。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">工具定义 + tool_call 返回的处理。</span></div>
+          <div class="rrow"><span class="rk">对应步骤</span><span class="rv">配"工具注册表 REGISTRY""ReAct 循环"两步。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.anthropic.com/research/building-effective-agents" target="_blank" rel="noopener">Building Effective Agents</a></span><span class="tags">工程博客 · 必读 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">何时该用 agent、怎么设计的经典文(<a href="../应用工程/A04-Agent基础.html">A04</a>/<a href="../应用工程/A05-Agent的harness底层框架.html">A05</a> 主线)。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">动手前先想清"这个任务到底要不要 agent、循环怎么兜底"。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">workflow vs agent + 常见模式。</span></div>
+          <div class="rrow"><span class="rk">对应步骤</span><span class="rv">配"max_steps 兜底"的设计。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://langchain-ai.github.io/langgraph/" target="_blank" rel="noopener">LangGraph 文档</a></span><span class="tags">框架 · 参考 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">用"图"编排更复杂 agent 的框架。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">这项目手写一个小的以看清机制;要搭更大更稳的,换它。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Quickstart。</span></div>
+          <div class="rrow"><span class="rk">对应步骤</span><span class="rv">选做:框架版重写。</span></div>
+        </div>
+      </div>
+
+      <h2 id="checklist"><span class="no">12</span><span>完成自查</span></h2>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我的 agent 能自己决定调哪个工具、调几次</li>
+          <li><input type="checkbox"> 我能讲清 agent loop 的一轮:想 → 做 → 看 → 再想</li>
+          <li><input type="checkbox"> 我知道工具的两面:干活的函数 + 给模型的 schema</li>
+          <li><input type="checkbox"> 我理解为什么必须把 tool 结果 append 回 messages</li>
+          <li><input type="checkbox"> 我知道 max_steps 是防死循环的闸,不能省</li>
+          <li><input type="checkbox"> 我知道"自主"来自这个循环,不是模型本身(A05)</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">13</span><span>下一个项目</span></h2>
+      <p>现在手里有了三块能跑的东西:会对话的助手(P4)、会查资料的 RAG(P5)、会用工具的 agent(P6)。最后一个项目 <a href="P7-完整AI应用.html">P7 · 完整 AI 应用</a>把它们<b>拼成一个能上线给别人用的产品</b>:前端页面 + 后端(密钥、限流、缓存、流式)+ 部署 + 监控(<a href="../应用工程/A07-工程化与部署.html">A07</a>)。从"能在本机上跑"到"别人能用",最后一跳。</p>
+      <nav class="chapter-nav" aria-label="项目导航">
+        <a href="P5-个人知识库问答.html"><span class="lb">上一个项目</span><span class="tt">P5 · 个人知识库问答</span></a>
+        <a href="P7-完整AI应用.html" class="next"><span class="lb">下一个项目</span><span class="tt">P7 · 完整 AI 应用</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本项目目录">
+      <p class="toc-label">P6 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">看清目标</span>
+        <a data-toc-target="target" href="#target"><i>1</i>成品长什么样</a>
+        <a data-toc-target="prep" href="#prep"><i>2</i>动手前的准备</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">分步搭建</span>
+        <a data-toc-target="s1" href="#s1"><i>3</i>定义工具</a>
+        <a data-toc-target="s2" href="#s2"><i>4</i>写 agent loop</a>
+        <a data-toc-target="s3" href="#s3"><i>5</i>执行工具</a>
+        <a data-toc-target="s4" href="#s4"><i>6</i>接上对话</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾 · 消化</span>
+        <a data-toc-target="run" href="#run"><i>7</i>跑起来</a>
+        <a data-toc-target="pitfalls" href="#pitfalls"><i>8</i>常见坑</a>
+        <a data-toc-target="extend" href="#extend"><i>9</i>进阶扩展</a>
+        <a data-toc-target="learned" href="#learned"><i>10</i>学到了什么</a>
+        <a data-toc-target="reflist" href="#reflist"><i>11</i>外部资源</a>
+        <a data-toc-target="checklist" href="#checklist"><i>12</i>完成自查</a>
+        <a data-toc-target="next" href="#next"><i>13</i>下一个项目</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="P6" data-kind="project" data-title="一个小 Agent"></script>
+</body>
+</html>

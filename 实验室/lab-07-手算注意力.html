@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-07 · 手算注意力:和纸笔对答案</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="lab-06-五步循环.html">lab-06</a><span class="sep">—</span>
+      <a href="lab-07-手算注意力.html" class="current">lab-07 手算注意力</a>
+      <span class="sep">—</span><a href="lab-08-Token与账单.html">lab-08</a>
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-07 · 配套 D14 注意力机制逐步手算</p>
+        <h1>手算注意力:和纸笔对答案</h1>
+        <p class="recap">把 <a href="../深度课程/D14-注意力机制逐步手算.html">D14</a> 第 9 节那个例子用代码跑一遍,每一步的中间量都打印出来,和纸笔逐个对。<b>顺便会撞见一处对不上的数字</b>——那个差别本身就是一课。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>打分 → 缩放 → softmax → 加权求和,四步的中间量全部可见</li>
+          <li>和讲义里手算的 [6.65, 3.45] 对照:代码算出来是 [6.60, 3.40]</li>
+          <li>这个差是怎么来的——四舍五入到两位小数再相乘的代价</li>
+          <li>因果掩码把「未来位置」设成负无穷之后,权重矩阵长什么样</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../深度课程/D14-注意力机制逐步手算.html">D14</a> 第 8–9 节(四步算术与手算例子)、第 11 节(因果掩码)。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p><b>方式 A · 页面内运行器</b>:每段代码旁边有「▶ 运行」,用的是 Pyodide——一个跑在浏览器里的<b>真实 Python</b>,不是模拟输出。首次点击要下载运行时,约 10–20 秒,需要联网。用到第三方库时会自动装包,第一次会再多等一会儿。</p>
+      <p><b>方式 B · 本机终端</b>:代码同时放在 <code>实验室\code\lab07\</code> 下,可以直接 <code>python step1_attention.py</code>。本机跑得更快,而且能改文件、能存结果。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>两件事:<b>亲手验证四步算术</b>;以及看清一个更普遍的道理——<b>手算的近似值和代码的精确值会有差,交付时要说清楚给的是哪一个</b>。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>四步,每步都打印</span></h2>
+      <p>用 D14 第 9 节的原始数字:K 是三个词的键,V 是三个词的值,q 是「老鼠」这个词的查询。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_attention.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="22">import numpy as np
+
+K = np.array([[1, 0, 1, 0],      # 猫
+              [0, 1, 0, 1],      # 追
+              [1, 0, 0, 1]])     # 老鼠
+V = np.array([[10, 0],           # 猫
+              [0, 10],           # 追
+              [5, 5]])           # 老鼠
+q = np.array([1, 0, 1, 0])       # 查询:老鼠
+d_k = K.shape[1]                 # = 4
+
+scores = q @ K.T
+print("① 打分 (q·K^T)      =", scores)
+
+scaled = scores / np.sqrt(d_k)
+print("② 缩放 (÷√d_k, √4=2) =", scaled)
+
+e = np.exp(scaled - scaled.max())        # 减最大值,防溢出,不改变结果
+weights = e / e.sum()
+print("③ softmax 权重       =", np.round(weights, 4))
+print("   权重之和           =", round(weights.sum(), 6))
+
+out = weights @ V
+print("④ 加权求和 → 输出    =", np.round(out, 4))
+print()
+print("讲义第 9 节用两位小数手算得到 [6.65, 3.45];代码的精确值见上。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>① 打分 (q·K^T)      = [2 0 1]
+② 缩放 (÷√d_k, √4=2) = [1.  0.  0.5]
+③ softmax 权重       = [0.5065 0.1863 0.3072]
+   权重之和           = 1.0
+④ 加权求和 → 输出    = [6.6008 3.3992]
+
+讲义第 9 节用两位小数手算得到 [6.65, 3.45];代码的精确值见上。</div>
+      <p>对照讲义:①<code>[2 0 1]</code> ②<code>[1 0 0.5]</code> ③<code>[0.51 0.19 0.31]</code> —— 前三步完全一致。第 ④ 步讲义写 <code>[6.65, 3.45]</code>,代码给 <code>[6.6008, 3.3992]</code>。<b>差别来自第 ③ 步的四舍五入</b>:讲义把权重截到两位小数再相乘(0.51×10=5.1),代码用的是完整精度(0.50648×10=5.0648)。<b>手算是对的、代码也是对的,但讲义第 12 节说「代码跑出来正好是 [6.65, 3.45]」这句不准确。</b></p>
+
+      <h2 id="s4"><span class="no">4</span><span>因果掩码</span></h2>
+      <p>生成时不许偷看后文。把「未来位置」的分数设成负无穷,再看权重矩阵。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_mask.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="22">import numpy as np
+
+K = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 0, 1]])
+Q = K.copy()                     # 自注意力:每个词都当一次查询
+d_k = K.shape[1]
+
+scores = (Q @ K.T) / np.sqrt(d_k)
+print("缩放后的分数矩阵(行=谁在查,列=查谁):")
+print(np.round(scores, 3))
+
+mask = np.triu(np.ones_like(scores, dtype=bool), k=1)   # 上三角 = 未来
+masked = scores.copy()
+masked[mask] = -np.inf
+print("\n加上因果掩码之后(-inf 表示不许看):")
+print(masked)
+
+e = np.exp(masked - masked.max(axis=1, keepdims=True))
+w = e / e.sum(axis=1, keepdims=True)
+print("\nsoftmax 之后的权重矩阵:")
+print(np.round(w, 4))
+print("\n每一行之和:", np.round(w.sum(axis=1), 6))</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>缩放后的分数矩阵(行=谁在查,列=查谁):
+[[1.  0.  0.5]
+ [0.  1.  0.5]
+ [0.5 0.5 1. ]]
+
+加上因果掩码之后(-inf 表示不许看):
+[[ 1.  -inf -inf]
+ [ 0.   1.  -inf]
+ [ 0.5  0.5  1. ]]
+
+softmax 之后的权重矩阵:
+[[1.     0.     0.    ]
+ [0.2689 0.7311 0.    ]
+ [0.2741 0.2741 0.4519]]
+
+每一行之和: [1. 1. 1.]</div>
+      <p>看权重矩阵的<b>右上三角:全是 0</b>。第 1 个词只能看自己(权重 1.0),第 2 个词能看前两个,第 3 个词能看全部三个。<code>exp(-inf) = 0</code>,所以负无穷在 softmax 之后精确变成 0,而不是「很小的数」——这就是为什么用 -inf 而不是一个大负数。</p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 把 <code>q</code> 改成 <code>[0, 1, 0, 1]</code>(查询变成「追」),输出会更靠近哪个词的 V?先猜再跑。<br><b>②</b> 把第 1 步的 <code>d_k</code> 人为改成 1(即不缩放),权重会变成什么样?这就是 D14 第 8 节说的「极端化」。<br><b>③</b> 第 2 步里把 <code>k=1</code> 改成 <code>k=0</code>(连自己也不许看),每一行还能算出权重吗?会发生什么?</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td><code>RuntimeWarning: invalid value in subtract</code></td><td>整行都是 -inf 时,减最大值得到 inf-inf</td><td>这正是第 3 个改一改会撞到的;真实实现里第一行永远保留自己</td></tr>
+            <tr><td>输出和讲义完全不同</td><td>K/V/q 抄错了</td><td>对照第 1 步代码里的三个矩阵,数字必须一模一样</td></tr>
+            <tr><td>权重不是加起来等于 1</td><td>softmax 的除法写错了轴</td><td>多维时要写 <code>axis=1, keepdims=True</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">这个实验里那处 0.05 的差,是个很小的数字,但它示范了一件大事:<b>手算的近似和代码的精确不是一回事,交付时要说清楚给的是哪一个</b>。下一个实验把这套「说清楚给的是哪一个」用到钱上。</p>
+
+      <nav class="chapter-nav">
+        <a href="lab-06-五步循环.html"><span class="lb">上一个</span><span class="tt">lab-06 五步循环</span></a>
+        <a href="lab-08-Token与账单.html" class="next"><span class="lb">下一个</span><span class="tt">lab-08 Token 与账单</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-07 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>四步算术</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>因果掩码</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-07" data-kind="lab" data-title="手算注意力:和纸笔对答案"></script>
+</body>
+</html>

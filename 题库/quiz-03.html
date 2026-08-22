@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第 3 章题库 · NumPy 数组与形状</title>
+</head>
+<body>
+<script>
+window.QUIZ_TITLE = "第 3 章题库 · NumPy 数组与形状";
+window.QUIZ_SUB = "10 题,重点在「形状意识」。正确率 70% 以上为通关。";
+window.QUESTIONS = [
+  {
+    "section": "一 · 数组与形状",
+    "type": "judge",
+    "q": "判断:NumPy 数组要求元素类型一致、在内存里连续存放,这正是它能做向量化、比列表循环快几十上百倍的原因。",
+    "options": [
+      "对",
+      "错"
+    ],
+    "answer": 0,
+    "explain": "对。「同类型 + 连续内存」让运算能整块下沉到底层 C/BLAS 实现,还能并行。这也是所有 AI 库都用数组/张量而不是列表的原因。"
+  },
+  {
+    "type": "shape",
+    "q": "a = np.zeros((3, 4)),那么 a.shape、a.ndim、a.size 分别是?",
+    "options": [
+      "(4,3) / 2 / 7",
+      "(3,4) / 3 / 12",
+      "(3,4) / 2 / 7",
+      "(3,4) / 2 / 12"
+    ],
+    "answer": 3,
+    "explain": "shape 是各维长度 (3,4);ndim 是维度个数 = 2(二维);size 是元素总数 = 3×4 = 12。这三个属性是排查形状 bug 的第一手工具。"
+  },
+  {
+    "type": "predict",
+    "q": "这段代码输出什么?",
+    "code": "import numpy as np\na = np.array([[1, 2, 3], [4, 5, 6]])\nprint(a.sum(axis=0))",
+    "options": [
+      "[5 7 9]",
+      "[6 15]",
+      "21",
+      "[[5 7 9]]"
+    ],
+    "answer": 0,
+    "explain": "axis=0 是「沿着行的方向(往下)求和」,即把每一列加起来:1+4=5、2+5=7、3+6=9。想按行求和(得 [6,15])要用 axis=1。记法:axis=几,那一维就被压掉。"
+  },
+  {
+    "section": "二 · 索引与切片",
+    "type": "shape",
+    "q": "a 的形状是 (5, 3),那么 a[1:3, :] 的形状是?",
+    "options": [
+      "(2,)",
+      "(2, 3)",
+      "(3, 3)",
+      "(3, 2)"
+    ],
+    "answer": 1,
+    "explain": "1:3 取第 1、2 行(不含 3),共 2 行;: 表示该维全取,3 列。所以是 (2,3)。切片是「左闭右开」,这是最常见的差一错误来源。"
+  },
+  {
+    "type": "judge",
+    "q": "判断:b = a[0:2] 得到的是「视图」,和原数组共享同一块内存,所以修改 b 会连带改变 a。",
+    "options": [
+      "对",
+      "错"
+    ],
+    "answer": 0,
+    "explain": "对。需要独立副本必须写 b = a[0:2].copy()。这个坑在数据预处理时经常悄悄改坏原始数据。"
+  },
+  {
+    "section": "三 · 向量化与广播",
+    "type": "choice",
+    "q": "为什么 AI 代码里几乎看不到 for 循环逐个处理数字?",
+    "options": [
+      "因为 Python 的 for 循环有语法限制,不能直接遍历 NumPy 数组",
+      "因为 GPU 无法执行 for 循环,所有循环都必须改写成矩阵运算",
+      "向量化运算把循环下沉到底层 C 实现,快几十上百倍,而且代码更短更不易错",
+      "因为 for 循环写出来太长,向量化只是一种更简洁的写法,速度其实差不多"
+    ],
+    "answer": 2,
+    "explain": "核心是性能与表达力:a * 2 比逐元素循环快得多(底层是编译好的 C/BLAS,还能并行)。选项 3、4 都是错的说法——能写,只是慢。"
+  },
+  {
+    "type": "predict",
+    "q": "广播:下面输出的形状是?",
+    "code": "import numpy as np\na = np.ones((3, 4))\nb = np.array([1, 2, 3, 4])\nprint((a + b).shape)",
+    "options": [
+      "(3,)",
+      "报错:形状不匹配",
+      "(4, 4)",
+      "(3, 4)"
+    ],
+    "answer": 3,
+    "explain": "广播规则从末尾维度对齐:a 是 (3,4),b 是 (4,),b 被自动「复制」成 3 行参与运算,结果仍是 (3,4)。若 b 是 (3,) 就会报错——因为末尾维 4 和 3 对不上。"
+  },
+  {
+    "type": "debug",
+    "q": "报错 ValueError: operands could not be broadcast together with shapes (3,4) (3,)。最直接的修法是?",
+    "options": [
+      "把 b 变成 (3,1) 形状(b.reshape(-1,1)),让它按列广播",
+      "用 np.array(b) 再包一层把它显式变成数组,让 NumPy 重新推断它的形状",
+      "把两个数组都用 tolist() 转成 Python 列表再相加,列表相加不受形状约束",
+      "给 a 加上 astype(float) 统一数据类型,类型一致后广播规则就能自动对齐"
+    ],
+    "answer": 0,
+    "explain": "广播从末尾维对齐:(3,4) 与 (3,) 的末尾维 4 vs 3 不匹配。若本意是「每行加一个数」,应把 b 变成 (3,1),这样它会沿列方向广播。看到 broadcast 报错,先打印两边 shape 再决定 reshape 哪个。 b[:, None] 是等价写法。广播要求两个数组的形状从末尾往前逐维对齐。"
+  },
+  {
+    "type": "short",
+    "q": "简答:为什么说「形状意识」是学 AI 最该先建立的习惯?",
+    "model": "因为神经网络的每一层都在做形状变换,绝大多数运行时错误是形状对不上(矩阵乘法、拼接、损失函数的输入)。养成「每步打印 .shape」的习惯,能把大部分 debug 时间省掉;后面 PyTorch 的张量(D07)沿用同一套形状规则。"
+  },
+  {
+    "type": "param",
+    "q": "参数实验:把 a.reshape(2, -1) 里的 -1 换成具体数字,会发生什么?-1 的含义是什么?",
+    "model": "-1 表示「这一维交给它算」:NumPy 会用总元素数除以其它维度自动推出。若 a 有 12 个元素,reshape(2,-1) 得到 (2,6);写成 reshape(2,6) 结果一样,但写死后一旦元素数变化就会报错。-1 让代码对数据规模更鲁棒,是实战常用写法。"
+  }
+];
+</script>
+<script src="../assets/quiz-engine.js"></script>
+</body>
+</html>

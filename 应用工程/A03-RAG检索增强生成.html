@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A03 · RAG:检索增强生成</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="A02-结构化输出与函数调用.html">A02 结构化输出</a><span class="sep">—</span>
+      <a href="A03-RAG检索增强生成.html" class="current">A03 RAG</a><span class="sep">—</span>
+      <a href="A04-Agent基础.html">A04 Agent 基础</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-A03.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">应用工程 · Chapter A03</p>
+        <h1>RAG:检索增强生成</h1>
+        <p class="recap">大模型只知道它训练时见过的东西——<b>不知道私有资料,也不知道昨天发生的事</b>,硬问就容易编(幻觉)。<b>RAG</b>(检索增强生成)是最实用的破解法:先从资料里<b>检索</b>出相关片段,<b>拼进上下文</b>,再让模型<b>基于这些片段作答</b>。相当于给模型配一个随身、可更新的资料库。这是企业里最常落地的 AI 应用形态。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,动手 + 精读约 4~6 小时。概念都用第 8 章的 Embedding、A01 的上下文窗口作对照。每出现一个新词,当场用白话解释。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>为什么要 RAG——让模型用上私有/最新资料,少编</li>
+          <li>向量检索——把问题和文档都变成向量,按语义找最相近的</li>
+          <li>切块 chunking——长文档切成小块存,块大小要权衡</li>
+          <li>检索→拼接→生成——取 top-k 块塞进提示词,让模型据此答、给出处</li>
+          <li>检索质量——检索不准是最大痛点;重排、评估救它</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>用到第 8 章的 <a href="../基础课程/08-大语言模型鸟瞰.html">Embedding</a>(意思近=向量近)和 <a href="A01-提示词工程与上下文.html">A01</a> 的上下文窗口管理。<b>通向后面:</b>RAG 常作为 <a href="../index.html">A04/A05 Agent</a> 的一个"工具"(让 agent 需要时去查资料);它也是项目 P5(个人知识库问答)的核心。</p>
+      </div>
+
+      <!-- ========== 模块 A ========== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>想让大模型回答"我自己的文档/知识库"里的问题的人。</li>
+        <li>受够了模型一本正经胡编,想让它"有依据地答、能给出处"的人。</li>
+        <li>准备做知识库问答、客服、文档助手这类最常见 AI 应用的人。</li>
+      </ul>
+      <p><b>不适合</b>:已经会搭 RAG、在调检索质量和重排的人——直接看 A04。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>两样:第 8 章的 <b>Embedding</b>(词/句变成向量、意思近则向量近)、<a href="A01-提示词工程与上下文.html">A01</a> 的<b>上下文窗口</b>。有个模型接口 + 一小堆自己的文档,就能动手搭一个最小 RAG。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>用一句话解释 RAG 在做什么、为什么能减少幻觉。</li>
+        <li>说清向量检索(语义搜索)和关键词搜索的区别。</li>
+        <li>知道为什么要切块、块大小怎么权衡。</li>
+        <li>画出 RAG 的完整链路:检索 → 拼上下文 → 生成。</li>
+        <li>知道 RAG 效果差时先查哪里(多半是检索,不是模型)。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">RAG:回答前先<b>去资料库里"搜"出最相关的几段</b>,把它们塞进提示词,再让模型<b>照着这几段回答</b>——开卷考试,而不是闭卷硬背。</p>
+      <p>模型的知识冻结在训练那一刻,且不含私有资料。与其花大价钱重新训练,不如<b>临时把相关资料喂给它</b>:用户一问,系统先从文档里检索出最相关的几段,连同问题一起放进上下文,模型就能基于这些真实材料作答,还能标出处。它把"模型记得多少"变成了"模型能查到多少"——资料更新了,换库即可,不用动模型。这是目前把大模型接上私有/实时知识的最主流、最划算的办法。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="RAG 五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">给模型一个</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">随身资料库</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 为什么要 RAG</text>
+          <rect x="588" y="122" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="670" y="150" text-anchor="middle" class="nl">② 向量检索</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ 切块</text>
+          <rect x="144" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="226" y="358" text-anchor="middle" class="nl">④ 检索→拼→生成</text>
+          <rect x="8" y="122" width="150" height="46" rx="8" class="d-ink nf"/>
+          <text x="83" y="150" text-anchor="middle" class="nl">⑤ 检索质量</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。组装起来,就能看懂第 12 节那段"喂文档 → 检索 → 基于它回答"的最小 RAG。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 B ========== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>本章每一小节把概念用图讲清。真正搭起来,靠<b>一个框架的官方教程 + 动手喂自己的文档</b>。下面选好主线,顺着走完即可。</p>
+      <div class="callout go">
+        <span class="label">默认主线 · 框架教程</span>
+        <p><b>LlamaIndex 官方教程(专为 RAG 而生,几十行搭一个)。</b>为什么是它:把"喂文档 → 建索引 → 检索 → 问答"收成最少的代码,概念和本章五块几乎一一对应。链接:<a href="https://docs.llamaindex.ai/" target="_blank" rel="noopener">docs.llamaindex.ai</a>;另一大主流是 <a href="https://python.langchain.com/docs/tutorials/rag/" target="_blank" rel="noopener">LangChain 的 RAG 教程</a>。</p>
+      </div>
+      <p><b>再配两件:</b></p>
+      <ul>
+        <li><b>RAG 最佳实践(论文)</b> — <a href="https://arxiv.org/abs/2407.01219" target="_blank" rel="noopener">Searching for Best Practices in RAG</a>,系统比较了切块、检索、重排各环节的选择。想调好检索质量时读。</li>
+        <li><b>Chip Huyen《AI Engineering》RAG 章</b> — <a href="https://huyenchip.com/" target="_blank" rel="noopener">把 RAG 放进整个应用工程里看</a>,理解它和微调、agent 的取舍。</li>
+      </ul>
+
+      <!-- ========== 模块 C ========== -->
+      <p class="handoff">先想清楚:模型明明"很懂",为什么答问题会编?</p>
+      <h2 id="why"><span class="no">7</span><span>为什么要 RAG</span></h2>
+      <p class="one-liner">模型的知识<b>冻结在训练那一刻</b>,而且<b>不含私有资料</b>。问它训练时没见过的东西,它不会说"不知道",而会流畅地编——这就是幻觉。RAG 给它真实材料垫底。</p>
+      <p>两个硬伤:一是<b>时效</b>,训练之后的事它不知道;二是<b>私有</b>,自己的文档、笔记它没见过。而它又倾向于"有问必答"(第 8 章:它优化的是"像不像下一句",不是"对不对"),于是编。解决思路有三:重新训练(贵、慢、私有数据也难)、微调(见 D16,适合改风格不适合塞知识)、<b>RAG(临时检索相关资料喂进去)</b>。RAG 最轻、最快、资料一改就生效,所以最流行。</p>
+
+      <p class="handoff">RAG 的第一步是"搜得准"——但这里的"搜"不是关键词匹配。</p>
+      <h2 id="retrieval"><span class="no">8</span><span>向量检索:按意思搜</span></h2>
+      <p class="one-liner">向量检索<span class="en">语义搜索</span>:把文档片段和用户问题都用 Embedding 变成<b>向量</b>,再找和问题向量<b>最相近</b>的那几段。靠"意思相近",不靠"字面相同"。</p>
+      <p>关键词搜索的毛病:问"怎么退款",但文档里写的是"申请返还款项",字面不匹配就搜不到。向量检索用第 8 章的 Embedding:意思相近的句子,向量也相近。于是"退款"能找到"返还款项"。做法:预先把所有文档片段算成向量、存进<b>向量数据库</b>;用户提问时把问题也算成向量,在库里找最近的 top-k 段。这一步准不准,几乎决定整个 RAG 的成败。</p>
+      <figure>
+        <svg viewBox="0 0 560 210" role="img" aria-label="问题向量在向量空间里找最近的文档片段">
+          <line x1="40" y1="30" x2="40" y2="180" class="d-soft"/><line x1="40" y1="180" x2="520" y2="180" class="d-soft"/>
+          <circle cx="150" cy="90" r="6" class="dot"/><text x="160" y="88" class="el">「返还款项」</text>
+          <circle cx="185" cy="115" r="6" class="dot"/><text x="195" y="120" class="el">「退货流程」</text>
+          <circle cx="420" cy="60" r="6" class="dot"/><text x="360" y="54" class="el">「营业时间」</text>
+          <circle cx="160" cy="105" r="8" class="dot-acc"/><text x="80" y="150" class="el-acc" font-weight="700">问题:「怎么退款」</text>
+          <circle cx="160" cy="105" r="46" class="d-acc" fill="none"/>
+          <text x="280" y="200" text-anchor="middle" class="el">问题向量附近的片段(圈内)= 最相关 → 取出来喂给模型</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>向量检索:问题和文档都成为空间里的点,取离问题最近的几段(圈内)。字面不同但意思相近也能命中。</figcaption>
+      </figure>
+
+      <p class="handoff">但一整篇文档太长,不能整篇存、整篇比——要先切块。</p>
+      <h2 id="chunk"><span class="no">9</span><span>切块 chunking</span></h2>
+      <p class="one-liner">切块:把长文档切成<b>一小段一小段</b>(chunk)再各自算向量。检索时命中的是"块",塞进上下文的也是块。块大小是个权衡。</p>
+      <p>为什么切:整篇文档一个向量,粒度太粗、检索不准,也塞不进上下文。切太碎,每块又缺上下文、意思不全。经验:按段落/小节切,一块几百字,块之间留一点重叠(overlap)防止把一句话拦腰截断。块大小、重叠多少没有万能值,要按文档和检索效果调——这也是 RAG 最需要试的旋钮之一。</p>
+
+      <p class="handoff">检索到相关块之后,就到了 RAG 名字里的后半段:拼接 + 生成。</p>
+      <h2 id="pipeline"><span class="no">10</span><span>检索 → 拼接 → 生成</span></h2>
+      <p class="one-liner">完整链路:<b>检索</b>出 top-k 相关块 → 把它们<b>拼进提示词</b>(连同"只根据以下资料回答"的指令)→ 模型<b>基于这些块生成</b>答案,并给出处。</p>
+      <p>这就是 RAG = Retrieval(检索)+ Augmented(增强上下文)+ Generation(生成)。要点在拼接那一步的提示词:明确让模型<b>只依据给的资料回答、找不到就说不知道、并标出处</b>。这样既减少编造,又让答案可追溯。上下文窗口有限(A01),所以 k 不能太大、块不能太长——检索得准比塞得多重要。</p>
+      <figure>
+        <svg viewBox="0 0 660 200" role="img" aria-label="RAG 全链路:检索 拼接 生成">
+          <defs><marker id="m-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="20" y="76" width="96" height="46" rx="8" class="box"/><text x="68" y="104" text-anchor="middle" class="nl">用户问题</text>
+          <line x1="116" y1="99" x2="158" y2="99" class="d-acc" marker-end="url(#m-r)"/>
+          <rect x="162" y="70" width="120" height="58" rx="8" class="box"/><text x="222" y="94" text-anchor="middle" class="nl">向量库检索</text><text x="222" y="112" text-anchor="middle" class="el">找 top-k 块</text>
+          <line x1="282" y1="99" x2="324" y2="99" class="d-acc" marker-end="url(#m-r)"/>
+          <rect x="328" y="70" width="130" height="58" rx="8" class="box-acc"/><text x="393" y="94" text-anchor="middle" class="nl-acc">拼进提示词</text><text x="393" y="112" text-anchor="middle" class="el">资料 + 问题 + 指令</text>
+          <line x1="458" y1="99" x2="500" y2="99" class="d-acc" marker-end="url(#m-r)"/>
+          <rect x="504" y="76" width="130" height="46" rx="8" class="box"/><text x="569" y="98" text-anchor="middle" class="nl">模型生成</text><text x="569" y="115" text-anchor="middle" class="el">据资料答+出处</text>
+          <rect x="162" y="150" width="120" height="30" rx="6" class="box"/><text x="222" y="170" text-anchor="middle" class="el">📚 文档(预先切块 + 算向量入库)</text>
+          <line x1="222" y1="150" x2="222" y2="130" class="d-soft" marker-end="url(#m-r)"/>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>RAG 全链路:问题 → 从文档向量库检索 top-k 块 → 拼进提示词 → 模型据资料作答并给出处。</figcaption>
+      </figure>
+      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:LlamaIndex 的 Starter 教程走一遍完整链路。<b>往后连:</b>A04 的 Agent 常把"RAG 检索"包成一个工具,让 agent 自己决定何时去查库。</p></div>
+
+      <p class="handoff">最后一块,也是 RAG 落地最痛的一块:检索不准怎么办。</p>
+      <h2 id="quality"><span class="no">11</span><span>检索质量:RAG 的命门</span></h2>
+      <p class="one-liner">RAG 效果差,<b>九成问题出在检索,不在模型</b>——检索没找对块,模型再强也是"照着错资料答"。先救检索:调切块、加<b>重排</b>、混合检索、评估。</p>
+      <p>常见误区是一出问题就换更强的模型,其实该先看"检索到的块对不对"。救检索的手段:调块大小和重叠;<b>重排(rerank)</b>——先粗召回一批,再用更精的模型给这批重新打分取前几;<b>混合检索</b>——向量搜 + 关键词搜结合;给块加标题/元数据帮助命中。更根本的是<b>评估</b>:用一组"问题→应命中的块"测检索命中率,别凭感觉。这套评估思路接到 A06。</p>
+      <div class="callout warn"><span class="label">先查检索,再怪模型</span><p>RAG 答错时的排查顺序:①检索到的块里到底有没有正确答案?没有 → 修检索(切块/重排/召回)。②块里有、但模型没用好 → 修提示词(强调"只依据资料")。别一上来就换模型。</p></div>
+
+      <!-- ========== 模块 D ========== -->
+      <p class="handoff">五块地基到齐了。下面用几行代码,喂一堆文档、搭一个最小 RAG。</p>
+      <h2 id="assemble"><span class="no">12</span><span>实战:几行搭一个最小 RAG</span></h2>
+      <p>用 LlamaIndex 把一个文件夹里的文档做成可问答的知识库——检索、拼接、生成都被它收进了几行:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">mini_rag.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> llama_index.core </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> VectorStoreIndex, SimpleDirectoryReader</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># ③④ 读 ./docs 里的文档 → 自动切块 → 算向量 → 建索引(向量库)</span></span>
+<span class="line"><span style="color:#14181F">docs </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> SimpleDirectoryReader(</span><span style="color:#557089">"docs"</span><span style="color:#14181F">).load_data()</span></span>
+<span class="line"><span style="color:#14181F">index </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> VectorStoreIndex.from_documents(docs)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># ⑤ 建一个问答引擎(默认:检索 top-k → 拼上下文 → 生成)</span></span>
+<span class="line"><span style="color:#14181F">engine </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> index.as_query_engine(similarity_top_k</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">3)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">answer </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> engine.query(</span><span style="color:#557089">"怎么申请退款?"</span><span style="color:#14181F">)   </span><span style="color:#8B95A8;font-style:italic"># ② 语义检索 + ⑩ 生成</span></span>
+<span class="line"><span style="color:#14181F">print(answer)                </span><span style="color:#8B95A8;font-style:italic"># 基于 docs 里的真实内容回答</span></span>
+<span class="line"><span style="color:#14181F">print(answer.source_nodes)   </span><span style="color:#8B95A8;font-style:italic"># 命中的来源块(出处),用来核对检索准不准</span></span></code></pre>
+      </div>
+      <p>读一遍:<code>from_documents</code> 一步完成<b>切块 + 算向量 + 入库</b>;<code>as_query_engine</code> 封装了<b>检索 → 拼接 → 生成</b>整条链;<code>similarity_top_k=3</code> 就是"取最相近的 3 块"。最该盯的是 <code>source_nodes</code>——先看<b>检索到的块对不对</b>,这是调 RAG 的第一现场。真实项目会把向量库换成专门的向量数据库、加上重排,但骨架就是这几行。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战</span>
+        <h3>改改看</h3>
+        <p>①把 <code>similarity_top_k</code> 从 3 调到 1 和 8,看答案和命中块怎么变(太少漏、太多噪音+占窗口)。②故意问一个文档里<b>没有</b>的问题,看它是否会编——再在提示词里加"资料里没有就说不知道",对比效果。③打印 <code>source_nodes</code> 里每块的相似度分数,感受"检索准不准"长什么样。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;下列链接均于 2026-08-16 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://docs.llamaindex.ai/" target="_blank" rel="noopener">LlamaIndex 文档</a></span><span class="spine">默认主线</span><span class="tags">框架文档 · 英文 · 2–3h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">最主流的 RAG 框架之一,把"切块→向量化→检索→拼上下文→生成"封装成几行代码。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章从零手写讲清了 RAG 的机制;它让人用成熟框架把同样的事做稳、做全。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Starter Tutorial 跑通一个;再看 Retrieval / Node Parsers 调质量。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配本章「切块」「向量检索」「拼上下文」几节——先懂机制,再用框架。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://python.langchain.com/docs/tutorials/rag/" target="_blank" rel="noopener">LangChain · RAG 教程</a></span><span class="tags">框架文档 · 英文 · 2h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">另一大主流框架的 RAG 官方教程。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">和 LlamaIndex 二选一即可;对比着看,会看清 RAG 的通用结构。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">RAG Tutorial(Part 1 建索引 + Part 2 检索生成)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「拼上下文」「检索质量」节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://arxiv.org/abs/2407.01219" target="_blank" rel="noopener">Searching for Best Practices in RAG(论文)</a></span><span class="tags">论文·字典/桥 · 英文 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">系统对比 RAG 各环节(切块大小、检索方式、重排…)哪种更好的实证论文。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">当"字典"用:调检索质量卡住时,来查"这一环该怎么设"的有据结论。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">各环节的对比表,直接看结论,不必细读方法。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「检索质量」节,想优化时再翻。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://huyenchip.com/" target="_blank" rel="noopener">Chip Huyen · AI Engineering</a></span><span class="tags">书/博客 · 英文 · 按需 · 部分免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">把 RAG 放进"AI 工程"整体来讲的系统性作者。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想理解 RAG 和微调/评估/成本怎么权衡时读她。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">RAG 相关章。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">应用工程模块的背景读物。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>要让模型懂我的资料,得重新训练/微调</td><td>多数场景 RAG 更划算:临时检索喂进去即可,资料更新换库就行,不动模型。</td></tr>
+          <tr><td>向量检索就是更高级的关键词搜索</td><td>它按"意思相近"找,字面不同也能命中(退款↔返还款项);关键词搜做不到。</td></tr>
+          <tr><td>把整篇文档塞给模型就行</td><td>太长塞不下、也稀释重点。切块 + 只取最相关的几段,准而省。</td></tr>
+          <tr><td>RAG 答错就是模型不行,换个大模型</td><td>九成是检索没找对块。先查 source_nodes,修检索(切块/重排),再谈换模型。</td></tr>
+          <tr><td>RAG 就不会幻觉了</td><td>会缓解,不能根除:检索错、或模型不照资料答,仍会编。要"只依据资料+给出处+可评估"。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>一句话本质。</b>用"开卷/闭卷"打比方说清 RAG。<details><summary>参考答案</summary><p>RAG 是开卷考:答前先翻出相关资料垫着答,而不是闭卷凭记忆硬答(容易编)。</p></details></li>
+        <li><b>检索。</b>问"怎么退款"、文档写"返还款项",关键词搜为什么搜不到、向量检索为什么能?<details><summary>参考答案</summary><p>关键词靠字面匹配,字不同就漏;向量检索靠语义,意思相近向量也近,故能命中。</p></details></li>
+        <li><b>切块。</b>块切太大、太小各有什么问题?<details><summary>参考答案</summary><p>太大:粒度粗、检索不准、占窗口;太小:缺上下文、意思不全。要按文档和效果调,块间留重叠。</p></details></li>
+        <li><b>排错。</b>RAG 答错,先看什么?<details><summary>参考答案</summary><p>先看检索到的块(source_nodes)里有没有正确答案。没有→修检索;有但没用好→修提示词。别先换模型。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上再进 A04(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能解释 RAG 在做什么、为什么能减少幻觉</li>
+          <li><input type="checkbox"> 我知道向量检索按语义找,和关键词搜索不同</li>
+          <li><input type="checkbox"> 我理解为什么要切块,以及块大小的权衡</li>
+          <li><input type="checkbox"> 我能画出 RAG 链路:检索 → 拼上下文 → 生成</li>
+          <li><input type="checkbox"> 我知道要让模型"只依据资料答、给出处、找不到就说不知道"</li>
+          <li><input type="checkbox"> 我知道 RAG 出问题先查检索(看命中的块),不是先换模型</li>
+          <li><input type="checkbox"> 我看懂了第 12 节的最小 RAG,并知道 source_nodes 的作用</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>会写提示词、会让模型调工具、会给它接一个可查的资料库之后,下一步是把这些能力<b>串成会自己规划、自己行动的系统</b>——<a href="A04-Agent基础.html">A04 · Agent 基础</a>。Agent 就是让模型在一个循环里:想一步、决定调哪个工具(可能就是 RAG 检索或 A02 的函数)、看结果、再想下一步,直到把任务办完。前三章学的,正是 agent 手里的那些"零件"。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="A02-结构化输出与函数调用.html"><span class="lb">上一章</span><span class="tt">A02 · 结构化输出</span></a>
+        <a href="A04-Agent基础.html" class="next"><span class="lb">下一章</span><span class="tt">A04 · Agent 基础</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">A03 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="why" href="#why"><i>7</i>为什么要 RAG</a>
+        <a data-toc-target="retrieval" href="#retrieval"><i>8</i>向量检索</a>
+        <a data-toc-target="chunk" href="#chunk"><i>9</i>切块</a>
+        <a data-toc-target="pipeline" href="#pipeline"><i>10</i>检索→拼→生成</a>
+        <a data-toc-target="quality" href="#quality"><i>11</i>检索质量</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>实战:最小 RAG</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="A03" data-kind="chapter" data-title="RAG:检索增强生成"></script>
+</body>
+</html>

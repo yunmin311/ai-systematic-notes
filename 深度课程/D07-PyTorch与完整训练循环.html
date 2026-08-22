@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D07 · PyTorch 与完整训练循环</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+/* 外部资源卡:是什么 / 为什么选它 / 精确看哪段 / 对应本章 */
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="D06-特征工程与数据预处理.html">D06 特征工程</a><span class="sep">—</span>
+      <a href="D07-PyTorch与完整训练循环.html" class="current">D07 PyTorch 训练循环</a><span class="sep">—</span>
+      <span class="plan">Track B 深度学习 · 开篇</span>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D07.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track B · Chapter D07 · 深度学习开篇</p>
+        <h1>PyTorch 与完整训练循环</h1>
+        <p class="recap">还记得 <a href="D01-线性回归全拆解.html">D01</a> 那个手写的训练循环吗——亲手算损失、亲手调那 1 个参数。<a href="../基础课程/07-神经网络入门.html">第 7 章</a>又讲了神经网络怎么前向、怎么反向传播。但真要训练一个有几万、几百万参数的网络,靠手写每一层的导数是不可能的。<b>PyTorch</b> 就是来解决这件事的:它把"数组运算 + 自动求导 + 数据加载 + 训练循环"这套骨架标准化了,让人只管"搭什么网络",把"怎么算梯度"完全交给框架。这一章把 D01 那个玩具循环,升级成<b>真正的深度学习训练循环</b>——后面 Track B 每一章(CNN、序列模型、迁移学习)都在这个循环里跑。</p>
+      </header>
+
+      <p>图解骨架约 30 分钟,动手 + 精读约 4~6 小时。跟着敲一遍那个五步循环,就握住了整个深度学习的"发动机"。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>为什么要框架——手写反向传播不现实,框架自动求导 + GPU 加速 + 现成组件</li>
+          <li>张量 Tensor——像 NumPy 数组,但能上 GPU、且会记录运算以便求导</li>
+          <li>自动求导 autograd——只写前向,一句 loss.backward() 框架把所有梯度算好</li>
+          <li>数据管道 Dataset / DataLoader——把数据切成小批量、打乱、按需喂</li>
+          <li>训练循环五步——前向 → 算损失 → 梯度清零 → 反向 → 更新,背下来</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>训练=一步步降损失续 <a href="D01-线性回归全拆解.html">D01</a> 的手写梯度下降;网络的前向/反向续 <a href="../基础课程/07-神经网络入门.html">第 7 章</a>;张量是形状运算续 <a href="../基础课程/03-NumPy数组与形状.html">第 3 章 NumPy</a>。<b>通向后面:</b>这个五步循环是 Track B 的"底盘"——<a href="D08-卷积神经网络CNN.html">D08 CNN</a>、<a href="D09-序列模型RNN到注意力.html">D09 序列模型</a>只是换掉循环里的"模型"那一块,循环本身一字不改;学完就能动手做 <a href="../index.html">项目 P3 手写数字识别</a>。</p>
+      </div>
+
+      <!-- ===== 模块 A ===== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>看过神经网络的道理(第 7 章),但一到"用代码训练一个"就发懵的人。</li>
+        <li>见过 PyTorch 代码,能看个大概,却说不清那五步各在干嘛、顺序为什么不能乱的人。</li>
+        <li>准备做第一个深度学习项目(如手写数字识别),想先把"训练脚手架"吃透的人。</li>
+      </ul>
+      <p><b>不适合</b>:完全没碰过"训练=降损失"这个概念的人——请先回 <a href="D01-线性回归全拆解.html">D01</a> 和 <a href="../基础课程/06-训练的本质.html">第 6 章</a>,那里把最核心的直觉打牢了,这一章才好懂。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>需要:<a href="../基础课程/06-训练的本质.html">第 6 章训练本质</a>(损失、梯度下降、学习率)、<a href="../基础课程/07-神经网络入门.html">第 7 章</a>(层、前向、反向传播)、<a href="../基础课程/03-NumPy数组与形状.html">第 3 章</a>(数组与形状)。数学只需记住一句:<b>梯度指向"损失上升最快"的方向,所以往它的反方向走就能降损失</b>——具体导数 PyTorch 全部算好,不用手推。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清"为什么要用框架、框架省了哪件最麻烦的事"。</li>
+        <li>解释张量和 NumPy 数组的两点关键区别(能上 GPU、能自动求导)。</li>
+        <li>看懂 <code>loss.backward()</code> 这一句背后发生了什么。</li>
+        <li>说清 Dataset / DataLoader 为什么要把数据切成小批量。</li>
+        <li>不看资料,默写出训练循环那五步、并说清每一步为何缺不得。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">PyTorch:<b>一个"会自己算梯度的 NumPy"。</b>使用者只负责写"数据怎么前向流成损失",框架负责把"每个参数该往哪调"(梯度)自动算好;再配上现成的层、优化器和数据管道,训练一个网络就浓缩成一个固定的五步循环。</p>
+      <p>为什么这是革命性的:D01 里模型只有 1 个参数,能手推它的导数;可一个真实网络有几百万个参数、几十层非线性变换,手推每个参数的导数是天方夜谭。PyTorch 用<b>自动求导</b>把这件最难的事变成一行代码。剩下的——把数组搬上 GPU 加速、把常用的层(线性层、卷积层)做成现成积木、把数据切批打乱——也都封装好了。于是注意力可以完全放在"搭什么样的网络、解决什么问题"上,而不是"梯度怎么算"。<b>PyTorch 和另一个框架 TensorFlow 是业界两大主流,近几年研究和教学几乎都用 PyTorch,本课程也用它。</b></p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="PyTorch 五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="640" y1="168" x2="480" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="540" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="220" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="120" y1="168" x2="280" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">一次完整的</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">深度学习训练</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 为什么要框架</text>
+          <rect x="596" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="674" y="150" text-anchor="middle" class="nl">② 张量 Tensor</text>
+          <rect x="440" y="330" width="176" height="46" rx="8" class="d-ink nf"/>
+          <text x="528" y="358" text-anchor="middle" class="nl">③ 自动求导</text>
+          <rect x="144" y="330" width="176" height="46" rx="8" class="d-ink nf"/>
+          <text x="232" y="358" text-anchor="middle" class="nl">④ 数据管道</text>
+          <rect x="8" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="86" y="150" text-anchor="middle" class="nl">⑤ 训练循环五步</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。②③④是训练要用到的三个零件,⑤把它们串成一个每轮都跑的固定循环——这就是深度学习的"发动机"。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 B ===== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>本课程只搭<b>骨架</b>——把"训练循环长什么样、五块零件各干嘛"讲清。<b>真正把它变成"会写代码",靠下面这一条外部主线</b>:官方教程的顺序几乎就是本章骨架的顺序,跟完这一条就够,别东拼西凑十份教程反而学乱。</p>
+      <div class="callout go">
+        <span class="label">默认主线 · 官方手把手 · 约 3–4 小时 · 免费</span>
+        <p><b>PyTorch 官方《Learn the Basics》六步教程</b>(英文,可用浏览器翻译)。<b>是什么:</b>官方入门六节,从张量一路写到完整训练循环,每一步都有能直接跑的最小代码。<b>为什么是它:</b>它的六步顺序就是本章五块地基的顺序,是"看懂→会写"的最短路径,权威、不过时。<b>怎么用:</b>先看我们每节的图和讲解建结构,再打开对应那节跟着敲一遍——下表把两边对齐好了。链接:<a href="https://pytorch.org/tutorials/beginner/basics/intro.html" target="_blank" rel="noopener">pytorch.org · Learn the Basics</a>。</p>
+      </div>
+      <table class="tbl">
+        <caption>表 1 · 本章骨架 ↔ 主线精读章节对应(先看我们的图,再跟对应那节敲代码)</caption>
+        <thead><tr><th>本章骨架(我们讲清"是什么、为什么")</th><th>主线精读(Learn the Basics,跟这节敲)</th></tr></thead>
+        <tbody>
+          <tr><td>第 8 节 · 张量 Tensor</td><td>Tensors</td></tr>
+          <tr><td>第 10 节 · 数据管道</td><td>Datasets &amp; DataLoaders</td></tr>
+          <tr><td>第 7 节 · 为什么要框架 · 搭模型</td><td>Build the Neural Network</td></tr>
+          <tr><td>第 9 节 · 自动求导</td><td>Automatic Differentiation with torch.autograd</td></tr>
+          <tr><td>第 11–12 节 · 训练循环五步</td><td>Optimizing Model Parameters</td></tr>
+        </tbody>
+      </table>
+      <p class="handoff">主线之外的配套资源,第 13 节逐条列出并注明了用法与对应小节。</p>
+
+      <!-- ===== 模块 C ===== -->
+      <p class="handoff">先想清楚:框架到底替我们省了哪件最要命的事。</p>
+      <h2 id="why"><span class="no">7</span><span>为什么要框架</span></h2>
+      <p class="one-liner">手写一个多层网络的反向传播,等于手推几百万个参数的导数——不现实、也极易出错。框架的头号价值就是:<b>只写"前向怎么算",它自动把"每个参数的梯度"算好。</b>再加上 GPU 加速和现成的层/优化器,训练网络才从"科研苦力"变成"搭积木"。</p>
+      <p>具体省了三件事:<b>一、自动求导。</b>这是核心——D01 里能手推 1 个参数的导数,但深层网络里,损失对第一层某个参数的导数要沿着几十层链式法则一路传回来,人工推导既慢又必错。框架把这一步自动化(第 9 节)。<b>二、GPU 加速。</b>神经网络的运算本质是海量矩阵乘法,GPU 天生擅长并行做这个,能比 CPU 快几十上百倍;框架让人一句 <code>.to("cuda")</code> 就把数据和模型搬上 GPU,代码几乎不用改。<b>三、现成组件。</b>线性层、卷积层、各种激活函数、各种优化器(Adam、SGD)都是封装好的积木,<code>import</code> 进来就用,不用重造轮子。这三件事凑齐,才能把精力放在"设计网络、解决问题"上。</p>
+
+      <p class="handoff">框架里一切数据的载体,先认识它:张量。</p>
+      <h2 id="tensor"><span class="no">8</span><span>张量 Tensor</span></h2>
+      <p class="one-liner">张量就是 PyTorch 版的 <b>NumPy 数组</b>(第 3 章):同样是带形状的多维数字网格,索引、切片、广播几乎一模一样。但它多两样本事:<b>能搬到 GPU 上算</b>,以及<b>能记录自己经历过哪些运算,好让框架回头求导</b>。</p>
+      <p>可以先粗暴地把"张量"理解成"能上 GPU、还会记账的 NumPy 数组"——第 3 章练过的形状意识(几行几列、哪个轴)在这里原样管用。两个新东西:<b>设备(device)</b>——张量住在 CPU 还是 GPU 上,用 <code>.to("cuda")</code> 搬家,模型和数据必须住在同一个设备上才能算。<b>数据类型(dtype)</b>——神经网络的输入几乎都用 <code>float32</code>(32 位小数),因为要做小数运算和求导;整数标签用 <code>int64</code>。一个新手最常见的报错就是 dtype 或 device 对不上,记住"输入转 float、模型和数据同设备"能躲开一大半。下面这段展示张量和它的求导能力:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">tensor_basics.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 张量:和 NumPy 数组几乎一样,能索引、切片、广播</span></span>
+<span class="line"><span style="color:#14181F">a </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> torch.tensor([[1.0, 2.0], [3.0, 4.0]])   </span><span style="color:#8B95A8;font-style:italic"># 2 行 2 列,dtype 默认 float32</span></span>
+<span class="line"><span style="color:#14181F">print(a.shape)          </span><span style="color:#8B95A8;font-style:italic"># torch.Size([2, 2])——形状意识和第 3 章一致</span></span>
+<span class="line"><span style="color:#14181F">print(a </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> 2)            </span><span style="color:#8B95A8;font-style:italic"># 逐元素运算,广播规则同 NumPy</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># requires_grad=True:告诉框架"请记录对这个张量的运算,我要对它求导"</span></span>
+<span class="line"><span style="color:#14181F">x </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> torch.tensor(2.0, requires_grad</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)</span></span>
+<span class="line"><span style="color:#14181F">y </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> x </span><span style="color:#14181F;font-weight:bold">**</span><span style="color:#14181F"> 2 </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> 3 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> x      </span><span style="color:#8B95A8;font-style:italic"># 前向:随便算一个式子</span></span>
+<span class="line"><span style="color:#14181F">y.backward()            </span><span style="color:#8B95A8;font-style:italic"># 反向:一句话,自动求导</span></span>
+<span class="line"><span style="color:#14181F">print(x.grad)           </span><span style="color:#8B95A8;font-style:italic"># dy/dx = 2x + 3 = 7.0 —— 框架已经算好了</span></span></code></pre>
+      </div>
+
+      <p class="handoff">上面那句 <code>y.backward()</code> 是全章的心脏,单拎出来讲。</p>
+      <h2 id="autograd"><span class="no">9</span><span>自动求导 autograd</span></h2>
+      <p class="one-liner">写前向计算时,PyTorch 在背后<b>悄悄记下每一步运算,连成一张"计算图"</b>。当对最终的损失调用 <code>loss.backward()</code>,它就沿这张图<b>从后往前</b>用链式法则,一路把"损失对每个参数的梯度"算出来,存进各参数的 <code>.grad</code> 里。这正是第 7 章"反向传播"的自动化版本。</p>
+      <p>拆开看:前向时,数据 <code>x</code> 经过模型算出预测 <code>ŷ</code>,再和真值算出损失 <code>loss</code>——这一串运算被框架记成一张从参数指向 loss 的图。<code>loss.backward()</code> 做的,就是第 7 章讲的反向传播:从 loss 出发,反着这张图逐层套链式法则,得到"每个参数改变一点点、loss 会变多少",也就是梯度。完全不用知道每层导数长什么样——<b>写好前向,梯度就是免费的</b>。有个坑要记住:梯度是<b>累加</b>进 <code>.grad</code> 的(为某些高级用法方便),所以每轮训练前必须先 <code>zero_grad()</code> 清零,否则这轮的梯度会和上轮的叠在一起、把方向带偏(第 11 节那五步里的第③步就是干这个)。</p>
+      <figure>
+        <svg viewBox="0 0 720 250" role="img" aria-label="前向计算与反向求导">
+          <defs>
+            <marker id="m-fwd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#14181f"/></marker>
+            <marker id="m-bwd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker>
+          </defs>
+          <rect x="24" y="86" width="118" height="46" rx="8" class="d-ink nf"/>
+          <text x="83" y="114" text-anchor="middle" class="nl">数据 x</text>
+          <rect x="196" y="86" width="118" height="46" rx="8" class="box-acc"/>
+          <text x="255" y="108" text-anchor="middle" class="nl-acc">模型</text>
+          <text x="255" y="124" text-anchor="middle" class="el-acc">(参数 w)</text>
+          <rect x="368" y="86" width="118" height="46" rx="8" class="d-ink nf"/>
+          <text x="427" y="114" text-anchor="middle" class="nl">预测 ŷ</text>
+          <rect x="540" y="86" width="140" height="46" rx="8" class="d-ink nf"/>
+          <text x="610" y="114" text-anchor="middle" class="nl">损失 loss</text>
+          <!-- 前向箭头 -->
+          <line x1="142" y1="100" x2="192" y2="100" class="d-ink" marker-end="url(#m-fwd)"/>
+          <line x1="314" y1="100" x2="364" y2="100" class="d-ink" marker-end="url(#m-fwd)"/>
+          <line x1="486" y1="100" x2="536" y2="100" class="d-ink" marker-end="url(#m-fwd)"/>
+          <text x="360" y="66" text-anchor="middle" class="el">前向:一路算到损失(框架偷偷记成计算图)</text>
+          <!-- 反向箭头 -->
+          <path d="M 600 142 C 480 200, 360 200, 262 146" class="d-acc" marker-end="url(#m-bwd)"/>
+          <text x="430" y="205" text-anchor="middle" class="el-acc">loss.backward():反着图求出每个参数的梯度 → 存进 w.grad</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>前向(黑)把数据一路算成损失;<code>loss.backward()</code>(蓝)反着计算图,自动把"损失对参数的梯度"算好。只写前向,反向是免费的。</figcaption>
+      </figure>
+
+      <p class="handoff">有了会求导的模型,还得有源源不断、切好批的数据喂它。</p>
+      <h2 id="data"><span class="no">10</span><span>数据管道 Dataset / DataLoader</span></h2>
+      <p class="one-liner"><b>Dataset</b> 定义"一条样本长什么样、怎么取第 i 条";<b>DataLoader</b> 把 Dataset 包起来,负责<b>切成小批量(mini-batch)、每轮打乱、并行加载</b>,一批一批地喂给训练循环。为什么切批:一次喂全部数据太占内存、也更新太慢;一次只喂一条又太抖——小批量(常见 32/64/128)是这两者的平衡(呼应第 6 章的 mini-batch)。</p>
+      <p>直觉:训练不是把全部数据连续塞进模型,而是像"一勺一勺喂"——每一勺(一个 batch)算一次前向反向、更新一次参数。<b>DataLoader</b> 就是那个自动盛勺的人:告诉它"每勺 32 条、每轮开饭前先把菜打乱",它就在循环里不断递过来 <code>(xb, yb)</code>。<b>打乱(shuffle)</b>很重要:如果数据原本按类别排好序(先全是猫、后全是狗),不打乱的话模型会先被猫带偏、再被狗带偏,学得不稳;打乱让每一批都是杂样本,梯度方向更可靠。对自己的数据,只要把它整理成"能按下标取第 i 条"的 Dataset,DataLoader 就能直接用——第 12 节的例子用最简单的 <code>TensorDataset</code>(直接把两个张量配成对)。</p>
+
+      <p class="handoff">五个零件到齐,把它们拼成那个每轮都跑的循环——本章的落点。</p>
+      <h2 id="loop"><span class="no">11</span><span>训练循环五步(背下来)</span></h2>
+      <p class="one-liner">深度学习的训练,剥到底就是一个固定的五步循环,一轮一轮地重复:<b>①前向</b>算预测 → <b>②算损失</b>比对真值 → <b>③梯度清零</b> → <b>④反向</b>求梯度 → <b>⑤更新</b>参数。Track B 后面所有模型都在这个循环里跑,变的只是"模型"和"数据",循环骨架一字不改。</p>
+      <p>逐步说清"为什么缺不得":<b>①前向</b>——把这一批数据喂进模型,得到预测,这是"当前参数下模型的答案"。<b>②算损失</b>——用损失函数量出"预测离真值多远",这是要压小的目标(第 6 章)。<b>③梯度清零 zero_grad</b>——上一轮的梯度还赖在 <code>.grad</code> 里(autograd 是累加的,第 9 节),不清零就会和这轮叠加、方向出错;新手最常忘这步,忘了模型就学不动或乱跳。<b>④反向 backward</b>——一句话触发自动求导,把这批数据下"损失对每个参数的梯度"算好。<b>⑤更新 step</b>——优化器(如 Adam)按梯度把每个参数往"损失下降"的方向挪一小步(步长由学习率定,第 6 章)。这五步跑完是一次更新;把所有批跑一遍叫一个 <b>epoch</b>(轮次),通常要跑几十上百个 epoch,损失才降到位。</p>
+      <figure>
+        <svg viewBox="0 0 720 250" role="img" aria-label="训练循环五步">
+          <defs><marker id="m-loop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#14181f"/></marker>
+          <marker id="m-loop2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="16" y="92" width="120" height="52" rx="8" class="d-ink nf"/>
+          <text x="76" y="115" text-anchor="middle" class="nl">① 前向</text>
+          <text x="76" y="132" text-anchor="middle" class="el">pred=model(x)</text>
+          <rect x="164" y="92" width="120" height="52" rx="8" class="d-ink nf"/>
+          <text x="224" y="115" text-anchor="middle" class="nl">② 算损失</text>
+          <text x="224" y="132" text-anchor="middle" class="el">loss_fn</text>
+          <rect x="312" y="92" width="120" height="52" rx="8" class="box-acc"/>
+          <text x="372" y="115" text-anchor="middle" class="nl-acc">③ 清零</text>
+          <text x="372" y="132" text-anchor="middle" class="el-acc">zero_grad</text>
+          <rect x="460" y="92" width="120" height="52" rx="8" class="d-ink nf"/>
+          <text x="520" y="115" text-anchor="middle" class="nl">④ 反向</text>
+          <text x="520" y="132" text-anchor="middle" class="el">backward()</text>
+          <rect x="608" y="92" width="104" height="52" rx="8" class="d-ink nf"/>
+          <text x="660" y="115" text-anchor="middle" class="nl">⑤ 更新</text>
+          <text x="660" y="132" text-anchor="middle" class="el">step()</text>
+          <line x1="136" y1="118" x2="160" y2="118" class="d-ink" marker-end="url(#m-loop)"/>
+          <line x1="284" y1="118" x2="308" y2="118" class="d-ink" marker-end="url(#m-loop)"/>
+          <line x1="432" y1="118" x2="456" y2="118" class="d-ink" marker-end="url(#m-loop)"/>
+          <line x1="580" y1="118" x2="604" y2="118" class="d-ink" marker-end="url(#m-loop)"/>
+          <path d="M 660 144 L 660 196 L 76 196 L 76 148" class="d-acc" marker-end="url(#m-loop2)"/>
+          <text x="368" y="216" text-anchor="middle" class="el-acc">下一批 / 下一轮:回到①,重复几十上百个 epoch,直到损失降到位</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>训练循环五步。跑完一批是一次参数更新;把全部数据跑一遍叫一个 epoch。后面所有网络都在这个圈里训练,只换"模型"和"数据"。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 D ===== -->
+      <p class="handoff">把五个零件拼成一段能跑的完整代码——这就是以后所有训练脚本的模板。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:一段完整的训练脚本</span></h2>
+      <p>下面这段就是深度学习训练的"标准模板":数据 → 管道 → 模型 → 损失/优化器 → 五步循环。记住它的形状,以后换任何模型都是往里填空:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">train_loop.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch.nn </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> nn</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> torch.utils.data </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> TensorDataset, DataLoader</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 1. 数据 → 张量 → 小批量管道(第 10 节)</span></span>
+<span class="line"><span style="color:#14181F">X </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> torch.randn(500, 4)                    </span><span style="color:#8B95A8;font-style:italic"># 500 个样本,每个 4 个特征(float32)</span></span>
+<span class="line"><span style="color:#14181F">y </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> torch.randn(500, 1)                    </span><span style="color:#8B95A8;font-style:italic"># 对应的目标值</span></span>
+<span class="line"><span style="color:#14181F">loader </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> DataLoader(TensorDataset(X, y),   </span><span style="color:#8B95A8;font-style:italic"># 把 (X, y) 配成可取第 i 条的数据集</span></span>
+<span class="line"><span style="color:#14181F">                    batch_size</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">32,         </span><span style="color:#8B95A8;font-style:italic"># 每批 32 条</span></span>
+<span class="line"><span style="color:#14181F">                    shuffle</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)          </span><span style="color:#8B95A8;font-style:italic"># 每个 epoch 打乱</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 2. 模型:现成积木堆起来(线性 → 激活 → 线性),第 7 节</span></span>
+<span class="line"><span style="color:#14181F">model </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.Sequential(</span></span>
+<span class="line"><span style="color:#14181F">    nn.Linear(4, 16),                      </span><span style="color:#8B95A8;font-style:italic"># 4 个输入 → 16 个隐藏单元</span></span>
+<span class="line"><span style="color:#14181F">    nn.ReLU(),                             </span><span style="color:#8B95A8;font-style:italic"># 激活函数(第 7 章)</span></span>
+<span class="line"><span style="color:#14181F">    nn.Linear(16, 1),                      </span><span style="color:#8B95A8;font-style:italic"># 16 → 1 个输出</span></span>
+<span class="line"><span style="color:#14181F">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 3. 损失函数 + 优化器(第 6 章)</span></span>
+<span class="line"><span style="color:#14181F">loss_fn </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.MSELoss()                                     </span><span style="color:#8B95A8;font-style:italic"># 均方误差(回归)</span></span>
+<span class="line"><span style="color:#14181F">optimizer </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> torch.optim.Adam(model.parameters(), lr</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">1e-3)  </span><span style="color:#8B95A8;font-style:italic"># Adam,学习率 0.001</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 4. 训练循环:牢记这五步(第 11 节)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> epoch </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> range(100):                   </span><span style="color:#8B95A8;font-style:italic"># 跑 100 个 epoch</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    for</span><span style="color:#14181F"> xb, yb </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> loader:                  </span><span style="color:#8B95A8;font-style:italic"># DataLoader 一批一批喂</span></span>
+<span class="line"><span style="color:#14181F">        pred </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> model(xb)                   </span><span style="color:#8B95A8;font-style:italic"># ① 前向:算预测</span></span>
+<span class="line"><span style="color:#14181F">        loss </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> loss_fn(pred, yb)           </span><span style="color:#8B95A8;font-style:italic"># ② 算损失</span></span>
+<span class="line"><span style="color:#14181F">        optimizer.zero_grad()              </span><span style="color:#8B95A8;font-style:italic"># ③ 梯度清零(别忘!第 9 节)</span></span>
+<span class="line"><span style="color:#14181F">        loss.backward()                    </span><span style="color:#8B95A8;font-style:italic"># ④ 反向:autograd 自动求梯度</span></span>
+<span class="line"><span style="color:#14181F">        optimizer.step()                   </span><span style="color:#8B95A8;font-style:italic"># ⑤ 更新:按梯度挪一小步</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F"> epoch </span><span style="color:#14181F;font-weight:bold">%</span><span style="color:#14181F"> 20 </span><span style="color:#14181F;font-weight:bold">==</span><span style="color:#14181F"> 0:</span></span>
+<span class="line"><span style="color:#14181F">        print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"epoch </span><span style="color:#557089">{</span><span style="color:#14181F">epoch</span><span style="color:#14181F;font-weight:bold">:3d</span><span style="color:#557089">}</span><span style="color:#557089">  loss </span><span style="color:#557089">{</span><span style="color:#14181F">loss.item()</span><span style="color:#14181F;font-weight:bold">:.4f</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)</span></span></code></pre>
+      </div>
+      <p>逐块对照 D01:D01 里手写 <code>loss = (y - w*x)**2</code>、手推梯度、手动 <code>w -= lr * grad</code>;这里 <code>nn.MSELoss()</code> 算损失、<code>loss.backward()</code> 求所有参数的梯度、<code>optimizer.step()</code> 更新——<b>三步各自被一行代码接管,循环的骨架却和 D01 一模一样</b>。把 <code>nn.Sequential(...)</code> 换成一个 CNN,这段代码其它部分一字不改,就是 <a href="D08-卷积神经网络CNN.html">D08</a> 的手写数字识别。这就是为什么说"五步循环是 Track B 的底盘"。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战 · 上手练习</span>
+        <h3>把它真的跑起来</h3>
+        <p>①按第 6 节装好 PyTorch(CPU 版即可),把上面这段原样跑通,观察 loss 一路下降。②故意<b>删掉 <code>optimizer.zero_grad()</code></b> 那一行,再跑——看 loss 变得多离谱,亲身体会"梯度不清零"的后果。③把学习率 <code>lr=1e-3</code> 改成 <code>1.0</code>,看 loss 如何震荡/发散(呼应第 6 章学习率)。④把模型中间的 <code>16</code> 改大到 <code>128</code>,看参数变多后训练有什么不同。跑通这四步,就真正握住了训练循环。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;下列链接均于 2026-08-19 核实在线。</p>
+      <div class="reslist">
+
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://pytorch.org/tutorials/beginner/basics/intro.html" target="_blank" rel="noopener">PyTorch · Learn the Basics</a></span><span class="spine">默认主线</span><span class="tags">官方教程 · 英文 · 3–4h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">官方六步入门,从张量到完整训练循环,每步配最小可运行代码。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">六步顺序 = 本章五块地基,是"看懂→会写"的最短路径,权威不过时。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Tensors → Datasets &amp; DataLoaders → Build Model → Autograd → Optimizing Parameters(Save &amp; Load 可暂缓)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§8↔Tensors、§10↔Datasets、§7↔Build Model、§9↔Autograd、§11–12↔Optimizing。先看我们的图,再跟它敲。</span></div>
+        </div>
+
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.3blue1brown.com/topics/neural-networks" target="_blank" rel="noopener">3Blue1Brown · 神经网络系列</a></span><span class="tags">视频 · 有中文字幕 · 约 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">全网公认最直观的神经网络动画讲解,把"梯度下降 / 反向传播"讲得看得见。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章把反向传播交给了 <code>loss.backward()</code> 这一行——想真正看懂那行背后在做什么,看它。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">"梯度下降""反向传播"那两集(共约 20 分钟),概念集即可,推导可跳。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 9 节(自动求导)一起看,直觉 + 代码两头夹。</span></div>
+        </div>
+
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://zh.d2l.ai/chapter_linear-networks/linear-regression-concise.html" target="_blank" rel="noopener">动手学深度学习 · 简洁实现</a></span><span class="tags">中文 · 书+代码 · 约 30min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">中文免费的深度学习教材,这一节把线性回归分别用"手写"和"框架"实现。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">正好把 <a href="D01-线性回归全拆解.html">D01</a> 的手写版和本章的 PyTorch 版并排,最能体会框架省了什么。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">"线性回归的简洁实现"一节;想再补底层看前一节"从零开始实现"。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 12 节(完整训练脚本)对照读。</span></div>
+        </div>
+
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://pytorch.org/get-started/locally/" target="_blank" rel="noopener">PyTorch 安装页</a></span><span class="tags">官方 · 工具 · 5min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">按系统自动给出安装命令的官方页面。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">动手前先把环境装好;没有 GPU 选 CPU 版即可,不挡本章和 P3。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">选好系统/包管理器,复制它给的那一行命令跑一下。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">开始第 12 节的动手挑战前做一次即可。</span></div>
+        </div>
+
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://pytorch.org/docs/stable/optim.html" target="_blank" rel="noopener">torch.optim 官方文档</a></span><span class="tags">官方 · 当字典查 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">优化器(Adam / SGD 等)的一手参数说明。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">当"字典"用——想确认某个优化器怎么调、有哪些参数时来查,别通读。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">页内直接搜 <code>Adam</code>;学习率调度看 <code>lr_scheduler</code>(D10 会用)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">第 12 节代码里的 Adam,想知道更多参数时查它。</span></div>
+        </div>
+
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>用 PyTorch 得先学会手推反向传播</td><td>正相反——框架就是自动求导,只需写前向。反向传播的道理(第 7 章)懂即可。</td></tr>
+          <tr><td>没有 GPU 就学不了深度学习</td><td>CPU 就能学完本章和小项目(如 P3)。GPU 只是让大模型训练更快,不是入门门槛。</td></tr>
+          <tr><td>zero_grad() 可有可无</td><td>不可无。梯度是累加的,不清零会把上一轮的梯度叠进来,方向出错、训练失败。</td></tr>
+          <tr><td>张量就是 NumPy 数组,没区别</td><td>用法几乎一样,但张量能上 GPU、能自动求导——这两点正是深度学习需要的。</td></tr>
+          <tr><td>一个 epoch 就是一次参数更新</td><td>一个 epoch 是"全部数据过一遍";每个 batch 更新一次,一个 epoch 里更新很多次。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>框架的头号价值。</b>PyTorch 省掉的最要命的一件事是什么?<details><summary>参考答案</summary><p>自动求导:只写前向计算,<code>loss.backward()</code> 就把损失对所有参数的梯度自动算好,免去手推深层网络导数这件不可能的苦差。</p></details></li>
+        <li><b>五步顺序。</b>不看资料,写出训练循环那五步,并说清③为什么不能省。<details><summary>参考答案</summary><p>①前向 pred=model(x) → ②算损失 → ③梯度清零 zero_grad → ④反向 backward → ⑤更新 step。③不能省:梯度是累加进 .grad 的,不清零就会叠上一轮的梯度,方向出错。</p></details></li>
+        <li><b>张量 vs 数组。</b>张量比 NumPy 数组多了哪两样本事?<details><summary>参考答案</summary><p>①能搬到 GPU 上并行加速;②能记录运算、支持自动求导(requires_grad)。日常的形状/索引/广播用法则和 NumPy 基本一致。</p></details></li>
+        <li><b>为什么切小批量。</b>DataLoader 为什么要把数据切成 mini-batch、还要 shuffle?<details><summary>参考答案</summary><p>切批:整批太占内存、更新太慢,单条太抖,小批量(32/64)是平衡。shuffle:防止数据原有顺序(如先猫后狗)把训练带偏,让每批都是杂样本、梯度更可靠。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上,就握住了深度学习的训练脚手架,可以进 D08、动手做 P3(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清框架替我省掉的最要命一件事(自动求导)</li>
+          <li><input type="checkbox"> 我知道张量比 NumPy 数组多了哪两样本事</li>
+          <li><input type="checkbox"> 我看懂了 loss.backward() 背后在做什么</li>
+          <li><input type="checkbox"> 我理解 Dataset/DataLoader 为什么切批、为什么 shuffle</li>
+          <li><input type="checkbox"> 我能不看资料默写训练循环五步</li>
+          <li><input type="checkbox"> 我知道 zero_grad 为什么不能省</li>
+          <li><input type="checkbox"> 我把第 12 节那段代码真的跑通了一次</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>现在手里有了一台"训练发动机"——那个五步循环。<b>Track B 接下来做的,全是往这台发动机里换不同的"模型"和"数据"。</b><a href="D08-卷积神经网络CNN.html">D08 卷积神经网络 CNN</a> 会把 <code>nn.Sequential</code> 里的线性层换成<b>卷积层</b>,让网络学会"看"图像——训练循环那五步一字不改,就能训练出一个手写数字识别器(<a href="../index.html">项目 P3</a>)。先把这一章的代码亲手跑通、把五步背熟,再上楼。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="D06-特征工程与数据预处理.html"><span class="lb">上一章</span><span class="tt">D06 · 特征工程与数据预处理</span></a>
+        <a href="D08-卷积神经网络CNN.html" class="next"><span class="lb">下一章</span><span class="tt">D08 · 卷积神经网络 CNN</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D07 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="why" href="#why"><i>7</i>为什么要框架</a>
+        <a data-toc-target="tensor" href="#tensor"><i>8</i>张量 Tensor</a>
+        <a data-toc-target="autograd" href="#autograd"><i>9</i>自动求导</a>
+        <a data-toc-target="data" href="#data"><i>10</i>数据管道</a>
+        <a data-toc-target="loop" href="#loop"><i>11</i>训练循环五步</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>完整训练脚本</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D07" data-kind="chapter" data-title="PyTorch 与完整训练循环"></script>
+</body>
+</html>

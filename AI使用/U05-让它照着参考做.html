@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>U05 · 让它照着参考做</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="U04-派活与成本.html">U04 派活与成本</a><span class="sep">—</span>
+      <a href="U05-让它照着参考做.html" class="current">U05 照着参考做</a><span class="sep">—</span>
+      <a href="U06-多对话协作.html">U06 多对话协作</a>
+      <span class="spacer"></span>
+      <a href="#skill" class="jump">技巧</a>
+      <a href="../排障台/症状索引.html" class="jump">排障台</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">AI 使用 · Stage 5 · Chapter U05</p>
+        <h1>让它照着参考做</h1>
+        <p class="recap">参考给了、还爬了一堆资料,回来的东西仍然是那个熟悉的味道。<a href="U01-它到底在干什么.html">U01</a> 说过原因:「能跑」是它在优化的目标,「像那个参考」不是。这一章讲怎么把「像不像」变成一件<b>能被判定的事</b>——只有变成可判定的,它才会真的往那个方向走。</p>
+      </header>
+
+      <p>约 2 小时。这一章的方法对设计、文案、代码风格同样适用。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>「读过参考」和「参考进了结果」之间隔着一道翻译:视觉 → 数值</li>
+          <li>映射表——把参考拆成几十个能被对照的具体项</li>
+          <li>核心样本先行——先做一个样,判定通过了再铺开</li>
+          <li>每轮回归对照——不只看新东西,还要看老的有没有被改坏</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>「MVP 倾向」与「AI 默认脸」的机制在 <a href="U01-它到底在干什么.html">U01</a> 第 6–7 节;为什么对齐训练把输出推向平均值在 <a href="../深度课程/D16-预训练微调与RLHF.html">D16</a>。<b>通向后面:</b>做完之后怎么判定真的像,是 <a href="U07-验收AI的产出.html">U07</a> 的验收动作。</p>
+      </div>
+
+      <h2 id="essence"><span class="no">1</span><span>一句话本质</span></h2>
+      <div class="one-liner">
+        <p>参考没进结果,不是因为它没看,是因为<b>「像」这件事没有被翻译成可判定的项</b>——判定不了的东西,不会被优化。</p>
+      </div>
+
+      <h2 id="gap"><span class="no">2</span><span>那道翻译:视觉 → 数值</span></h2>
+      <p>给一张参考图,它看到的是一张图;给一个参考网站,它读到的是 HTML 和截图。要产出「像」的东西,中间必须发生一次翻译:把「这个感觉」拆成一串具体数值。</p>
+      <div class="rationale">
+        <span class="label">为什么这一步会失败</span>
+        <p>因为这次翻译<b>没有强制校验</b>。它可以生成一段「参考的风格是简洁克制、留白充足、层次清晰」——这段话本身完全合理,读起来也像认真分析过,但它没有产出任何一个能被对照的数。下一步照着这段话做,做出来的当然是分布中心那个样子。<br><b>「简洁克制」不是判据,「正文 15px / 行高 1.75 / 段间距 22px / 主色只有一个」才是判据。</b></p>
+      </div>
+      <p>一个典型情形:抓取了大量参考站点的页面与截图,产出的三版方案仍然是模型默认的那个样子。<b>抓取本身是成功的,失败发生在翻译这一步。</b></p>
+
+      <h2 id="mapping"><span class="no">3</span><span>映射表:动手前先交这个</span></h2>
+      <p>规矩很硬:<b>在写第一行实现之前,先交一份映射表。</b>表没过,不许开工。</p>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>参考里的项</th><th>实测值</th><th>本次要落到哪</th><th>怎么判定</th></tr></thead>
+          <tbody>
+            <tr><td>正文字号</td><td>15px</td><td><code>--fs-body</code></td><td>取样对比,允许 ±0</td></tr>
+            <tr><td>字号级数</td><td>共 7 级</td><td>全站只许出现这 7 个值</td><td>脚本扫 <code>font-size</code>,超出即失败</td></tr>
+            <tr><td>强调色</td><td>1 个,#2743c7</td><td><code>--acc</code></td><td>脚本扫色值,第二个强调色即失败</td></tr>
+            <tr><td>圆角</td><td>6px / 4px 两档</td><td>卡片 / 按钮</td><td>脚本扫 <code>border-radius</code></td></tr>
+            <tr><td>阴影</td><td>无</td><td>—</td><td>脚本扫 <code>box-shadow</code>,出现即失败</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fig-note">这张表的价值不在「记录」,在于它把每一项都配了一个<b>能被程序判定的方式</b>。凡是判定方式那一列写不出来的项,说明还没拆到位,得继续拆。</p>
+      <div class="callout warn">
+        <span class="label">三条容易被跳过的</span>
+        <p><b>①</b> 实测值必须是<b>量出来的</b>,不是看图估的。取色器、开发者工具,一项一项量。<br>
+           <b>②</b> 「没有什么」和「有什么」一样重要——参考里没有阴影、没有渐变、没有第二个强调色,这些负向约束最容易在实现里被悄悄加回来。<br>
+           <b>③</b> 表要留在项目里,不是聊天记录里。后面每一轮回归都要拿它对。</p>
+      </div>
+
+      <h2 id="pilot"><span class="no">4</span><span>核心样本先行</span></h2>
+      <p>拿到映射表之后,不要一次铺开全部。先挑<b>一个最难、最能代表整体气质的样本</b>做出来,逐项判定通过了,再复制到其余部分。</p>
+      <div class="steps">
+        <ol>
+          <li><b>挑样本。</b>挑那个「做对了别的就都好办」的:一个页面里最复杂的模块、一篇文章里最难的一段、一个组件库里最典型的那个组件。</li>
+          <li><b>做到判定通过。</b>对着映射表逐项过,不是「看起来差不多」。</li>
+          <li><b>让它被判定一次。</b>拿去给人看一眼——这是唯一一处必须有人的环节,因为「气质像不像」目前没有脚本能判。</li>
+          <li><b>再铺开。</b>铺的时候是复制已判定通过的样本,不是重新发挥。</li>
+        </ol>
+      </div>
+      <div class="callout">
+        <span class="label">为什么不能先铺开</span>
+        <p>因为铺开之后再改,改的是几十处;而且铺开的过程本身会引入新的自由发挥。<b>先铺后改的返工量,通常是先样后铺的十倍以上。</b>一个典型情形:整套界面铺完之后才收到「交互逻辑不对、配色也有问题」的判词——如果先做一个样,这句话会在第一天出现,而不是第三十天。</p>
+      </div>
+
+      <h2 id="regress"><span class="no">5</span><span>每轮回归对照</span></h2>
+      <p>第三条规矩:<b>每一轮改动之后,不只看新做的部分,还要把映射表整个过一遍。</b></p>
+      <p>原因和 <a href="U01-它到底在干什么.html">U01</a> 第 6 节是同一个:每一次生成都会往分布中心漂一点。改 A 的时候顺手把 B 改回「更常见的那种写法」,是高频发生的事,而且没有任何报错。</p>
+      <div class="callout go">
+        <span class="label">把回归做成脚本</span>
+        <p>映射表里凡是判定方式能写成程序的,就写成一个脚本,每轮跑一次。例如扫全站的字号集合,不在那 7 个值里就点名;扫强调色,出现第二个就失败。<br>这正是 <a href="U03-指令为什么不生效.html">U03</a> 第 3 节说的<b>第 4 层</b>——规则只有升到脚本这一层,才第一次真正生效。</p>
+      </div>
+
+      <h2 id="skill"><span class="no">6</span><span>技巧:一次完整的流程</span></h2>
+      <div class="steps">
+        <ol>
+          <li><b>确认前提。</b>先让它用一句话说清参考材料是什么(几页、什么结构),确认无误再往下——见 <a href="U01-它到底在干什么.html">U01</a> 第 8 节。</li>
+          <li><b>交映射表。</b>不许带实现,只要表。表里判定方式一列不许空。</li>
+          <li><b>人过一遍表。</b>这一步很快,但它决定后面所有工作的方向。</li>
+          <li><b>做核心样本。</b>做到逐项判定通过。</li>
+          <li><b>人看一眼样本。</b>气质不像就在这里推翻,成本最低。</li>
+          <li><b>铺开。</b>复制样本,不重新发挥。</li>
+          <li><b>每轮跑回归脚本。</b>不绿不算完。</li>
+        </ol>
+      </div>
+      <div class="callout warn">
+        <span class="label">一句常见的话不能当作理由</span>
+        <p>「我可以用另一种方式实现同样的效果」——在高保真任务里,这句话是危险信号。<b>选型依据是参考怎么做的,不是实现方不擅长哪种做法。</b>如果参考用的方式确实做不到,那要单独提出来问,而不是默默换一种。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">7</span><span>外部资源</span></h2>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://refactoringui.com/" target="_blank" rel="noopener">Refactoring UI</a></span><span class="spine">主线 · 付费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">把「看起来更好」拆成一条条具体数值决定的书。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">它整本都在做本章第 3 节那件事:把感觉翻译成可判定的项。用来练拆解眼力。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Hierarchy 与 Spacing 两章;其余按需。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">第 2–3 节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://developer.mozilla.org/zh-CN/docs/Tools" target="_blank" rel="noopener">浏览器开发者工具(MDN)</a></span><span class="spine">工具 · 字典</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">量参考真值的手段:计算样式面板、取色器、盒模型。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">映射表要求「量出来的值」,这是量的工具;不量就只能猜。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Computed 面板与颜色取样两处,会用就够。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">第 3 节的实测值一列。</span></div>
+        </div>
+      </div>
+
+      <h2 id="practice"><span class="no">8</span><span>自测</span></h2>
+      <div class="challenge">
+        <span class="label">三道题</span>
+        <p><b>①</b> 一份分析报告写着「参考的风格是现代、简洁、有呼吸感」。这份报告能不能作为映射表用?为什么?<br>
+           <b>②</b> 映射表里哪一列最容易被写空,写空了会导致什么?<br>
+           <b>③</b> 核心样本判定通过、铺开到二十个页面之后,发现其中六个页面的字号跑偏了。这说明哪个环节缺失?</p>
+      </div>
+      <details class="hint"><summary>参考答案</summary>
+        <p><b>①</b> 不能。三个词都不可判定——没有任何一项能被程序或人对照着说「这条做到了/没做到」。它需要被继续拆成数值:字号级数、行高、留白尺度、主色数量。<br>
+           <b>②</b> 「怎么判定」那一列。写空了,这一项就退回成一句感想,不会真的约束实现——也就退回到第 2 节说的失败模式。<br>
+           <b>③</b> 缺的是每轮回归对照(第 5 节)。铺开时的每一次生成都会往分布中心漂,不跑回归脚本就发现不了。</p>
+      </details>
+
+      <h2 id="link"><span class="no">9</span><span>连接</span></h2>
+      <p class="handoff">前五章讲的都是一个对话内部的事。从下一章起换一个尺度:几个对话同时干活,它们之间怎么不打架、交接怎么不失真。</p>
+
+      <nav class="chapter-nav">
+        <a href="U04-派活与成本.html"><span class="lb">上一章</span><span class="tt">U04 派活与成本</span></a>
+        <a href="U06-多对话协作.html" class="next"><span class="lb">下一章</span><span class="tt">U06 多对话协作</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">U05 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 为什么不像</span>
+        <a data-toc-target="essence" href="#essence"><i>1</i>一句话本质</a>
+        <a data-toc-target="gap" href="#gap"><i>2</i>视觉到数值那道翻译</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 三件套</span>
+        <a data-toc-target="mapping" href="#mapping"><i>3</i>映射表</a>
+        <a data-toc-target="pilot" href="#pilot"><i>4</i>核心样本先行</a>
+        <a data-toc-target="regress" href="#regress"><i>5</i>每轮回归对照</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 怎么办</span>
+        <a data-toc-target="skill" href="#skill"><i>6</i>完整流程</a>
+        <a data-toc-target="reflist" href="#reflist"><i>7</i>外部资源</a>
+        <a data-toc-target="practice" href="#practice"><i>8</i>自测</a>
+        <a data-toc-target="link" href="#link"><i>9</i>连接</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="U05" data-kind="usage" data-title="让它照着参考做"></script>
+</body>
+</html>

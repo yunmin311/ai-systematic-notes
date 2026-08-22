@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A04 · Agent 基础:工具、记忆、工作流</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="A03-RAG检索增强生成.html">A03 RAG</a><span class="sep">—</span>
+      <a href="A04-Agent基础.html" class="current">A04 Agent 基础</a><span class="sep">—</span>
+      <a href="A05-Agent的harness底层框架.html">A05 harness</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-A04.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">应用工程 · Chapter A04</p>
+        <h1>Agent 基础:工具、记忆、工作流</h1>
+        <p class="recap">前三章的模型都是"问一次、答一次"。<b>Agent(智能体)</b>把它升级成:模型在一个<b>循环</b>里——想一步、决定<b>调哪个工具</b>(A02 的函数、A03 的检索、搜索、写文件……)、看结果、再想下一步,<b>直到把任务办完</b>。这一章讲清 agent 的四个零件(工具、记忆、循环、判断),以及一个关键的克制:<b>能用固定流程解决的,别上 agent</b>。这是通往下一章"harness/底层框架"的正门。</p>
+      </header>
+
+      <p>图解骨架约 45 分钟,动手 + 精读约 5~7 小时。所有零件都用前三章作对照:工具=A02 函数调用、检索工具=A03 RAG、上下文=A01。每个新词当场白话解释。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>Agent 是什么——模型 + 一个循环 + 一批工具,能自己多步做事</li>
+          <li>工具——agent 的手脚:把「只会说」变成「能动手」</li>
+          <li>记忆与状态——记住做过什么、上一步结果(短期在上下文,长期存外部)</li>
+          <li>规划循环 ReAct——想→做→看→再想,循环到完成(核心)</li>
+          <li>何时该用/不该用——能用固定工作流就别上 agent(贵、慢、不稳)</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>agent 手里的零件全是前三章:<a href="A02-结构化输出与函数调用.html">A02 函数调用</a>=工具、<a href="A03-RAG检索增强生成.html">A03 RAG</a>=一个"查资料"工具、<a href="A01-提示词工程与上下文.html">A01 上下文</a>=它的记忆载体。<b>通向后面:</b>A05 会掀开 agent 的<b>底层框架(harness)</b>——循环、上下文管理、工具协议(MCP)、多 agent 到底怎么搭,这正是理解治理体系的关键。</p>
+      </div>
+
+      <!-- ========== 模块 A ========== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>想让 AI 不只是回答、而是<b>自己动手办完一件多步骤的事</b>的人。</li>
+        <li>听过 "AI Agent / 智能体" 但说不清它和"聊天机器人"差在哪的人。</li>
+        <li>想搞懂 Claude Code、各种 AI 助手<b>底层怎么运转</b>的人(治理目标的正门)。</li>
+      </ul>
+      <p><b>不适合</b>:已经写过 agent loop、在调多 agent 编排的人——直接看 A05。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>三样,全在前三章:<a href="A02-结构化输出与函数调用.html">函数调用</a>(模型让人的程序去执行动作)、<a href="A03-RAG检索增强生成.html">RAG</a>(一种典型工具)、<a href="A01-提示词工程与上下文.html">上下文窗口</a>(agent 靠它记事)。有这三样,agent 就是把它们装进一个循环。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>用一句话说清 agent 和普通问答的区别。</li>
+        <li>说出 agent 的四个零件:工具、记忆、循环、判断。</li>
+        <li>讲清 ReAct 循环:想 → 做 → 看 → 再想。</li>
+        <li>判断一个任务该用 agent 还是固定工作流。</li>
+        <li>看懂一段最简 agent loop 伪代码。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">Agent:把模型放进一个<b>循环</b>,让它<b>自己决定下一步调哪个工具</b>、看到结果后<b>再决定下一步</b>,如此往复,直到任务完成——从"回答问题"变成"完成任务"。</p>
+      <p>普通问答是一锤子买卖:问,它答,结束。但很多真实任务不是一句话能答完的——"帮我查这周三个城市的天气再订最便宜的酒店",需要多次查、比、算。Agent 的办法:给模型一批<b>工具</b>(它能调用的动作),再套一个<b>循环</b>——模型每轮输出"我要调哪个工具、传什么参数",程序执行、把结果喂回去,模型据此决定下一步,直到它说"办完了"。模型成了循环里的<b>决策大脑</b>,工具是它的手脚,循环给它多步行动的机会。这就是从 A02 的"单次调用"到"自主系统"的跃迁。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="Agent 五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">让模型在循环里</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">自己把任务办完</text>
+          <rect x="290" y="32" width="180" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① Agent 是什么</text>
+          <rect x="600" y="122" width="152" height="46" rx="8" class="d-ink nf"/>
+          <text x="676" y="150" text-anchor="middle" class="nl">② 工具</text>
+          <rect x="440" y="330" width="176" height="46" rx="8" class="d-ink nf"/>
+          <text x="528" y="358" text-anchor="middle" class="nl">③ 记忆与状态</text>
+          <rect x="144" y="330" width="176" height="46" rx="8" class="d-ink nf"/>
+          <text x="232" y="358" text-anchor="middle" class="nl">④ 规划循环 ReAct</text>
+          <rect x="8" y="122" width="152" height="46" rx="8" class="d-ink nf"/>
+          <text x="84" y="150" text-anchor="middle" class="nl">⑤ 用/不用</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。组装起来,就能看懂第 12 节那段最简 agent loop:循环里模型选工具、程序执行、结果喂回。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 B ========== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>agent 概念多、噪音也多(全网充斥夸大宣传)。选一条冷静、权威的主线,别被"全自动 AI 员工"带偏。</p>
+      <div class="callout go">
+        <span class="label">默认主线 · 必读</span>
+        <p><b>Anthropic《Building Effective Agents》。</b>为什么是它:它把"什么是 agent、什么只是工作流、什么时候该用哪个"讲得最清醒,并明确主张<b>能简单就别复杂</b>——这正是本章第 11 节的态度。读它,会免疫掉九成 agent 炒作。链接:<a href="https://www.anthropic.com/research/building-effective-agents" target="_blank" rel="noopener">anthropic.com/research/building-effective-agents</a>。</p>
+      </div>
+      <p><b>再配三件:</b></p>
+      <ul>
+        <li><b>Hugging Face Agents 课</b> — <a href="https://huggingface.co/learn/agents-course" target="_blank" rel="noopener">系统、免费、动手</a>,从零搭一个 agent,概念和本章一一对应。</li>
+        <li><b>ReAct 论文</b> — <a href="https://arxiv.org/abs/2210.03629" target="_blank" rel="noopener">ReAct: Synergizing Reasoning and Acting</a>,"想→做→看"循环的原始出处。先看图 1 和摘要即可(桥)。</li>
+        <li><b>LangGraph</b> — <a href="https://langchain-ai.github.io/langgraph/" target="_blank" rel="noopener">把 agent 循环画成图来搭</a>,想真正写一个时看。</li>
+      </ul>
+
+      <!-- ========== 模块 C ========== -->
+      <p class="handoff">先看清楚:同一个问题,普通问答和 agent 的处理方式差在哪。</p>
+      <h2 id="what"><span class="no">7</span><span>Agent 是什么:从一次问答到一个循环</span></h2>
+      <p class="one-liner">普通问答=<b>一次</b>输入到输出;agent=模型 + <b>一个循环</b> + <b>一批工具</b>,能<b>多轮自主行动</b>。差别不在模型多聪明,在外面套没套那个循环。</p>
+      <p>关键要认清:agent 的"自主"不是模型自己长出来的,而是<b>用代码给它搭的循环</b>给的。模型每一轮只做一件事——根据当前情况输出"下一步调哪个工具"。是外面的程序真正去执行工具、把结果拼回上下文、再让模型跑下一轮。所以 agent = <b>会决策的模型 + 会执行的循环</b>。理解这一点,A05 讲 harness 就顺理成章:harness 就是这个循环 + 上下文管理 + 工具接线的总和。</p>
+      <figure>
+        <svg viewBox="0 0 680 220" role="img" aria-label="普通问答与 agent 循环对比">
+          <defs><marker id="m-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker><marker id="m-ca" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <text x="150" y="28" text-anchor="middle" class="nl">普通问答</text>
+          <rect x="60" y="46" width="80" height="38" rx="8" class="box"/><text x="100" y="70" text-anchor="middle" class="el">问</text>
+          <line x1="140" y1="65" x2="176" y2="65" class="d-ink" marker-end="url(#m-c)"/>
+          <rect x="180" y="46" width="80" height="38" rx="8" class="box"/><text x="220" y="70" text-anchor="middle" class="el">模型</text>
+          <line x1="260" y1="65" x2="296" y2="65" class="d-ink" marker-end="url(#m-c)"/>
+          <rect x="300" y="46" width="80" height="38" rx="8" class="box"/><text x="340" y="70" text-anchor="middle" class="el">答,结束</text>
+          <line x1="60" y1="108" x2="620" y2="108" class="d-soft"/>
+          <text x="150" y="134" text-anchor="middle" class="nl-acc">Agent</text>
+          <rect x="60" y="150" width="80" height="42" rx="8" class="box-acc"/><text x="100" y="168" text-anchor="middle" class="el-acc">模型决定</text><text x="100" y="184" text-anchor="middle" class="el">调哪个工具</text>
+          <line x1="140" y1="171" x2="196" y2="171" class="d-acc" marker-end="url(#m-ca)"/>
+          <rect x="200" y="150" width="90" height="42" rx="8" class="box"/><text x="245" y="168" text-anchor="middle" class="el">程序执行</text><text x="245" y="184" text-anchor="middle" class="el">工具</text>
+          <line x1="290" y1="171" x2="346" y2="171" class="d-acc" marker-end="url(#m-ca)"/>
+          <rect x="350" y="150" width="90" height="42" rx="8" class="box"/><text x="395" y="168" text-anchor="middle" class="el">结果喂回</text><text x="395" y="184" text-anchor="middle" class="el">上下文</text>
+          <path d="M440 150 C 500 120, 500 120, 250 130 L 105 130 L 105 150" class="d-acc" marker-end="url(#m-ca)"/>
+          <text x="470" y="176" class="el-acc">↻ 循环到办完</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>普通问答走一条直线就结束;agent 把"决定→执行→喂回"接成一个环,能多步推进直到任务完成。</figcaption>
+      </figure>
+
+      <p class="handoff">循环里最实的一块,是模型能调的那批"工具"。</p>
+      <h2 id="tools"><span class="no">8</span><span>工具:agent 的手脚</span></h2>
+      <p class="one-liner">工具<span class="en">tools</span>:agent 能调用的一个个动作——搜索、算数、查数据库、读写文件、调 API……就是 <a href="A02-结构化输出与函数调用.html">A02 的函数调用</a>,只是给它<b>一批</b>让它自己挑。</p>
+      <p>模型本身只会生成文字,不能上网、不能算准数、不能改文件。工具就是把这些能力接给它:每个工具有名字、说明、参数(A02 讲的 schema),模型根据任务<b>选一个、填好参数</b>,程序执行后把结果告诉它。A03 的 RAG 检索,在 agent 眼里就是一个叫"查资料"的工具。工具的<b>说明写得好不好</b>,直接决定模型选得对不对——这和 A01 的提示词工程一脉相承。工具越强,agent 能干的事越多,但也越要防它乱调(见 A06 安全)。</p>
+
+      <p class="handoff">多步行动就要记事:上一步查到了什么,不能转头就忘。</p>
+      <h2 id="memory"><span class="no">9</span><span>记忆与状态</span></h2>
+      <p class="one-liner">Agent 靠<b>把历史累积在上下文里</b>记事:每轮的想法、调过的工具、拿到的结果都留在上下文中,模型下一轮才知道"进行到哪了"。这叫<b>状态</b>。上下文放不下时,靠<b>长期记忆</b>(存外部、要用再取)。</p>
+      <p>短期记忆=当前上下文窗口(A01),装着这次任务的全过程;它有限,轮数一多就撑爆,所以要管理(A05 的核心话题之一)。长期记忆=把该记住的东西存到外部(文件、数据库、向量库),需要时再检索回来——注意,这本质就是 <a href="A03-RAG检索增强生成.html">A03 的 RAG</a>,只不过检索的是"agent 自己的历史/知识"。<b>状态管理是 agent 稳不稳的命门</b>:记乱了、记丢了,它就会重复劳动或前后矛盾。</p>
+
+      <p class="handoff">工具、记忆到位,把它们转起来的引擎,就是那个循环——ReAct。</p>
+      <h2 id="loop"><span class="no">10</span><span>规划循环 ReAct(核心)</span></h2>
+      <p class="one-liner">ReAct = <b>Reason(想)+ Act(做)</b>:模型先<b>想</b>一步(我该干嘛)→ <b>做</b>(调一个工具)→ <b>看</b>结果(observation)→ 拿结果<b>再想</b>下一步……循环到任务完成才收尾。这是绝大多数 agent 的骨架。</p>
+      <p>为什么要"想"这一步:如果模型闷头直接调工具,一步错步步错;让它每轮先把"当前该做什么、为什么"讲出来(哪怕只在内部),决策质量明显更高——这也接上了 A01 的"分步思考"。循环的每一轮把"想法 + 动作 + 结果"追加进上下文(第 9 节的状态),模型据此判断:还没完→继续下一轮;够了→输出最终答案。这个"想→做→看"的环,就是 A05 里 <b>agent loop</b> 的雏形,也是理解 Claude Code 这类工具怎么运转的钥匙。</p>
+      <figure>
+        <svg viewBox="0 0 560 300" role="img" aria-label="ReAct 循环:想 做 看 再想">
+          <defs><marker id="m-l" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="200" y="20" width="160" height="46" rx="8" class="box"/><text x="280" y="42" text-anchor="middle" class="nl">任务</text><text x="280" y="59" text-anchor="middle" class="el">用户给的目标</text>
+          <line x1="280" y1="66" x2="280" y2="92" class="d-acc" marker-end="url(#m-l)"/>
+          <rect x="200" y="94" width="160" height="46" rx="8" class="box-acc"/><text x="280" y="116" text-anchor="middle" class="nl-acc">① 想 Reason</text><text x="280" y="133" text-anchor="middle" class="el">这一步该做什么</text>
+          <line x1="360" y1="117" x2="430" y2="117" class="d-acc" marker-end="url(#m-l)"/>
+          <rect x="432" y="94" width="118" height="46" rx="8" class="box"/><text x="491" y="116" text-anchor="middle" class="nl">② 做 Act</text><text x="491" y="133" text-anchor="middle" class="el">调一个工具</text>
+          <line x1="491" y1="140" x2="491" y2="196" class="d-acc" marker-end="url(#m-l)"/>
+          <rect x="432" y="198" width="118" height="46" rx="8" class="box"/><text x="491" y="220" text-anchor="middle" class="nl">③ 看 Observe</text><text x="491" y="237" text-anchor="middle" class="el">工具结果</text>
+          <path d="M432 221 C 300 250, 300 250, 280 158" class="d-acc" marker-end="url(#m-l)"/>
+          <text x="300" y="255" text-anchor="middle" class="el-acc">↻ 没完就拿结果再想下一步</text>
+          <line x1="200" y1="117" x2="120" y2="117" class="d-ink" marker-end="url(#m-l)"/>
+          <rect x="10" y="94" width="108" height="46" rx="8" class="box"/><text x="64" y="116" text-anchor="middle" class="nl">完成</text><text x="64" y="133" text-anchor="middle" class="el">输出答案</text>
+          <text x="150" y="108" text-anchor="middle" class="el">够了</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>ReAct 循环:想 → 做 → 看,拿结果再想;判断够了就跳出循环、输出答案。这是 agent 的引擎,也是 A05 "agent loop" 的原型。</figcaption>
+      </figure>
+      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:ReAct 论文图 1 对比"只推理/只行动/ReAct"三种,一眼看出为什么要合起来。<b>往后连:</b>A05 会把这个循环拆到底层——上下文怎么管、工具怎么用协议(MCP)接、多个 agent 怎么协作。</p></div>
+
+      <p class="handoff">最后是最重要的判断:很多任务,其实不该上 agent。</p>
+      <h2 id="when"><span class="no">11</span><span>何时该用 agent、何时别用</span></h2>
+      <p class="one-liner">Agent 强,但<b>贵、慢、不稳</b>(每轮都调一次模型,还可能绕远、卡循环)。<b>能用固定工作流(workflow)解决的,就别上 agent。</b>这是 Anthropic 反复强调的克制。</p>
+      <p>区分两个词:<b>工作流 workflow</b>=预先把步骤写死的固定管线(第一步做 A、第二步做 B),路径可预测、便宜、稳;<b>agent</b>=让模型自己决定路径,灵活但不可预测。判据很简单:<b>任务步骤固定、可预先编排 → 用工作流</b>(比如 A03 那条 RAG 链就是工作流);<b>步骤因情况而变、需要临场决策 → 才用 agent</b>。现实里最好的系统常是"工作流为主,只在真需要判断的那一环嵌一小段 agent"。别因为 agent 时髦就到处用——它每多转一轮,就多一份成本、延迟和出错机会。</p>
+      <figure>
+        <svg viewBox="0 0 620 180" role="img" aria-label="工作流与 agent 对比">
+          <defs><marker id="m-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <text x="150" y="26" text-anchor="middle" class="nl">工作流:路径写死</text>
+          <rect x="40" y="44" width="60" height="34" rx="6" class="box"/><text x="70" y="65" text-anchor="middle" class="el">步骤A</text>
+          <line x1="100" y1="61" x2="126" y2="61" class="d-ink" marker-end="url(#m-w)"/>
+          <rect x="130" y="44" width="60" height="34" rx="6" class="box"/><text x="160" y="65" text-anchor="middle" class="el">步骤B</text>
+          <line x1="190" y1="61" x2="216" y2="61" class="d-ink" marker-end="url(#m-w)"/>
+          <rect x="220" y="44" width="60" height="34" rx="6" class="box"/><text x="250" y="65" text-anchor="middle" class="el">步骤C</text>
+          <text x="160" y="104" text-anchor="middle" class="el">可预测 · 便宜 · 稳 —— 步骤固定时首选</text>
+          <line x1="310" y1="20" x2="310" y2="160" class="d-soft"/>
+          <text x="470" y="26" text-anchor="middle" class="nl-acc">Agent:路径自决</text>
+          <circle cx="470" cy="86" r="30" class="box-acc"/><text x="470" y="90" text-anchor="middle" class="nl-acc">模型</text>
+          <line x1="440" y1="70" x2="392" y2="52" class="d-acc" marker-end="url(#m-w)"/><text x="372" y="48" class="el">工具1</text>
+          <line x1="500" y1="70" x2="548" y2="52" class="d-acc" marker-end="url(#m-w)"/><text x="552" y="48" class="el">工具2</text>
+          <line x1="470" y1="116" x2="470" y2="140" class="d-acc" marker-end="url(#m-w)"/><text x="470" y="156" text-anchor="middle" class="el">工具3</text>
+          <text x="470" y="176" text-anchor="middle" class="el-acc">灵活但贵/慢/不稳 —— 需临场决策才用</text>
+        </svg>
+        <figcaption><span class="fig-num">图 4</span>工作流把路径写死,可预测又便宜;agent 让模型自决路径,灵活但代价大。步骤固定用左,需临场判断才用右。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 D ========== -->
+      <p class="handoff">五块地基到齐。下面用一段伪代码,把整个 agent 循环压成十几行。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:最简 agent loop</span></h2>
+      <p>下面这段(化简的伪代码)就是几乎所有 agent 的心脏——它把前五块全串起来了:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">agent_loop.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> run_agent(task, tools, max_steps</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">10):</span></span>
+<span class="line"><span style="color:#14181F">    messages </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [{</span><span style="color:#557089">"role"</span><span style="color:#14181F">: </span><span style="color:#557089">"user"</span><span style="color:#14181F">, </span><span style="color:#557089">"content"</span><span style="color:#14181F">: task}]   </span><span style="color:#8B95A8;font-style:italic"># ③ 状态:一路累积在这</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    for</span><span style="color:#14181F"> step </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> range(max_steps):                    </span><span style="color:#8B95A8;font-style:italic"># ④ 循环:给它多步机会</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic">        # ① 模型这一轮:想 + 决定调哪个工具(工具清单来自 ②)</span></span>
+<span class="line"><span style="color:#14181F">        reply </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> model.chat(messages, tools</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">tools)</span></span>
+<span class="line"><span style="color:#14181F">        messages.append(reply)                        </span><span style="color:#8B95A8;font-style:italic"># 把这轮想法/决定记进状态</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        if</span><span style="color:#14181F"> reply.tool_call </span><span style="color:#14181F;font-weight:bold">is</span><span style="color:#14181F"> None:                   </span><span style="color:#8B95A8;font-style:italic"># ⑩ 判断:它说不用工具了 = 办完</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">            return</span><span style="color:#14181F"> reply.content                       </span><span style="color:#8B95A8;font-style:italic"># 输出最终答案,跳出循环</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic">        # ② 做:程序真正执行模型选中的工具</span></span>
+<span class="line"><span style="color:#14181F">        result </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> run_tool(reply.tool_call)</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic">        # ③ 看:把工具结果喂回状态,下一轮模型据此再想</span></span>
+<span class="line"><span style="color:#14181F">        messages.append({</span><span style="color:#557089">"role"</span><span style="color:#14181F">: </span><span style="color:#557089">"tool"</span><span style="color:#14181F">, </span><span style="color:#557089">"content"</span><span style="color:#14181F">: result})</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#557089"> "超过步数上限还没办完"</span><span style="color:#8B95A8;font-style:italic">                        # ⑪ 兜底:防死循环(见 A06)</span></span></code></pre>
+      </div>
+      <p>逐行对照五块:<code>messages</code> 是<b>状态/记忆</b>(③),一路追加;<code>for step</code> 是<b>循环</b>(④),给它多步机会;<code>model.chat(..., tools=...)</code> 让模型<b>想 + 选工具</b>(①②);<code>run_tool</code> 是<b>做</b>,结果<b>喂回</b>(③)让它下一轮再想。<code>tool_call is None</code> 是<b>它自己判断办完了</b>。<code>max_steps</code> 是<b>兜底闸</b>——防止它卡进死循环(agent 最常见的翻车,A06 细讲)。真实框架(LangGraph 等)在这十几行上加了错误处理、并行、观测,但骨架就是它。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战</span>
+        <h3>想清楚三件事</h3>
+        <p>①如果去掉 <code>max_steps</code> 这道闸,会发生什么坏情况?(提示:工具老是失败或模型判断不了"办完")②如果 <code>messages</code> 越滚越长、撑爆上下文窗口,该怎么办?(这正是 A05 的上下文管理)③一个"查天气→订酒店"的任务,用这个循环走一遍,列出它每一轮的想/做/看分别是什么。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;下列链接均于 2026-08-16 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.anthropic.com/research/building-effective-agents" target="_blank" rel="noopener">Anthropic · Building Effective Agents</a></span><span class="spine">默认主线 · 必读</span><span class="tags">工程博客 · 英文 · 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">一线厂商总结"什么时候用固定工作流、什么时候才真需要 agent"的经典文章。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">它把本章最重要的判断——"别动不动上 agent"——讲得最透,直接对治理目标。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全篇;尤其 workflow vs agent 的取舍和几个常见模式。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「什么时候用 Agent / 什么时候用工作流」节;续到 <a href="A05-Agent的harness底层框架.html">A05</a>。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://huggingface.co/learn/agents-course" target="_blank" rel="noopener">Hugging Face · Agents 课</a></span><span class="tags">课程 · 可切中文 · 3h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">手把手演示搭一个能调工具的 agent 的免费课程。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章讲清了 ReAct 循环的道理,这门课让人真把它跑起来。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Unit 1 起,跟着搭第一个 agent。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「模型-工具-状态循环(ReAct)」节 + 项目 <a href="../项目/P6-一个小Agent.html">P6</a>。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://arxiv.org/abs/2210.03629" target="_blank" rel="noopener">ReAct(论文)</a></span><span class="tags">论文·字典/桥 · 英文 · 30min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">"推理 + 行动"交替这套 agent 范式的源头论文。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想知道"ReAct 到底哪来的、原始长什么样"时看它,一张图就懂。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">摘要 + 图 1(Reason/Act 交替的例子);其余可跳。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「ReAct」节做溯源。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://langchain-ai.github.io/langgraph/" target="_blank" rel="noopener">LangGraph 文档</a></span><span class="tags">框架文档 · 英文 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">用"图"来编排 agent 工作流的主流框架。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">真要写一个稳的多步 agent 时,用它比手撸循环更好控。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Quickstart。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「工作流 vs Agent」节;要落地时再用。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>Agent 是一种更聪明的模型</td><td>不是。它是"普通模型 + 搭的循环 + 一批工具";自主来自循环,不是模型本身。</td></tr>
+          <tr><td>什么任务都该做成 agent</td><td>步骤固定的任务用工作流更好——便宜、稳、可预测。能不用 agent 就不用。</td></tr>
+          <tr><td>Agent 会自己上网、自己算</td><td>只有给它接了对应工具才行;不给工具,它还是只会生成文字。</td></tr>
+          <tr><td>给它目标它就能一路办到底</td><td>它会绕远、卡死循环、记乱状态;必须有步数闸、错误处理、观测(A06)。</td></tr>
+          <tr><td>Agent 和 RAG 是两回事</td><td>RAG 常常就是 agent 手里的一个"查资料"工具;长期记忆本质也是 RAG。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>一句话本质。</b>agent 和普通问答最根本的区别是什么?<details><summary>参考答案</summary><p>普通问答一次结束;agent 把模型放进循环 + 给它工具,让它多轮自主行动直到办完任务。自主来自循环。</p></details></li>
+        <li><b>四个零件。</b>说出 agent 的四个零件并各一句话。<details><summary>参考答案</summary><p>工具(能调的动作)、记忆/状态(累积历史)、循环 ReAct(想→做→看→再想)、判断(何时办完/该不该用 agent)。</p></details></li>
+        <li><b>该用哪个。</b>"每天早上把三个固定网站的头条抓下来汇总"——用 agent 还是工作流?<details><summary>参考答案</summary><p>工作流。步骤固定、可预先编排,不需要临场决策,用 agent 只会更贵更不稳。</p></details></li>
+        <li><b>兜底。</b>为什么 agent loop 一定要有 max_steps?<details><summary>参考答案</summary><p>防死循环:工具反复失败、或模型判断不了"办完",会无限转下去,烧钱又卡住。步数闸强制收尾。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上再进 A05(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清 agent 和普通问答的区别,且知道"自主"来自循环</li>
+          <li><input type="checkbox"> 我能说出四个零件:工具、记忆/状态、循环、判断</li>
+          <li><input type="checkbox"> 我知道工具就是 A02 的函数调用,给一批让模型自选</li>
+          <li><input type="checkbox"> 我理解状态=历史累积在上下文,长期记忆本质是 RAG</li>
+          <li><input type="checkbox"> 我能画出 ReAct 循环:想 → 做 → 看 → 再想 → 完成</li>
+          <li><input type="checkbox"> 我会判断一个任务该用工作流还是 agent</li>
+          <li><input type="checkbox"> 我看懂了最简 agent loop,知道 max_steps 是干嘛的</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>这一章从外面看清了 agent 的样子:循环、工具、记忆、判断。下一章 <a href="A05-Agent的harness底层框架.html">A05 · AI Agent 的 harness / 底层框架</a>会<b>掀开盖子</b>看里面:那个循环(agent loop)工程上怎么搭、上下文长了怎么管、工具用什么协议接进来(<b>MCP</b>)、多个 agent 怎么协作。这一章正是推进治理体系时反复要打交道的"AI 底层框架"——A04 给出词汇,A05 给出机制。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="A03-RAG检索增强生成.html"><span class="lb">上一章</span><span class="tt">A03 · RAG</span></a>
+        <a href="A05-Agent的harness底层框架.html" class="next"><span class="lb">下一章</span><span class="tt">A05 · harness / 底层框架</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">A04 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="what" href="#what"><i>7</i>Agent 是什么</a>
+        <a data-toc-target="tools" href="#tools"><i>8</i>工具</a>
+        <a data-toc-target="memory" href="#memory"><i>9</i>记忆与状态</a>
+        <a data-toc-target="loop" href="#loop"><i>10</i>ReAct 循环</a>
+        <a data-toc-target="when" href="#when"><i>11</i>用/不用</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>最简 agent loop</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="A04" data-kind="chapter" data-title="Agent 基础:工具、记忆、工作流"></script>
+</body>
+</html>

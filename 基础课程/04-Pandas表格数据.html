@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>04 · Pandas:表格数据处理</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-code{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink);text-align:center;margin:0 0 16px;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.dftbl{margin:0 auto;border-collapse:collapse;font-family:var(--mono);font-size:var(--fs-small);}
+.dftbl th{color:var(--ink-faint);font-weight:600;padding:6px 12px;}
+.dftbl thead th{border-bottom:1.5px solid var(--acc);color:var(--acc);}
+.dftbl td{padding:8px 14px;border:1px solid var(--rule);color:var(--ink);text-align:center;background:var(--surface);}
+.dftbl tbody th{border-right:1.5px solid var(--acc);color:var(--acc);text-align:right;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.gc{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.gc-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.gv{font-family:var(--mono);font-size:14px;font-weight:700;fill:var(--ink);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.chapter-nav a.disabled{opacity:.55;pointer-events:none;}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="03-NumPy数组与形状.html">03 NumPy</a><span class="sep">—</span>
+      <a href="04-Pandas表格数据.html" class="current">04 Pandas</a><span class="sep">—</span>
+      <a href="05-机器学习核心概念.html">05 机器学习核心</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-04.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">基础课程 · Chapter 04</p>
+        <h1>Pandas:表格数据处理</h1>
+        <p class="recap">上一章的 NumPy 数组是一块纯数字,没有列名、不好清洗。真实数据是带列名的表(CSV / Excel),还夹着缺失值和文字。这一章用 <b>Pandas</b> 在数组之上加行列标签,把它变成好用的「表格」:读进来、选子集、清缺失、分组统计。喂数据给模型之前,数据大都长这样。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,外部精读 + 动手约 3~5 小时。全程只用到读文件、筛选、求平均这类操作,概念都用上一章的数组作对照。每出现一个新词,当场用白话解释。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>Series 与 DataFrame——带行列标签的一维/二维表,比裸数组好用</li>
+          <li>读写数据——一行把 CSV / Excel 读成表,处理完存回去</li>
+          <li>选取子集——按列名、按行条件挑出想要的那部分</li>
+          <li>清洗——找缺失值、填补或丢弃、改类型、改列名</li>
+          <li>分组统计——按某列分组,每组各算一个统计(groupby)</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接上一章:</b><a href="03-NumPy数组与形状.html">第 3 章的数组</a>能高速算一堆纯数字,但没有列名。Pandas 给它加上行列标签。<b>通向下一章:</b><a href="05-机器学习核心概念.html">第 5 章 机器学习核心概念</a>——喂给模型的训练数据,几乎都是先用 Pandas 读进来、清洗、整理好的表。</p>
+      </div>
+
+      <!-- ========== 模块 A ========== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>做完第 3 章、会用数组,但想处理真实的 CSV / Excel 表格数据的人。</li>
+        <li>想读懂 AI 代码里 <code>pd.read_csv</code>、<code>df['列名']</code>、<code>df.groupby(...)</code> 在干什么的人。</li>
+        <li>设计、产品、运营等常和表格打交道,想用代码代替手工 Excel 清洗统计的人。</li>
+      </ul>
+      <p><b>不适合</b>:已经能熟练用 Pandas 做清洗和分组统计的人——直接跳到第 5 章。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>两样:一是<a href="03-NumPy数组与形状.html">第 3 章</a>的数组、shape、索引;二是激活的 <code>.venv</code> 环境。装一次库(Pandas 自带会把 NumPy 一起装上):</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">装 Pandas</span><span class="rt"><span class="lang">bash</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">pip install pandas</span></span></code></pre>
+      </div>
+      <p>装完 <code>import pandas as pd</code> 不报错就成。<code>pd</code> 是全世界通用的简称,本章一律这么写。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>把一个 CSV 文件读成 <code>DataFrame</code>,看清它有几行几列、每列什么类型。</li>
+        <li>按列名选列、按条件筛选行,取出想分析的那部分数据。</li>
+        <li>找出缺失值,决定是填补还是丢弃,并改列名、改类型。</li>
+        <li>用 <code>groupby</code> 按某一列分组,算出每组的平均、计数等统计。</li>
+        <li>读懂一段真实的数据清洗 + 统计代码,看懂它每一步在对表做什么。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">Pandas 在 NumPy 数组之上,给行和列都<b>贴上标签</b>,于是能按「列名」和「条件」来操作数据——这就是一张能用代码处理的<b>表</b>。</p>
+      <p>数组只能按位置 <code>a[0, 1]</code> 取值;表可以按名字 <code>df['分数']</code> 取一整列,或 <code>df[df['分数']&gt;90]</code> 按条件筛行。多出来的这层「行列标签」,正是真实数据分析需要的:数据带列名、有缺失、要按类别分组统计。底层的数还是 NumPy 数组,Pandas 只是给它套了个好用的壳。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <p>先记住「就这五块」。中间是本章目标,四周是达成它要用的五块地基,下面模块 C 逐块拆。</p>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="Pandas 五块地基环绕核心目标">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">带标签的表</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">读 · 洗 · 统计</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① Series / DataFrame</text>
+          <rect x="588" y="122" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="670" y="150" text-anchor="middle" class="nl">② 读写数据</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ 选取子集</text>
+          <rect x="144" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="226" y="358" text-anchor="middle" class="nl">④ 清洗</text>
+          <rect x="8" y="122" width="150" height="46" rx="8" class="d-ink nf"/>
+          <text x="83" y="150" text-anchor="middle" class="nl">⑤ 分组统计</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。学完能把它们组装起来,读懂第 12 节那段真实的读取—清洗—统计代码。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 B ========== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>本章每一小节只负责把「这是什么、长什么样」用图讲清。真正把 Pandas 练熟,靠<b>一条外部主线</b>——从头到尾跟完一套,比东拼西凑扎实得多。下面选好主线,把它的章节和本章骨架一一对应,顺着走完即可。</p>
+
+      <div class="callout go">
+        <span class="label">默认主线 · 文字</span>
+        <p><b>Pandas 官方「Getting started tutorials」(10 篇,全文免费)。</b>为什么是它:官方为零基础写的一组「怎么做 X」小教程,每篇解决一个真问题、和本章五块几乎一一对应。<b>读第 1–6 篇</b>(数据结构、读写、选取、新列、统计、reshape)。链接:<a href="https://pandas.pydata.org/docs/getting_started/intro_tutorials/index.html" target="_blank" rel="noopener">pandas.pydata.org · getting started tutorials</a>;快速一览另看 <a href="https://pandas.pydata.org/docs/user_guide/10min.html" target="_blank" rel="noopener">10 minutes to pandas</a>。</p>
+      </div>
+
+      <table class="tbl">
+        <caption>表 1 · 本章骨架 ↔ 主线精读对应</caption>
+        <thead><tr><th>本章骨架(先看图,3–5 分钟)</th><th>主线精读(官方 intro tutorials,读这篇)</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td>第 7 节 · Series / DataFrame</td><td>01 What kind of data does pandas handle?</td></tr>
+          <tr><td>第 8 节 · 读写数据</td><td>02 How do I read and write tabular data?</td></tr>
+          <tr><td>第 9 节 · 选取子集</td><td>03 How do I select a subset of a DataFrame?</td></tr>
+          <tr><td>第 10 节 · 清洗</td><td>05 How to create new columns + 官方 “Working with missing data”</td></tr>
+          <tr><td>第 11 节 · 分组统计</td><td>06 How to calculate summary statistics</td></tr>
+        </tbody>
+      </table>
+
+      <p><b>看图学更顺?加一条图解主线(和上一章同一位作者):</b></p>
+      <ul>
+        <li><b>Pandas Illustrated · Lev Maximov</b> — <a href="https://betterprogramming.pub/pandas-illustrated-the-definitive-visual-guide-to-pandas-c31fa921a43" target="_blank" rel="noopener">全图解的可视化指南</a>。和上一章的 NumPy Illustrated 同一作者、同一风格,先读 Series 与 DataFrame 两部分。</li>
+        <li><b>换视频主线</b> — 英文 <a href="https://www.youtube.com/playlist?list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU" target="_blank" rel="noopener">Corey Schafer · Pandas 教程(11 集)</a>,和第 2 章用过的是同一位讲者;中文 <a href="https://www.bilibili.com/video/BV1Ex411L7oT/" target="_blank" rel="noopener">莫烦 · Numpy &amp; Pandas</a>(看 Pandas 部分)。挑一条从头跟,别混着跳。</li>
+      </ul>
+
+      <div class="callout">
+        <span class="label">再配两件</span>
+        <p><b>忘了某个函数怎么写</b> — 存一张官方 <a href="https://pandas.pydata.org/Pandas_Cheat_Sheet.pdf" target="_blank" rel="noopener">Pandas 速查表(PDF)</a>,随时翻。</p>
+        <p><b>想系统深挖(以后)</b> — Pandas 之父 Wes McKinney 的 <a href="https://wesmckinney.com/book/" target="_blank" rel="noopener">《Python for Data Analysis》(第 3 版全文免费在线)</a>。<b>现在先不碰。</b></p>
+      </div>
+
+      <!-- ========== 模块 C ========== -->
+      <p class="handoff">先把第一块立起来:Pandas 的两个基本结构,以及它们和上一章数组差在哪。</p>
+      <h2 id="ds"><span class="no">7</span><span>Series 与 DataFrame</span></h2>
+      <p class="one-liner">DataFrame<span class="en">数据框</span>:一张带<b>行标签(index)和列标签(columns)</b>的二维表。它的每一列是一个 <b>Series</b>——带标签的一维数据。</p>
+      <p>把数组想成没抬头的方阵,DataFrame 就是给它加了列名(columns)和行号(index)的 Excel 表。一列叫一个 Series,同一列类型统一;整张表放一起就是 DataFrame。有了列名,才能用 <code>df['分数']</code> 这种一眼看懂的方式取数,而不是背第几列。</p>
+      <figure>
+        <div class="fig-code">df = pd.DataFrame({'姓名': [...], '分数': [...], '城市': [...]})</div>
+        <table class="dftbl">
+          <thead><tr><th>index</th><th>姓名</th><th>分数</th><th>城市</th></tr></thead>
+          <tbody>
+            <tr><th>0</th><td>阿岩</td><td>88</td><td>北京</td></tr>
+            <tr><th>1</th><td>小林</td><td>95</td><td>上海</td></tr>
+            <tr><th>2</th><td>阿彩</td><td>72</td><td>北京</td></tr>
+          </tbody>
+        </table>
+        <div class="fig-note">一列 = 一个 Series　·　df['分数'] 取一整列　·　df.loc[1] 取一整行</div>
+        <figcaption><span class="fig-num">图 2</span>DataFrame = 带行标签(index)和列标签(columns)的表。每一列是一个 Series。</figcaption>
+      </figure>
+      <div class="code-block">
+        <div class="chead"><span class="fn">造一张表 · 看属性</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> pandas </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> pd</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">df </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> pd.DataFrame({</span></span>
+<span class="line"><span style="color:#557089">    '姓名'</span><span style="color:#14181F">: [</span><span style="color:#557089">'阿岩'</span><span style="color:#14181F">, </span><span style="color:#557089">'小林'</span><span style="color:#14181F">, </span><span style="color:#557089">'阿彩'</span><span style="color:#14181F">],</span></span>
+<span class="line"><span style="color:#557089">    '分数'</span><span style="color:#14181F">: [88, 95, 72],</span></span>
+<span class="line"><span style="color:#557089">    '城市'</span><span style="color:#14181F">: [</span><span style="color:#557089">'北京'</span><span style="color:#14181F">, </span><span style="color:#557089">'上海'</span><span style="color:#14181F">, </span><span style="color:#557089">'北京'</span><span style="color:#14181F">],</span></span>
+<span class="line"><span style="color:#14181F">})</span></span>
+<span class="line"><span style="color:#14181F">print(df.shape)     </span><span style="color:#8B95A8;font-style:italic"># (3, 3)  三行三列</span></span>
+<span class="line"><span style="color:#14181F">print(df.columns)   </span><span style="color:#8B95A8;font-style:italic"># Index(['姓名', '分数', '城市'], ...)</span></span>
+<span class="line"><span style="color:#14181F">print(df.dtypes)    </span><span style="color:#8B95A8;font-style:italic"># 每列的类型:object(文字)/ int64(数)</span></span>
+<span class="line"><span style="color:#14181F">print(df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">])   </span><span style="color:#8B95A8;font-style:italic"># 取「分数」这一列(一个 Series)</span></span></code></pre>
+      </div>
+      <div class="callout go"><span class="label">去精读</span><p>官方 intro tutorial 01「What kind of data does pandas handle?」;<code>df.head()</code>、<code>df.info()</code>、<code>df.describe()</code> 这几个「看表」的方法读那一篇顺带就会。</p></div>
+
+      <p class="handoff">真实数据不是手打的,而是从文件读进来——下一块。</p>
+      <h2 id="io"><span class="no">8</span><span>读写数据</span></h2>
+      <p class="one-liner">读写:<code>pd.read_csv('文件.csv')</code> 把一个文件读成 DataFrame,<code>df.to_csv('新文件.csv')</code> 把处理完的表存回去。Excel 换成 <code>read_excel</code>。</p>
+      <p>这是 Pandas 最日常的入口:数据分析十有八九从 <code>read_csv</code> 开始。读进来第一件事是<b>体检</b>——<code>df.head()</code> 看前几行长什么样,<code>df.info()</code> 看有多少行、每列什么类型、哪里有缺失,<code>df.describe()</code> 看数值列的均值和分布。先看清楚,再动手。</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">读文件 · 先体检</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">df </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> pd.read_csv(</span><span style="color:#557089">'scores.csv'</span><span style="color:#14181F">)   </span><span style="color:#8B95A8;font-style:italic"># 从 CSV 读成表</span></span>
+<span class="line"><span style="color:#14181F">df.head()        </span><span style="color:#8B95A8;font-style:italic"># 看前 5 行,先认清列名和样子</span></span>
+<span class="line"><span style="color:#14181F">df.info()        </span><span style="color:#8B95A8;font-style:italic"># 行数、每列类型、缺失情况</span></span>
+<span class="line"><span style="color:#14181F">df.describe()    </span><span style="color:#8B95A8;font-style:italic"># 数值列的均值/最大/最小/分位数</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">df.to_csv(</span><span style="color:#557089">'cleaned.csv'</span><span style="color:#14181F">, index</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">False)  </span><span style="color:#8B95A8;font-style:italic"># 处理完存回,不写行号</span></span></code></pre>
+      </div>
+      <div class="callout warn"><span class="label">读中文 CSV 乱码</span><p>Windows 下 CSV 常是 GBK 编码,直接读会乱码或报错。加参数指定编码:<code>pd.read_csv('文件.csv', encoding='gbk')</code>;若还不行试 <code>encoding='utf-8-sig'</code>。</p></div>
+
+      <p class="handoff">表读进来了,接着要从一大张表里挑出想分析的那部分——选取子集。</p>
+      <h2 id="subset"><span class="no">9</span><span>选取子集:挑行挑列</span></h2>
+      <p class="one-liner">选列用 <code>df['列名']</code>;选行用 <code>df.loc[标签]</code> 或 <code>df.iloc[位置]</code>;按<b>条件</b>筛行用 <code>df[df['列'] &gt; 值]</code>。</p>
+      <p>三种最常用:一是<b>选列</b>,<code>df['分数']</code> 取一列、<code>df[['姓名','分数']]</code> 取多列;二是<b>选行</b>,<code>df.loc[0]</code> 按行标签、<code>df.iloc[0]</code> 按位置(和数组一样从 0 数);三是<b>条件筛选</b>,<code>df[df['分数']&gt;90]</code> 直接留下分数大于 90 的行,和上一章的布尔索引是同一招。<code>loc</code> 认<b>标签</b>、<code>iloc</code> 认<b>位置</b>,是最容易搞混的一对。</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">选列 · 选行 · 条件</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">]                 </span><span style="color:#8B95A8;font-style:italic"># 选一列(Series)</span></span>
+<span class="line"><span style="color:#14181F">df[[</span><span style="color:#557089">'姓名'</span><span style="color:#14181F">, </span><span style="color:#557089">'分数'</span><span style="color:#14181F">]]        </span><span style="color:#8B95A8;font-style:italic"># 选多列(小 DataFrame)</span></span>
+<span class="line"><span style="color:#14181F">df.loc[1]                  </span><span style="color:#8B95A8;font-style:italic"># 按行标签取第 1 行</span></span>
+<span class="line"><span style="color:#14181F">df.iloc[0]                 </span><span style="color:#8B95A8;font-style:italic"># 按位置取第 1 行</span></span>
+<span class="line"><span style="color:#14181F">df[df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">></span><span style="color:#14181F"> 90]        </span><span style="color:#8B95A8;font-style:italic"># 条件筛选:分数大于 90 的行</span></span>
+<span class="line"><span style="color:#14181F">df.loc[df[</span><span style="color:#557089">'城市'</span><span style="color:#14181F">]</span><span style="color:#14181F;font-weight:bold">==</span><span style="color:#557089">'北京'</span><span style="color:#14181F">, </span><span style="color:#557089">'姓名'</span><span style="color:#14181F">]  </span><span style="color:#8B95A8;font-style:italic"># 北京学生的姓名列</span></span></code></pre>
+      </div>
+      <div class="predict">
+        <span class="ql">想一想</span>
+        <p><code>df.loc[1]</code> 和 <code>df.iloc[1]</code> 什么时候结果不一样?</p>
+        <details><summary>看答案</summary>
+        <p>当行标签(index)不是默认的 0,1,2 时。<code>loc[1]</code> 找<b>标签叫 1</b> 的那行;<code>iloc[1]</code> 永远是<b>第 2 行</b>(位置从 0 数)。如果把某列设成了 index(比如用姓名当行标签),<code>loc['小林']</code> 用名字取行,而 <code>iloc[1]</code> 还是取位置。记住:<b>loc 认标签、iloc 认位置</b>。</p></details>
+      </div>
+
+      <p class="handoff">真实数据总有脏的地方——缺失、类型不对、列名难认。下一块是清洗。</p>
+      <h2 id="clean"><span class="no">10</span><span>清洗:缺失值与类型</span></h2>
+      <p class="one-liner">清洗:找出<b>缺失值(NaN)</b>,决定<b>填补</b>还是<b>丢弃</b>;顺手把类型改对、把列名改清楚。</p>
+      <p>真实表里常有空格子(缺失值,显示成 <code>NaN</code>)。<code>df.isna().sum()</code> 一眼看出每列缺多少;<code>df.dropna()</code> 丢掉有缺失的行,<code>df.fillna(值)</code> 用某个值(如该列平均)填补。到底填还是丢,看数据——缺得少可丢,缺得多、又不能丢就填。另外常做的:<code>df.rename()</code> 改列名、<code>df['列'].astype(int)</code> 改类型。</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">找缺失 · 填或丢 · 改</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">df.isna().sum()            </span><span style="color:#8B95A8;font-style:italic"># 每列有多少缺失值</span></span>
+<span class="line"><span style="color:#14181F">df.dropna()                </span><span style="color:#8B95A8;font-style:italic"># 丢掉含缺失的行</span></span>
+<span class="line"><span style="color:#14181F">df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">].fillna(df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">].mean())   </span><span style="color:#8B95A8;font-style:italic"># 用该列平均填补缺失</span></span>
+<span class="line"><span style="color:#14181F">df.rename(columns</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">{</span><span style="color:#557089">'分数'</span><span style="color:#14181F">: </span><span style="color:#557089">'score'</span><span style="color:#14181F">})   </span><span style="color:#8B95A8;font-style:italic"># 改列名</span></span>
+<span class="line"><span style="color:#14181F">df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">].astype(float)  </span><span style="color:#8B95A8;font-style:italic"># 改类型</span></span></code></pre>
+      </div>
+      <div class="callout warn"><span class="label">很多方法不改原表</span><p><code>df.dropna()</code>、<code>df.fillna()</code> 默认<b>返回一张新表、不动原表</b>。想让改动生效,要么接住返回值 <code>df = df.dropna()</code>,要么(不推荐)用 <code>inplace=True</code>。忘了接返回值,是新手最常见的「代码没报错但表没变」。</p></div>
+
+      <p class="handoff">最后一块,也是数据分析的核心动作:按类别把数据分组,each 组各算一个统计。</p>
+      <h2 id="groupby"><span class="no">11</span><span>分组统计 groupby</span></h2>
+      <p class="one-liner">groupby:按某一列的<b>取值分组</b>,对每一组各算一个统计(平均、计数、求和)——「拆开 → 各算 → 合并」三步。</p>
+      <p>这是从「一堆明细」得到「一张汇总」的标准动作,对应 Excel 的数据透视表。<code>df.groupby('城市')['分数'].mean()</code> 读作:按城市把行拆成几组,每组算分数的平均,再把结果合并成一张小表。三步一句话:<b>split(按列拆开)→ apply(每组各算)→ combine(合并结果)</b>。</p>
+      <figure>
+        <div class="fig-code">df.groupby('城市')['分数'].mean()</div>
+        <svg viewBox="0 0 720 168" role="img" aria-label="groupby 的拆开-各算-合并三步">
+          <defs><marker id="m-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="16" y="54" width="150" height="60" rx="8" class="d-ink nf"/>
+          <text x="91" y="80" text-anchor="middle" class="nl">整张表</text>
+          <text x="91" y="100" text-anchor="middle" class="el">明细若干行</text>
+          <line x1="170" y1="84" x2="212" y2="84" class="d-acc" marker-end="url(#m-g)"/>
+          <text x="256" y="40" text-anchor="middle" class="el-acc">拆开 split</text>
+          <rect x="216" y="48" width="120" height="30" rx="6" class="gc-acc"/><text x="276" y="68" text-anchor="middle" class="el">北京组</text>
+          <rect x="216" y="92" width="120" height="30" rx="6" class="gc-acc"/><text x="276" y="112" text-anchor="middle" class="el">上海组</text>
+          <line x1="340" y1="84" x2="382" y2="84" class="d-acc" marker-end="url(#m-g)"/>
+          <text x="430" y="40" text-anchor="middle" class="el-acc">各算 apply</text>
+          <rect x="386" y="48" width="120" height="30" rx="6" class="gc"/><text x="446" y="68" text-anchor="middle" class="el">北京均分</text>
+          <rect x="386" y="92" width="120" height="30" rx="6" class="gc"/><text x="446" y="112" text-anchor="middle" class="el">上海均分</text>
+          <line x1="510" y1="84" x2="552" y2="84" class="d-acc" marker-end="url(#m-g)"/>
+          <text x="632" y="40" text-anchor="middle" class="el-acc">合并 combine</text>
+          <rect x="556" y="54" width="150" height="60" rx="8" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="631" y="80" text-anchor="middle" class="nl-acc">一张汇总表</text>
+          <text x="631" y="100" text-anchor="middle" class="el">每城市一行</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>groupby 三步:按列拆开 → 每组各算 → 合并成汇总。对应 Excel 的透视表。</figcaption>
+      </figure>
+      <div class="code-block">
+        <div class="chead"><span class="fn">分组统计</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">df.groupby(</span><span style="color:#557089">'城市'</span><span style="color:#14181F">)[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">].mean()     </span><span style="color:#8B95A8;font-style:italic"># 每个城市的平均分</span></span>
+<span class="line"><span style="color:#14181F">df.groupby(</span><span style="color:#557089">'城市'</span><span style="color:#14181F">).size()             </span><span style="color:#8B95A8;font-style:italic"># 每个城市几个人</span></span>
+<span class="line"><span style="color:#14181F">df.groupby(</span><span style="color:#557089">'城市'</span><span style="color:#14181F">)[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">].agg([</span><span style="color:#557089">'mean'</span><span style="color:#14181F">, </span><span style="color:#557089">'max'</span><span style="color:#14181F">, </span><span style="color:#557089">'count'</span><span style="color:#14181F">])  </span><span style="color:#8B95A8;font-style:italic"># 一次算多个</span></span></code></pre>
+      </div>
+      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:官方 intro tutorial 06「How to calculate summary statistics」。<b>往后连:</b>准备训练数据时,常先 <code>groupby</code> 看各类别的分布是否均衡——这是第 5 章挑数据集的第一步。</p></div>
+
+      <!-- ========== 模块 D ========== -->
+      <p class="handoff">五块地基到齐了。下面把它们组装起来,读懂一段真实的读取—清洗—统计代码。</p>
+      <h2 id="assemble"><span class="no">12</span><span>实战:一张成绩表从读到汇总</span></h2>
+      <p>下面这段是数据分析最常见的开头:读进来、体检、清洗、筛选、分组汇总。用到本章全部五块:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">analyze.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> pandas </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> pd</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">df </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> pd.read_csv(</span><span style="color:#557089">'scores.csv'</span><span style="color:#14181F">)      </span><span style="color:#8B95A8;font-style:italic"># ① 读:文件 → 表</span></span>
+<span class="line"><span style="color:#14181F">print(df.info())                    </span><span style="color:#8B95A8;font-style:italic">#    体检:看行数、类型、缺失</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">df </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> df.dropna(subset</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">])     </span><span style="color:#8B95A8;font-style:italic"># ② 清洗:丢掉分数缺失的行(接住返回值!)</span></span>
+<span class="line"><span style="color:#14181F">df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">].astype(float)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">top </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> df[df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">>=</span><span style="color:#14181F"> 60]          </span><span style="color:#8B95A8;font-style:italic"># ③ 选取:只看及格的</span></span>
+<span class="line"><span style="color:#14181F">by_city </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> top.groupby(</span><span style="color:#557089">'城市'</span><span style="color:#14181F">)[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">].mean()   </span><span style="color:#8B95A8;font-style:italic"># ④ 分组:每城市平均分</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(by_city.sort_values(ascending</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">False))    </span><span style="color:#8B95A8;font-style:italic"># 从高到低排</span></span></code></pre>
+      </div>
+      <p>读一遍:<code>read_csv</code> 是<b>读写</b>;<code>dropna</code>、<code>astype</code> 是<b>清洗</b>;<code>df[df['分数']&gt;=60]</code> 是<b>选取子集</b>;<code>groupby(...).mean()</code> 是<b>分组统计</b>;整张 <code>df</code> 从头到尾是一个 <b>DataFrame</b>。真实数据分析,开头几乎都是这套。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战</span>
+        <h3>改改看</h3>
+        <p>在上面基础上加两问:①每个城市<b>各科</b>的平均分(提示:<code>groupby(['城市','科目'])</code> 按两列分组);②找出每个城市分数<b>最高</b>的那个人(提示:先 <code>groupby('城市')</code> 再看 <code>idxmax()</code>,或按城市分组后取每组分数最大的行)。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。均于 2026-08-14 核实在线;打不开就记住名字搜一下。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://pandas.pydata.org/docs/getting_started/intro_tutorials/index.html" target="_blank" rel="noopener">Pandas 官方 · Getting started(10 篇)</a></span><span class="spine">默认主线</span><span class="tags">官方教程 · 英文(可机翻) · 2h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">官方十篇小教程,读表/选取/筛选/清洗/分组一步步来。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">顺序和本章骨架对得上,权威、每篇都短,跟完就会用 DataFrame。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">第 1–6 篇。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「选取」「清洗」「分组统计」几节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://betterprogramming.pub/pandas-illustrated-the-definitive-visual-guide-to-pandas-c31fa921a43" target="_blank" rel="noopener">Pandas Illustrated(图解)</a></span><span class="tags">图解博客 · 英文 · 40min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">用图把 Series/DataFrame 的结构和操作画出来。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">设计师友好:一图看懂"表是怎么被切/被合"的。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Series + DataFrame 两部分。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「Series/DataFrame」节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/playlist?list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU" target="_blank" rel="noopener">Corey Schafer · Pandas(11 集)</a></span><span class="tags">视频 · 英文 · 3h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">口碑极好的 Pandas 英文视频系列,每集一个主题。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">爱看视频、想从头跟一条的话选它。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">从头跟,和本章分节对应。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">整章的视频替代主线。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://pandas.pydata.org/Pandas_Cheat_Sheet.pdf" target="_blank" rel="noopener">Pandas 官方速查表(PDF)</a></span><span class="tags">官方 · 当字典查 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">一页纸的常用操作速查。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">忘了某个函数怎么写时,扫一眼比搜快。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">按需翻。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">动手做练习/项目 P1 时常备。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 3 · 五个新手误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>DataFrame 和 Excel 表一样,能随手改格子</td><td>它是代码里的对象;改动靠方法(选取、赋值、groupby),不是鼠标点。好处是可复现、能自动跑。</td></tr>
+          <tr><td><code>loc</code> 和 <code>iloc</code> 差不多</td><td><code>loc</code> 认<b>标签</b>、<code>iloc</code> 认<b>位置</b>。index 不是 0,1,2 时结果不同,是最常见的坑。</td></tr>
+          <tr><td><code>df.dropna()</code> 会直接改原表</td><td>默认返回<b>新表</b>、不动原表。要 <code>df = df.dropna()</code> 接住,否则「没报错但表没变」。</td></tr>
+          <tr><td>缺失值一律删掉最省事</td><td>缺得多就删,会丢大量数据。看情况:能填(平均/众数/前值)就填,不能填再删。</td></tr>
+          <tr><td>groupby 很玄</td><td>就是「拆开 → 各算 → 合并」三步,等于 Excel 透视表。想清楚「按什么分、每组算什么」就会写。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>手把手练习</span></h2>
+      <p>没有现成 CSV 也能练——先用字典造一张小表当数据。</p>
+      <ol class="steps">
+        <li><b>造表、体检。</b>用字典造一张含姓名、分数、城市的表,打印 <code>shape</code>、<code>info()</code>、<code>describe()</code>。<details><summary>提示</summary><p><code>pd.DataFrame({...})</code> 之后调三个方法。</p></details></li>
+        <li><b>选取。</b>取「分数」这一列;取「姓名」和「城市」两列;筛出分数大于等于 90 的行。<details><summary>提示</summary><p><code>df['分数']</code>、<code>df[['姓名','城市']]</code>、<code>df[df['分数']&gt;=90]</code>。</p></details></li>
+        <li><b>清洗。</b>把某个分数改成缺失(<code>None</code>),用 <code>isna().sum()</code> 数缺失,再用平均填补。<details><summary>提示</summary><p><code>df['分数'].fillna(df['分数'].mean())</code>。</p></details></li>
+        <li><b>分组。</b>按城市求平均分,并按平均分从高到低排。<details><summary>提示</summary><p><code>df.groupby('城市')['分数'].mean().sort_values(ascending=False)</code>。</p></details></li>
+        <li><b>存回。</b>把处理后的表存成 <code>result.csv</code>,不写行号。<details><summary>提示</summary><p><code>df.to_csv('result.csv', index=False)</code>。</p></details></li>
+      </ol>
+
+      <h2 id="answers"><span class="no">16</span><span>参考答案</span></h2>
+      <details><summary>练习 1 · 造表、体检</summary>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">df </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> pd.DataFrame({</span><span style="color:#557089">'姓名'</span><span style="color:#14181F">:[</span><span style="color:#557089">'阿岩'</span><span style="color:#14181F">,</span><span style="color:#557089">'小林'</span><span style="color:#14181F">,</span><span style="color:#557089">'阿彩'</span><span style="color:#14181F">],</span></span>
+<span class="line"><span style="color:#557089">                   '分数'</span><span style="color:#14181F">:[88,95,72], </span><span style="color:#557089">'城市'</span><span style="color:#14181F">:[</span><span style="color:#557089">'北京'</span><span style="color:#14181F">,</span><span style="color:#557089">'上海'</span><span style="color:#14181F">,</span><span style="color:#557089">'北京'</span><span style="color:#14181F">]})</span></span>
+<span class="line"><span style="color:#14181F">df.shape; df.info(); df.describe()</span></span></code></pre></details>
+      <details><summary>练习 2 · 选取</summary>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">]</span></span>
+<span class="line"><span style="color:#14181F">df[[</span><span style="color:#557089">'姓名'</span><span style="color:#14181F">,</span><span style="color:#557089">'城市'</span><span style="color:#14181F">]]</span></span>
+<span class="line"><span style="color:#14181F">df[df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">>=</span><span style="color:#14181F"> 90]</span></span></code></pre></details>
+      <details><summary>练习 3 · 清洗</summary>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">df.loc[0, </span><span style="color:#557089">'分数'</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> None</span></span>
+<span class="line"><span style="color:#14181F">df.isna().sum()</span></span>
+<span class="line"><span style="color:#14181F">df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">].fillna(df[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">].mean())</span></span></code></pre></details>
+      <details><summary>练习 4 · 分组</summary>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">df.groupby(</span><span style="color:#557089">'城市'</span><span style="color:#14181F">)[</span><span style="color:#557089">'分数'</span><span style="color:#14181F">].mean().sort_values(ascending</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">False)</span></span></code></pre></details>
+      <details><summary>练习 5 · 存回</summary>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">df.to_csv(</span><span style="color:#557089">'result.csv'</span><span style="color:#14181F">, index</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">False)</span></span></code></pre></details>
+
+      <h2 id="checklist"><span class="no">17</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上再进第 5 章(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清 DataFrame 和 Series 的关系,以及它比裸数组多了什么</li>
+          <li><input type="checkbox"> 我能用 <code>read_csv</code> 读文件,并用 <code>head/info/describe</code> 给表体检</li>
+          <li><input type="checkbox"> 我会选列 <code>df['列']</code>、选行 <code>loc/iloc</code>、条件筛选 <code>df[df['列']&gt;x]</code></li>
+          <li><input type="checkbox"> 我知道 <code>loc</code> 认标签、<code>iloc</code> 认位置的区别</li>
+          <li><input type="checkbox"> 我会找缺失值,并判断该填补还是丢弃</li>
+          <li><input type="checkbox"> 我理解 <code>dropna/fillna</code> 默认返回新表,要接住返回值</li>
+          <li><input type="checkbox"> 我能用 <code>groupby</code> 按某列分组算统计,说清「拆开→各算→合并」</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">18</span><span>本章与下一章的连接</span></h2>
+      <p>会读表、洗表、按类别汇总之后,数据就整理成了「能喂给模型」的样子。<a href="05-机器学习核心概念.html">第 5 章 机器学习核心概念</a>开始讲:一份整理好的表,怎么分成训练集和测试集、什么叫分类和回归、模型「学」的是什么。到那时会发现,前几章练的数组和表,正是模型的输入。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="03-NumPy数组与形状.html"><span class="lb">上一章</span><span class="tt">03 · NumPy</span></a>
+        <a href="05-机器学习核心概念.html" class="next"><span class="lb">下一章</span><span class="tt">05 · 机器学习核心</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">第 4 章 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="ds" href="#ds"><i>7</i>Series/DataFrame</a>
+        <a data-toc-target="io" href="#io"><i>8</i>读写数据</a>
+        <a data-toc-target="subset" href="#subset"><i>9</i>选取子集</a>
+        <a data-toc-target="clean" href="#clean"><i>10</i>清洗</a>
+        <a data-toc-target="groupby" href="#groupby"><i>11</i>分组统计</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>实战:读到汇总</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>手把手练习</a>
+        <a data-toc-target="answers" href="#answers"><i>16</i>参考答案</a>
+        <a data-toc-target="checklist" href="#checklist"><i>17</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>18</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="04" data-kind="chapter" data-title="Pandas:表格数据处理"></script>
+</body>
+</html>

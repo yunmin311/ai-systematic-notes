@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P5 · 个人知识库问答(RAG)</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg,.term .thead{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0;}
+.badge{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.04em;color:var(--ink-soft);border:1px solid var(--rule);border-radius:20px;padding:4px 12px;background:var(--surface);}
+.badge b{color:var(--acc);font-weight:700;}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.milestone{border-left:3px solid var(--acc);padding:2px 0 2px 15px;margin:18px 0 18px -18px;}
+.milestone .label{display:block;font-family:var(--sans);font-size:var(--fs-small);font-weight:600;color:var(--acc);margin:0 0 4px;}
+.milestone p{margin:4px 0;}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.term{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:#12151b;}
+.term .thead{display:flex;align-items:center;gap:8px;padding:7px 14px;background:#1b1f27;border-bottom:1px solid #2a2f3a;color:#8b95a8;}
+.term .dots{display:flex;gap:5px;}
+.term .dots i{width:9px;height:9px;border-radius:50%;display:block;background:#3a4150;}
+.term pre{margin:0;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;color:#d7dce5;}
+.term .u{color:#8fa7ff;} .term .a{color:#e6e9f0;} .term .c{color:#6b7688;} .term .p{color:#5fd39a;} .term .s{color:#e0b072;}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="P4-命令行AI助手.html">P4 命令行助手</a><span class="sep">—</span>
+      <a href="P5-个人知识库问答.html" class="current">P5 知识库问答</a><span class="sep">—</span>
+      <a href="P6-一个小Agent.html">P6 小 Agent</a>
+      <span class="spacer"></span>
+      <a href="#build" class="jump">开始搭建</a>
+      <a href="#run" class="jump">跑起来</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">项目 · Project P5</p>
+        <h1>个人知识库问答(RAG)</h1>
+        <p class="recap">P4 的助手只会用模型脑子里的知识,不知道<b>自己的资料</b>。这个项目给它接上一个"随身资料库":把一堆笔记(<code>.md</code>/<code>.txt</code>)做成能<b>基于文档、带出处回答</b>的问答机——这就是 <a href="../应用工程/A03-RAG检索增强生成.html">A03 的 RAG</a> 落地。我们<b>从零手写</b>整条链(切块 → 算向量 → 检索 → 拼接 → 生成),不用现成框架,好让人亲眼看清"语义检索"到底怎么工作。</p>
+        <div class="badges">
+          <span class="badge">难度 <b>入门+</b></span>
+          <span class="badge">语言 <b>Python</b></span>
+          <span class="badge">用时 <b>3~5 小时</b></span>
+          <span class="badge">前置 <b>A03 · P4</b></span>
+          <span class="badge">产出 <b>能问自己笔记的问答机</b></span>
+        </div>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">做完这个项目,会有 / 会做</p>
+        <ul>
+          <li>一个能回答"我自己文档里问题"的命令行问答机,还给出处</li>
+          <li>亲手写出一条完整 RAG 链,不再是黑箱调库</li>
+          <li>会把长文档切块、算 embedding、存成向量索引</li>
+          <li>会用余弦相似度做"语义检索",找出最相关的片段</li>
+          <li>会写"只依据资料回答、标出处、没有就说不知道"的提示词</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">这个项目用到哪些章</span>
+        <p>主力是 <a href="../应用工程/A03-RAG检索增强生成.html">A03</a>(RAG 全链路)、<a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>(Embedding=意思近则向量近);生成那步复用 <a href="P4-命令行AI助手.html">P4</a> 的调用与提示词骨架。做完它,把"检索"包成一个工具,就通向 P6 的 Agent。</p>
+      </div>
+
+      <!-- ===== 模块 A ===== -->
+      <h2 id="target"><span class="no">1</span><span>成品长什么样</span></h2>
+      <p>把笔记放进一个 <code>docs/</code> 文件夹,跑起来后就能这样问——它会<b>基于文档</b>回答,并标出答案来自哪一块:</p>
+      <div class="term">
+        <div class="thead"><span class="dots"><i></i><i></i><i></i></span><span>终端 · python rag.py</span></div>
+<pre><span class="p">已索引 docs/ 下 12 个片段。开始提问(exit 退出)</span>
+<span class="u">问 ›</span> <span class="a">我上次记的关于「上下文管理」的三种做法是什么?</span>
+<span class="u">答 ›</span> <span class="a">笔记里写了三种:①裁剪旧轮次 ②压缩成要点 ③检索回相关片段。</span>
+      <span class="s">[来源 1] A05-harness.md</span>  <span class="s">[来源 2] 学习心得.md</span>
+<span class="c"># ↑ 答案来自你的文档,还标了出处——可核对,不怕它编</span>
+<span class="u">问 ›</span> <span class="a">量子计算机怎么造?</span>
+<span class="u">答 ›</span> <span class="a">你的资料里没有相关内容,我无法回答。</span>
+<span class="c"># ↑ 资料里没有就老实说不知道,这正是 RAG 减少幻觉的关键</span></pre>
+      </div>
+      <p class="one-liner">RAG 分两半:<b>建库(一次性)</b>——把文档切块、每块算成向量、存起来;<b>问答(每次)</b>——把问题也算成向量,找最相近的几块,塞进提示词让模型照着答。这个项目就是把这两半各写一遍。</p>
+      <figure>
+        <svg viewBox="0 0 620 300" role="img" aria-label="RAG 两阶段:建库与问答">
+          <defs><marker id="m-p5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <text x="40" y="24" class="el-acc" font-weight="700">建库(一次性)</text>
+          <rect x="20" y="36" width="92" height="40" rx="6" class="box"/><text x="66" y="60" text-anchor="middle" class="el">docs/ 文档</text>
+          <line x1="112" y1="56" x2="146" y2="56" class="d-acc" marker-end="url(#m-p5)"/>
+          <rect x="150" y="36" width="80" height="40" rx="6" class="box"/><text x="190" y="60" text-anchor="middle" class="el">切块</text>
+          <line x1="230" y1="56" x2="264" y2="56" class="d-acc" marker-end="url(#m-p5)"/>
+          <rect x="268" y="36" width="110" height="40" rx="6" class="box"/><text x="323" y="60" text-anchor="middle" class="el">每块算向量</text>
+          <line x1="378" y1="56" x2="412" y2="56" class="d-acc" marker-end="url(#m-p5)"/>
+          <rect x="416" y="30" width="150" height="52" rx="8" class="box-acc"/><text x="491" y="52" text-anchor="middle" class="nl-acc">向量索引</text><text x="491" y="70" text-anchor="middle" class="el">块文字 + 向量</text>
+          <line x1="491" y1="120" x2="491" y2="86" class="d-soft" marker-end="url(#m-p5)"/>
+          <text x="40" y="150" class="el-acc" font-weight="700">问答(每次)</text>
+          <rect x="20" y="162" width="92" height="40" rx="6" class="box"/><text x="66" y="186" text-anchor="middle" class="el">问题</text>
+          <line x1="112" y1="182" x2="146" y2="182" class="d-acc" marker-end="url(#m-p5)"/>
+          <rect x="150" y="162" width="92" height="40" rx="6" class="box"/><text x="196" y="186" text-anchor="middle" class="el">问题算向量</text>
+          <line x1="242" y1="182" x2="276" y2="182" class="d-acc" marker-end="url(#m-p5)"/>
+          <rect x="280" y="156" width="128" height="52" rx="8" class="box-acc"/><text x="344" y="178" text-anchor="middle" class="nl-acc">检索 top-k</text><text x="344" y="196" text-anchor="middle" class="el">余弦相似度</text>
+          <line x1="408" y1="182" x2="442" y2="182" class="d-acc" marker-end="url(#m-p5)"/>
+          <rect x="446" y="162" width="120" height="40" rx="6" class="box"/><text x="506" y="182" text-anchor="middle" class="el">拼进提示词</text><text x="506" y="197" text-anchor="middle" class="el">资料+问题</text>
+          <line x1="491" y1="82" x2="420" y2="170" class="d-soft" marker-end="url(#m-p5)"/>
+          <line x1="506" y1="202" x2="506" y2="240" class="d-acc" marker-end="url(#m-p5)"/>
+          <rect x="360" y="242" width="206" height="40" rx="6" class="box"/><text x="463" y="262" text-anchor="middle" class="el">模型:据资料答 + 标出处</text><text x="463" y="277" text-anchor="middle" class="el">找不到就说不知道</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>两阶段:上排"建库"把文档变成向量索引(跑一次);下排"问答"每次把问题也变成向量、检索最相近的块、拼进提示词让模型据此作答。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 B ===== -->
+      <h2 id="prep"><span class="no">2</span><span>动手前的准备</span></h2>
+      <ol class="steps">
+        <li><b>接着 P4 的环境</b>:Python 3.9+、密钥已在环境变量(<a href="P4-命令行AI助手.html">见 P4 第 2 节</a>)。</li>
+        <li><b>装两个库</b>:调模型的 <code>openai</code> + 算向量距离的 <code>numpy</code>。我们故意不装 RAG 框架,自己写好看清机制:<br>
+          <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span></span></div><pre>pip install openai numpy</pre></div>
+        </li>
+        <li><b>准备资料</b>:新建一个 <code>docs/</code> 文件夹,丢几篇笔记进去(<code>.md</code> 或 <code>.txt</code> 都行)。哪怕先放两三篇也能跑。</li>
+      </ol>
+      <div class="callout warn"><span class="label">生产做法(A03)</span><p>这里用 numpy 手算相似度,是为了<b>看清原理</b>——文档几千块以内够快。真做产品会把向量存进专门的<b>向量数据库</b>、或直接用 LlamaIndex/LangChain(几行搞定),原理还是这一套。先懂再用框架,不亏。</p></div>
+
+      <!-- ===== 模块 C ===== -->
+      <p class="handoff" id="build">分四步,正好对着图 1 的两阶段:第 1–2 步建库,第 3–4 步问答。</p>
+
+      <h2 id="s1"><span class="no">3</span><span>第 1 步 · 读文档 + 切块</span></h2>
+      <p>先把 <code>docs/</code> 里每篇读进来,切成一小段一小段(A03 的切块)。切太大检索不准、切太小丢上下文,这里按字数切、块间留点重叠防止把一句话拦腰截断:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">rag.py · 建库(1/2)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> os, glob</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> chunk_text(text, size</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">500, overlap</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">80):</span></span>
+<span class="line"><span style="color:#557089">    """把一篇长文本切成若干块,块之间重叠 overlap 个字符。"""</span></span>
+<span class="line"><span style="color:#14181F">    chunks, i </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [], 0</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    while</span><span style="color:#14181F"> i </span><span style="color:#14181F;font-weight:bold">&#x3C;</span><span style="color:#14181F"> len(text):</span></span>
+<span class="line"><span style="color:#14181F">        chunks.append(text[i:i </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> size])</span></span>
+<span class="line"><span style="color:#14181F">        i </span><span style="color:#14181F;font-weight:bold">+=</span><span style="color:#14181F"> size </span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F"> overlap            </span><span style="color:#8B95A8;font-style:italic"># 下一块往前挪,留出重叠</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> chunks</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> load_chunks(folder</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"docs"</span><span style="color:#14181F">):</span></span>
+<span class="line"><span style="color:#557089">    """读 folder 下所有 .md/.txt,切块,记住每块来自哪个文件。"""</span></span>
+<span class="line"><span style="color:#14181F">    items </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> []</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    for</span><span style="color:#14181F"> path </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> glob.glob(os.path.join(folder, </span><span style="color:#557089">"*.md"</span><span style="color:#14181F">)) </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> glob.glob(os.path.join(folder, </span><span style="color:#557089">"*.txt"</span><span style="color:#14181F">)):</span></span>
+<span class="line"><span style="color:#14181F">        text </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> open(path, encoding</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"utf-8"</span><span style="color:#14181F">).read()</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        for</span><span style="color:#14181F"> c </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> chunk_text(text):</span></span>
+<span class="line"><span style="color:#14181F">            items.append({</span><span style="color:#557089">"text"</span><span style="color:#14181F">: c, </span><span style="color:#557089">"source"</span><span style="color:#14181F">: os.path.basename(path)})   </span><span style="color:#8B95A8;font-style:italic"># 记住出处</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> items</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">chunks </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> load_chunks()</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"读到 </span><span style="color:#557089">{</span><span style="color:#14181F">len(chunks)</span><span style="color:#557089">}</span><span style="color:#557089"> 个片段"</span><span style="color:#14181F">)</span></span></code></pre>
+      </div>
+      <p>每个片段存成一个字典:<code>text</code>(内容)+ <code>source</code>(哪个文件)。<code>source</code> 现在就记好,后面回答才能标出处。</p>
+      <div class="milestone"><span class="label">✓ 里程碑</span><p>运行后打印"读到 N 个片段",N 合理(比如 3 篇笔记切出十几块),第 1 步就成了。</p></div>
+
+      <h2 id="s2"><span class="no">4</span><span>第 2 步 · 算 embedding,建索引</span></h2>
+      <p>把每块文字送去算成一个<b>向量</b>(第 8 章:意思近的文字,向量也近)。存下来,索引就建好了:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">rag.py · 建库(2/2)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> numpy </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> np</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> openai </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> OpenAI</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">client </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> OpenAI(api_key</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">os.environ[</span><span style="color:#557089">"OPENAI_API_KEY"</span><span style="color:#14181F">])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> embed(texts):</span></span>
+<span class="line"><span style="color:#557089">    """把一批文字变成一批向量(一次调用批量算,省钱又快)。"""</span></span>
+<span class="line"><span style="color:#14181F">    resp </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> client.embeddings.create(model</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"text-embedding-3-small"</span><span style="color:#14181F">, input</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">texts)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> [np.array(d.embedding) </span><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> d </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> resp.data]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">vectors </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> embed([c[</span><span style="color:#557089">"text"</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> c </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> chunks])     </span><span style="color:#8B95A8;font-style:italic"># 批量算所有块的向量</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> c, v </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> zip(chunks, vectors):</span></span>
+<span class="line"><span style="color:#14181F">    c[</span><span style="color:#557089">"vec"</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> v                                  </span><span style="color:#8B95A8;font-style:italic"># 把向量挂回每个片段</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"索引建好了 ✓"</span><span style="color:#14181F">)</span></span></code></pre>
+      </div>
+      <p>关键是<b>批量</b>算:一次把所有块的文字传进去,比一块调一次省得多(A06 成本)。算完把向量 <code>vec</code> 挂回每个片段,索引就是内存里这个 <code>chunks</code> 列表——每项有 文字 + 出处 + 向量。</p>
+      <div class="milestone"><span class="label">✓ 里程碑</span><p>打印"索引建好了",且没报错,说明 embedding 调用通了。图 1 的上排(建库)完成。</p></div>
+
+      <h2 id="s3"><span class="no">5</span><span>第 3 步 · 检索:给问题找最相近的块</span></h2>
+      <p>问答阶段的核心。把问题也算成向量,用<b>余弦相似度</b>衡量它和每个块的"意思接近程度",取最高的几块(A03 的语义检索):</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">rag.py · 问答(1/2)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> cosine(a, b):</span></span>
+<span class="line"><span style="color:#557089">    """余弦相似度:两个向量方向越一致,值越接近 1(意思越近)。"""</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> np.dot(a, b) </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> (np.linalg.norm(a) </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> np.linalg.norm(b))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> retrieve(question, k</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">3):</span></span>
+<span class="line"><span style="color:#14181F">    q_vec </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> embed([question])[0]                          </span><span style="color:#8B95A8;font-style:italic"># 问题也算成向量</span></span>
+<span class="line"><span style="color:#14181F">    scored </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [(cosine(q_vec, c[</span><span style="color:#557089">"vec"</span><span style="color:#14181F">]), c) </span><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> c </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> chunks]</span></span>
+<span class="line"><span style="color:#14181F">    scored.sort(key</span><span style="color:#14181F;font-weight:bold">=lambda</span><span style="color:#14181F"> x: x[0], reverse</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)         </span><span style="color:#8B95A8;font-style:italic"># 按相似度从高到低排</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> [c </span><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> score, c </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> scored[:k]]                 </span><span style="color:#8B95A8;font-style:italic"># 取最相近的 k 块</span></span></code></pre>
+      </div>
+      <p>就这么朴素:算问题向量、跟每块比一下、排序、取前 <code>k</code>。这一步准不准,几乎决定整个 RAG 的成败(A03 说的"命门")。想看它到底找了啥,把 <code>scored[:k]</code> 的分数打印出来一眼就明白。</p>
+      <div class="milestone"><span class="label">✓ 里程碑</span><p>随便传一个问题给 <code>retrieve()</code>,打印返回块的 <code>source</code> 和前几十字——命中的块确实和问题相关,检索就成了。</p></div>
+
+      <h2 id="s4"><span class="no">6</span><span>第 4 步 · 拼上下文 + 生成 + 出处</span></h2>
+      <p>最后一步:把检索到的块拼进提示词,明确要求模型<b>只依据资料回答、标出处、找不到就说不知道</b>(A03 收口 + A01 提示词),再套上 P4 的对话循环:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">rag.py · 问答(2/2)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> answer(question):</span></span>
+<span class="line"><span style="color:#14181F">    top </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> retrieve(question, k</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">3)</span></span>
+<span class="line"><span style="color:#14181F">    context </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089"> "\n\n"</span><span style="color:#14181F">.join(</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        f</span><span style="color:#557089">"[来源:</span><span style="color:#557089">{</span><span style="color:#14181F">c[</span><span style="color:#557089">'source'</span><span style="color:#14181F">]</span><span style="color:#557089">}</span><span style="color:#557089">] </span><span style="color:#557089">{</span><span style="color:#14181F">c[</span><span style="color:#557089">'text'</span><span style="color:#14181F">]</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F;font-weight:bold"> for</span><span style="color:#14181F"> c </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> top    </span><span style="color:#8B95A8;font-style:italic"># 每块带上出处</span></span>
+<span class="line"><span style="color:#14181F">    )</span></span>
+<span class="line"><span style="color:#14181F">    prompt </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> (</span></span>
+<span class="line"><span style="color:#557089">        "只根据下面的资料回答问题,并在末尾用 [来源:文件名] 标注依据。\n"</span></span>
+<span class="line"><span style="color:#557089">        "如果资料里没有相关内容,就直说「你的资料里没有相关内容」,不要编。\n\n"</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        f</span><span style="color:#557089">"资料:</span><span style="color:#557089">\n{</span><span style="color:#14181F">context</span><span style="color:#557089">}\n\n</span><span style="color:#557089">问题:</span><span style="color:#557089">{</span><span style="color:#14181F">question</span><span style="color:#557089">}</span><span style="color:#557089">"</span></span>
+<span class="line"><span style="color:#14181F">    )</span></span>
+<span class="line"><span style="color:#14181F">    resp </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> client.chat.completions.create(</span></span>
+<span class="line"><span style="color:#14181F">        model</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"gpt-4o-mini"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#14181F">        messages</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">[{</span><span style="color:#557089">"role"</span><span style="color:#14181F">: </span><span style="color:#557089">"user"</span><span style="color:#14181F">, </span><span style="color:#557089">"content"</span><span style="color:#14181F">: prompt}],</span></span>
+<span class="line"><span style="color:#14181F">    )</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> resp.choices[0].message.content</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"已索引 docs/ 下 </span><span style="color:#557089">{</span><span style="color:#14181F">len(chunks)</span><span style="color:#557089">}</span><span style="color:#557089"> 个片段。开始提问(exit 退出)"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">while</span><span style="color:#14181F"> True:                                    </span><span style="color:#8B95A8;font-style:italic"># 复用 P4 的对话循环</span></span>
+<span class="line"><span style="color:#14181F">    q </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> input(</span><span style="color:#557089">"问 › "</span><span style="color:#14181F">).strip()</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F"> q </span><span style="color:#14181F;font-weight:bold">==</span><span style="color:#557089"> "exit"</span><span style="color:#14181F">: </span><span style="color:#14181F;font-weight:bold">break</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    try</span><span style="color:#14181F">:</span></span>
+<span class="line"><span style="color:#14181F">        print(</span><span style="color:#557089">"答 ›"</span><span style="color:#14181F">, answer(q))</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    except</span><span style="color:#14181F"> Exception </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> e:</span></span>
+<span class="line"><span style="color:#14181F">        print(</span><span style="color:#557089">"[出错了,再试一次]"</span><span style="color:#14181F">, e)</span></span></code></pre>
+      </div>
+      <p>提示词里那两句约束是 RAG 减少幻觉的关键:<b>只依据资料 + 没有就说不知道 + 标出处</b>。少了它,模型会拿资料当引子、继续自由发挥,出处也无从核对。到这,图 1 下排(问答)就通了。</p>
+      <div class="milestone"><span class="label">✓ 里程碑 · 完成</span><p>问一个笔记里<b>有</b>的问题,它据实回答并标来源;问一个笔记里<b>没有</b>的,它说"资料里没有"。两种都对,整个 RAG 就跑通了——就是本章开头那段效果。</p></div>
+
+      <!-- ===== 模块 D ===== -->
+      <h2 id="run"><span class="no">7</span><span>跑起来</span></h2>
+      <p>把四步的代码按顺序放进一个 <code>rag.py</code>(建库两段在前、问答两段在后),放好 <code>docs/</code>,然后:</p>
+      <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span></span></div><pre>python rag.py</pre></div>
+      <p>第一次启动会花几秒算所有块的向量(建库),之后每次提问都很快。就有了一个"能回答自己笔记"的问答机——把 <code>docs/</code> 换成任何资料(产品手册、课程讲义、会议记录),它立刻就懂那些内容。</p>
+
+      <h2 id="pitfalls"><span class="no">8</span><span>常见坑</span></h2>
+      <table class="tbl">
+        <caption>表 1 · 排错速查</caption>
+        <thead><tr><th>症状</th><th>多半是</th><th>怎么办</th></tr></thead>
+        <tbody>
+          <tr><td>答案总跑偏、答非所问</td><td>检索没找对块(A03 命门)</td><td>打印命中块看看;调 <code>size</code>/<code>overlap</code>/<code>k</code>;笔记加清晰小标题</td></tr>
+          <tr><td>明明资料里有却说"没有"</td><td>块切太碎、关键信息被切散</td><td>调大 <code>size</code> 或加大 <code>k</code>,让相关内容进得来</td></tr>
+          <tr><td>它无视资料、自由发挥</td><td>提示词约束不够硬</td><td>强化"只依据资料""没有就说不知道"</td></tr>
+          <tr><td>启动很慢</td><td>文档太多、每次重算向量</td><td>见扩展①:把索引存盘,别每次重算</td></tr>
+          <tr><td>读文件报编码错</td><td>笔记不是 UTF-8</td><td><code>open(..., encoding="utf-8", errors="ignore")</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="extend"><span class="no">9</span><span>进阶扩展</span></h2>
+      <div class="challenge">
+        <span class="label">再往上加(选做)</span>
+        <h3>从玩具到好用</h3>
+        <p>①<b>索引存盘</b>:把 <code>chunks</code>(含向量)用 <code>numpy.save</code>/<code>pickle</code> 存下来,启动直接读,不用每次重算。②<b>显示相似度分数</b>:回答时把命中块的分数打出来,直观感受"检索准不准"。③<b>换成真向量库</b>:文档上万时,把 numpy 检索换成 Chroma/FAISS,快很多。④<b>加重排</b>(A03):先粗召回 10 块,再让模型从中挑最相关的 3 块喂进去。⑤<b>接回 P4</b>:把它做成流式输出的多轮对话版。</p>
+      </div>
+
+      <h2 id="learned"><span class="no">10</span><span>到底学到了什么</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 概念 → 代码</caption>
+        <thead><tr><th>A03 的概念</th><th>在这个项目里变成了</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td>切块 chunking</td><td><code>chunk_text()</code>(按字数切 + 重叠)</td></tr>
+          <tr class="sel"><td>Embedding(第 8 章)</td><td><code>embed()</code> → 每块一个向量</td></tr>
+          <tr class="sel"><td>向量检索 / 语义搜索</td><td><code>cosine()</code> + 排序取 top-k</td></tr>
+          <tr class="sel"><td>拼接 + 生成 + 出处</td><td><code>answer()</code> 的提示词(只依据资料/标来源)</td></tr>
+          <tr class="sel"><td>减少幻觉</td><td>"没有就说不知道" + 可核对的出处</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="reflist"><span class="no">11</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本项目页只给搭建的骨架;真正的参数细节在下面这些一手文档里。每条注明:是什么、为什么选它、精确看哪段、对应哪一步。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;均于 2026-08-16 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://platform.openai.com/docs/guides/embeddings" target="_blank" rel="noopener">OpenAI · Embeddings 指南</a></span><span class="spine">本项目主文档</span><span class="tags">官方 · 当字典查 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">怎么把文本变成向量(embedding)的一手文档。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">这项目从零手写 RAG,第一步就是把笔记切块 + 向量化;确切写法在这。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">如何取 embedding + 向量维度那段。</span></div>
+          <div class="rrow"><span class="rk">对应步骤</span><span class="rv">配"切块 / 向量化"步。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://docs.llamaindex.ai/" target="_blank" rel="noopener">LlamaIndex 文档</a></span><span class="tags">框架 · 参考 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">成熟的 RAG 框架(<a href="../应用工程/A03-RAG检索增强生成.html">A03</a> 主线)。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">这项目故意手写以看清机制;看清后想少写代码,用它把同样的事做稳。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Starter Tutorial。</span></div>
+          <div class="rrow"><span class="rk">对应步骤</span><span class="rv">选做:把手写版换成框架版。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://arxiv.org/abs/2407.01219" target="_blank" rel="noopener">RAG 最佳实践(论文)</a></span><span class="tags">论文·桥 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">对比 RAG 各环节怎么设更好的实证论文。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">问答不准时,来查"切块多大、要不要重排"的有据结论。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">各环节对比表,看结论即可。</span></div>
+          <div class="rrow"><span class="rk">对应步骤</span><span class="rv">配"调检索质量"这一步。</span></div>
+        </div>
+      </div>
+
+      <h2 id="checklist"><span class="no">12</span><span>完成自查</span></h2>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我的问答机能基于 docs/ 里的文档回答,并标出处</li>
+          <li><input type="checkbox"> 问资料里没有的问题,它会说"没有",不硬编</li>
+          <li><input type="checkbox"> 我能讲清"建库"和"问答"两个阶段各做什么</li>
+          <li><input type="checkbox"> 我理解余弦相似度是在比"意思接近程度"</li>
+          <li><input type="checkbox"> 我知道检索不准时先去调切块/k/提示词</li>
+          <li><input type="checkbox"> 我能把 A03 五个概念和代码对上号(表 2)</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">13</span><span>下一个项目</span></h2>
+      <p>现在会"让模型调一个能力"了——刚写的 <code>retrieve()</code> 其实就是一个"查资料工具"。下一个项目 <a href="P6-一个小Agent.html">P6 · 一个小 Agent</a>更进一步:给模型<b>好几个工具</b>(检索、算数、查时间……),让它<b>自己在循环里决定该调哪个</b>、看结果再决定下一步(<a href="../应用工程/A04-Agent基础.html">A04</a> 的 ReAct 循环)。这个 RAG 就会变成它手里的一件工具。</p>
+      <nav class="chapter-nav" aria-label="项目导航">
+        <a href="P4-命令行AI助手.html"><span class="lb">上一个项目</span><span class="tt">P4 · 命令行 AI 助手</span></a>
+        <a href="P6-一个小Agent.html" class="next"><span class="lb">下一个项目</span><span class="tt">P6 · 一个小 Agent</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本项目目录">
+      <p class="toc-label">P5 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">看清目标</span>
+        <a data-toc-target="target" href="#target"><i>1</i>成品长什么样</a>
+        <a data-toc-target="prep" href="#prep"><i>2</i>动手前的准备</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">分步搭建</span>
+        <a data-toc-target="s1" href="#s1"><i>3</i>读文档+切块</a>
+        <a data-toc-target="s2" href="#s2"><i>4</i>算 embedding</a>
+        <a data-toc-target="s3" href="#s3"><i>5</i>检索</a>
+        <a data-toc-target="s4" href="#s4"><i>6</i>拼接+生成+出处</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾 · 消化</span>
+        <a data-toc-target="run" href="#run"><i>7</i>跑起来</a>
+        <a data-toc-target="pitfalls" href="#pitfalls"><i>8</i>常见坑</a>
+        <a data-toc-target="extend" href="#extend"><i>9</i>进阶扩展</a>
+        <a data-toc-target="learned" href="#learned"><i>10</i>学到了什么</a>
+        <a data-toc-target="reflist" href="#reflist"><i>11</i>外部资源</a>
+        <a data-toc-target="checklist" href="#checklist"><i>12</i>完成自查</a>
+        <a data-toc-target="next" href="#next"><i>13</i>下一个项目</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="P5" data-kind="project" data-title="个人知识库问答(RAG)"></script>
+</body>
+</html>

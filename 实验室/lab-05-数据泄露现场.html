@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-05 · 数据泄露现场:分数是怎么被喂高的</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="lab-04-过拟合现场.html">lab-04</a><span class="sep">—</span>
+      <a href="lab-05-数据泄露现场.html" class="current">lab-05 数据泄露现场</a>
+      <span class="sep">—</span><a href="lab-06-五步循环.html">lab-06</a>
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-05 · 配套 D06 特征工程与数据预处理</p>
+        <h1>数据泄露现场:分数是怎么被喂高的</h1>
+        <p class="recap">这个实验用一份<b>纯随机、毫无规律</b>的数据训练模型。诚实地做,分数应该在 50% 上下(等于抛硬币);把一步顺序搞错,分数能冲到 70% 以上——<b>从一堆噪声里「学」出了规律</b>。这就是数据泄露的样子:它不报错,只让分数变好看。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>在完全没有规律的数据上,泄露能把分数抬高多少</li>
+          <li>为什么这个差是「泄露」而不是「运气」</li>
+          <li><code>Pipeline</code> 到底把什么东西锁住了</li>
+          <li>一条能自己检查的判据:预处理的统计量是从哪来的</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../深度课程/D06-特征工程与数据预处理.html">D06</a> 第 12 节的流水线,以及 <a href="../深度课程/D05-评价指标与验证深挖.html">D05</a> 的交叉验证。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p><b>方式 A · 页面内运行器</b>:每段代码旁边有「▶ 运行」,用的是 Pyodide——一个跑在浏览器里的<b>真实 Python</b>,不是模拟输出。首次点击要下载运行时,约 10–20 秒,需要联网。用到第三方库时会自动装包,第一次会再多等一会儿。</p>
+      <p><b>方式 B · 本机终端</b>:代码同时放在 <code>实验室\code\lab05\</code> 下,可以直接 <code>python step1_leak.py</code>。本机跑得更快,而且能改文件、能存结果。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>看清泄露的本质:<b>验证集的信息,通过预处理的统计量,提前流进了训练过程</b>。它不会报错,只会让分数变好看。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>错误写法:先挑特征,再交叉验证</span></h2>
+      <p>数据是<b>纯随机</b>的:特征和标签之间毫无关系。诚实的分数应该在 0.5 附近。先按最常见的写法来——用全部数据挑出「最相关」的 20 个特征,然后交叉验证。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_leak.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="19">import numpy as np
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
+
+rng = np.random.default_rng(0)
+X = rng.normal(size=(120, 3000))          # 3000 个纯噪声特征
+y = rng.integers(0, 2, size=120)          # 标签也是随机的
+print("数据里没有任何规律:特征和标签互相独立")
+print("所以诚实的分数应该在 0.5 上下(等于抛硬币)\n")
+
+# ★ 错误:用全部 120 个样本挑出「最相关」的 20 个特征
+X_sel = SelectKBest(f_classif, k=20).fit_transform(X, y)
+bad = cross_val_score(LogisticRegression(max_iter=2000), X_sel, y, cv=5)
+
+print("先挑特征再交叉验证(错误写法)")
+print("  每折:", np.round(bad, 3))
+print("  均值:", round(bad.mean(), 3), " ← 从纯噪声里「学」出来的")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>数据里没有任何规律:特征和标签互相独立
+所以诚实的分数应该在 0.5 上下(等于抛硬币)
+
+先挑特征再交叉验证(错误写法)
+  每折: [0.917 0.833 0.792 0.917 0.875]
+  均值: 0.867  ← 从纯噪声里「学」出来的</div>
+      <p>3000 个纯噪声特征里,总有几个碰巧和标签对得上。<b>用全部数据去挑,挑中的正是那些「在这 120 个样本上碰巧相关」的</b>——包括后面要当验证集的那部分。于是验证时,模型早就见过答案的影子了。这份数据里<b>根本没有规律可学</b>,分数却明显高于 0.5,差出来的全是泄露。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>正确写法:把挑特征关进流水线</span></h2>
+      <p>同样的数据、同样的模型、同样挑 20 个特征。唯一的差别:<b>挑特征这一步,只在每一折的训练部分上做</b>。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_pipeline.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="22">import numpy as np
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import cross_val_score
+
+rng = np.random.default_rng(0)
+X = rng.normal(size=(120, 3000))
+y = rng.integers(0, 2, size=120)
+
+# 错误写法(对照用):划分前就挑好了特征
+X_sel = SelectKBest(f_classif, k=20).fit_transform(X, y)
+bad = cross_val_score(LogisticRegression(max_iter=2000), X_sel, y, cv=5)
+
+# ★ 正确:挑特征进流水线,每一折只看该折的训练部分
+pipe = make_pipeline(SelectKBest(f_classif, k=20),
+                     LogisticRegression(max_iter=2000))
+good = cross_val_score(pipe, X, y, cv=5)
+
+print("错误写法均值:", round(bad.mean(), 3))
+print("正确写法均值:", round(good.mean(), 3), " ← 回到抛硬币水平,诚实")
+print("虚高了:      ", round(bad.mean() - good.mean(), 3))
+print()
+print("正确写法每折:", np.round(good, 3))</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>错误写法均值: 0.867
+正确写法均值: 0.4  ← 回到抛硬币水平,诚实
+虚高了:       0.467
+
+正确写法每折: [0.333 0.375 0.417 0.417 0.458]
+
+(0.4 而不是正好 0.5,是 120 个样本 5 折的正常波动;
+ 关键是它已经掉回「学不到东西」的水平,而不是 0.867)</div>
+      <p>两段代码的差别只有「挑特征在哪一步做」。<b>流水线不是为了代码好看,它是一道机制</b>:<code>fit</code> 时只看训练部分,<code>transform</code> 时把训练部分学到的东西原样套到验证部分。这样即使写代码的人忘了这条规矩,也犯不了错——这正是 <a href="../AI使用/U03-指令为什么不生效.html">U03</a> 说的「把规则升到机制层」。</p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 把 <code>3000</code> 个特征改成 30 个,再跑一次。虚高的幅度变小了吗?为什么特征越多泄露越严重?<br><b>②</b> 把 <code>k=20</code> 改成 <code>k=200</code>,虚高会更大还是更小?先猜再跑。<br><b>③</b> 把 <code>cv=5</code> 改成 <code>cv=10</code>,虚高的幅度怎么变?</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>两个分数一模一样</td><td>特征太少或样本太多,泄露被稀释了</td><td>这正是第 1 个改一改要看的现象;把特征数调大</td></tr>
+            <tr><td><code>ConvergenceWarning</code></td><td>高维数据迭代慢</td><td>已设 <code>max_iter=2000</code>;不影响结论</td></tr>
+            <tr><td>浏览器里跑很久</td><td>3000 维 × 5 折</td><td>耐心等或改用本机;本机约一两秒</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">到这里,经典机器学习那条线的坑基本踩全了。下一个实验换赛道:把手写的训练循环换成 PyTorch 的五步,那是深度学习所有代码的骨架。</p>
+
+      <nav class="chapter-nav">
+        <a href="lab-04-过拟合现场.html"><span class="lb">上一个</span><span class="tt">lab-04 过拟合现场</span></a>
+        <a href="lab-06-五步循环.html" class="next"><span class="lb">下一个</span><span class="tt">lab-06 五步循环</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-05 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>错误写法</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>正确写法</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-05" data-kind="lab" data-title="数据泄露现场:分数是怎么被喂高的"></script>
+</body>
+</html>

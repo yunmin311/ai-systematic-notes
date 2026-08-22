@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D17 · 推理、量化与部署成本</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="D16-预训练微调与RLHF.html">D16 预训练与 RLHF</a><span class="sep">—</span>
+      <a href="D17-推理量化与部署成本.html" class="current">D17 推理与成本</a><span class="sep">—</span>
+      <span class="plan">Track C 收官 · 全课程终章</span>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D17.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track C · Chapter D17 · 全课程收官</p>
+        <h1>推理、量化与部署成本</h1>
+        <p class="recap">模型造好了(<a href="D15-Transformer完整结构.html">D15</a>)、训好了也调听话了(<a href="D16-预训练微调与RLHF.html">D16</a>)。最后一个问题最现实:<b>它跑起来要花多少钱、能有多快、能不能塞进一张普通显卡。</b>这一章讲推理侧的四件事:自回归生成为什么一个词一个词往外蹦、<b>KV cache</b> 怎么把重复计算省掉、<b>量化</b>怎么把模型压小几倍还能用、以及怎么<b>估一次调用的真实成本</b>。学完它,从 <a href="D12-Tokenizer与词表.html">D12</a> 的一个 Token 到最后账单上的一个数字,整条链路就全通了。</p>
+      </header>
+
+      <p>图解骨架约 30 分钟,精读 + 算账约 3~4 小时。这一章最实用:<b>它把前面所有技术细节,换算成了钱、延迟和显存这三个能直接决策的量。</b></p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>自回归生成——一次只出一个 Token,再把它接回输入重来一遍</li>
+          <li>预填充 vs 解码——两个阶段的瓶颈完全不同(算力 vs 显存带宽)</li>
+          <li>KV cache——把已算过的 K/V 存起来,是长对话能跑得动的关键</li>
+          <li>量化——把权重从 16 位压到 8/4 位,显存和成本大降、质量略损</li>
+          <li>算一笔账——Token 数 × 单价、上下文窗口的代价、自建 vs API</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>Token 计价续 <a href="D12-Tokenizer与词表.html">D12</a>;n² 代价与掩码续 <a href="D14-注意力机制逐步手算.html">D14</a>;参数量估算续 <a href="D15-Transformer完整结构.html">D15</a>。<b>通向后面:</b>本章的成本与延迟直接接上 <a href="../应用工程/A07-工程化与部署.html">A07 工程化与部署</a>(缓存/限流/监控)和 <a href="../应用工程/A06-评估幻觉安全成本.html">A06 的成本控制</a>——技术到这里闭环成产品决策。</p>
+      </div>
+
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>要为一个 AI 功能估成本、给出报价或预算的人。</li>
+        <li>纠结"用 API 还是自己部署开源模型"的人(第 11 节有判据)。</li>
+        <li>想知道"为什么模型是一个字一个字蹦出来的"的人。</li>
+      </ul>
+      <p><b>不适合</b>:只关心模型内部原理、不碰落地的人——那 D12–D16 已经够了。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>需要:<a href="D12-Tokenizer与词表.html">D12</a>(Token)、<a href="D14-注意力机制逐步手算.html">D14</a>(注意力与 n² 代价)、<a href="D15-Transformer完整结构.html">D15</a>(层数/维度/参数量)。数学只有乘除法。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清自回归生成的循环,以及它为什么无法并行。</li>
+        <li>区分预填充和解码两个阶段、各自卡在哪。</li>
+        <li>解释 KV cache 省了什么、代价是什么。</li>
+        <li>说清量化是什么、4-bit 大概能省多少。</li>
+        <li>估算一次调用的 Token 成本,并判断自建还是用 API。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">推理的全部特点都源于一件事:<b>模型一次只能产出一个 Token,然后必须把它接回输入、再跑一遍整个网络。</b>于是——生成必然是逐字的、无法并行;每多生成一个词就要重算一次;而"重算"里绝大部分是重复劳动,<b>KV cache</b> 就是来消掉这部分重复的;显存不够就用<b>量化</b>把模型压小。费用与延迟,都从这个循环里长出来。</p>
+      <p>把它和训练对照就清楚了:<b>训练</b>时整段文本是已知的,可以一次并行算完所有位置(<a href="D14-注意力机制逐步手算.html">D14</a> 的掩码保证不作弊);<b>推理</b>时后文还不存在,只能"生成一个 → 拼回去 → 再生成一个"。这就是为什么训练能把 GPU 喂满、而推理常常喂不满:<b>解码阶段每一步的计算量都很小,却要把几十 GB 的模型权重从显存里完整读一遍</b>——瓶颈不在算力,在<b>显存带宽</b>。理解这一点,就能解释很多现象:为什么并发批处理能大幅提高吞吐(多个请求共用一次权重读取)、为什么输出长的请求比输入长的贵得多、为什么量化(权重变小=要读的字节变少)能直接让生成变快。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="推理与成本五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="640" y1="168" x2="480" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="540" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="220" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="120" y1="168" x2="280" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">跑起来要多少钱、</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">多快、多大显存</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 自回归生成</text>
+          <rect x="596" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="674" y="150" text-anchor="middle" class="nl">② 预填充 vs 解码</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="box-acc"/>
+          <text x="534" y="358" text-anchor="middle" class="nl-acc">③ KV cache</text>
+          <rect x="146" y="330" width="174" height="46" rx="8" class="d-ink nf"/>
+          <text x="233" y="358" text-anchor="middle" class="nl">④ 量化</text>
+          <rect x="8" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="86" y="150" text-anchor="middle" class="nl">⑤ 算一笔账</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。①②是推理的基本节奏,③④是让它跑得动跑得快的两大手段,⑤把这一切换算成钱。</figcaption>
+      </figure>
+
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <div class="callout go">
+        <span class="label">默认主线 · 看原理 + 查价目表 · 约 2–3 小时</span>
+        <p><b>Hugging Face《LLM Inference》概念文 + 各家 API 的定价页。</b>做法:先读 HF 那篇把预填充/解码、KV cache 的机制吃透,再打开任一家的定价页,按第 11 节的算法给自己的真实用例算一次账。链接:<a href="https://huggingface.co/docs/text-generation-inference/conceptual/streaming" target="_blank" rel="noopener">HF · TGI 概念文档</a>、<a href="https://platform.openai.com/docs/pricing" target="_blank" rel="noopener">OpenAI 定价</a>、<a href="https://www.anthropic.com/pricing" target="_blank" rel="noopener">Anthropic 定价</a>。</p>
+      </div>
+      <table class="tbl">
+        <caption>表 1 · 本章骨架 ↔ 主线对应</caption>
+        <thead><tr><th>本章骨架</th><th>主线精读 / 动手</th></tr></thead>
+        <tbody>
+          <tr><td>第 7–8 节 · 自回归 / 两阶段</td><td>HF 概念文的 prefill &amp; decode 段</td></tr>
+          <tr><td>第 9 节 · KV cache</td><td>HF 文档的 KV caching 段</td></tr>
+          <tr><td>第 10 节 · 量化</td><td>HF Quantization 概念页(int8 / 4-bit)</td></tr>
+          <tr><td>第 11 节 · 算账</td><td>打开定价页,按自己的用例算一次</td></tr>
+        </tbody>
+      </table>
+
+      <p class="handoff">先看清推理的基本节奏。</p>
+      <h2 id="autoreg"><span class="no">7</span><span>自回归生成:一次一个词</span></h2>
+      <p class="one-liner"><b>自回归(autoregressive)</b>:模型每跑一遍网络,只产出<b>一个</b>新 Token;把它拼到输入末尾,再跑一遍,产出下一个……直到遇到结束标记或达到上限。<a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>那个"文字一个个往外蹦"的循环,就是这件事。</p>
+      <p>三个直接后果值得记住:<b>①输出无法并行</b>——第 2 个词必须等第 1 个词生成完(因为它要作为输入),所以<b>回答越长,耗时越线性增长</b>;而输入(提示词)可以一次性并行处理,这是下一节两阶段的由来。<b>②同一个问题每次答得不一样</b>——每步是从概率表里"抽"一个词(<a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>),温度等参数控制抽得多随机。<b>③错误会累积</b>——一旦某步抽到一个不太好的词,它会成为后续所有步的输入前提,模型只能顺着往下编,这也是幻觉容易"一路编到底"的机制原因(<a href="../应用工程/A06-评估幻觉安全成本.html">A06</a>)。</p>
+
+      <p class="handoff">这个循环其实分成性质完全不同的两段。</p>
+      <h2 id="phase"><span class="no">8</span><span>预填充 vs 解码:两个阶段,两种瓶颈</span></h2>
+      <p class="one-liner"><b>预填充(prefill)</b>:把整段提示词一次性喂进去算完(所有位置可并行)——<b>吃算力</b>,但一次搞定。<b>解码(decode)</b>:之后每生成一个词跑一遍网络——每次计算量很小,却要把整个模型权重读一遍,<b>吃显存带宽</b>。这解释了几乎所有关于速度和价格的现象。</p>
+      <p>对照着看很清楚:<b>预填充</b>阶段有几百上千个位置同时算,GPU 能被喂满,所以"读完长提示词"通常很快(它还决定了看到的<b>首字延迟</b>);<b>解码</b>阶段每步只算一个位置,几十 GB 权重却仍要完整读一遍,GPU 算力大量闲置——<b>瓶颈是把权重从显存搬出来的速度</b>。由此推出三条实用结论:<b>①输出 Token 通常比输入 Token 贵</b>(各家定价表上,输出单价常是输入的 3~5 倍),因为输出是逐个"跑全网络"跑出来的;<b>②批处理能大幅提高吞吐</b>——多个请求拼一起,权重只读一次却服务了多个用户,这是服务商成本优化的主力;<b>③让模型少说废话就是省钱</b>,这比压缩提示词更有效(<a href="../应用工程/A06-评估幻觉安全成本.html">A06 成本控制</a>)。</p>
+
+      <p class="handoff">解码阶段有大量重复劳动——KV cache 就是来消掉它的。</p>
+      <h2 id="kv"><span class="no">9</span><span>KV cache:别把算过的再算一遍</span></h2>
+      <p class="one-liner">生成第 t 个词时,注意力需要前面所有词的 K 和 V(<a href="D14-注意力机制逐步手算.html">D14</a>)。但这些 K/V 在前几步<b>早就算过了</b>,而且不会变。<b>KV cache</b> 就是把它们缓存下来:每步只算<b>新词</b>的 K/V 并追加进缓存,其余直接复用——把每步的计算从"重算整段"降到"只算一个"。</p>
+      <p>没有它,生成第 100 个词就要把前 99 个词的 K/V 全部重算一遍,总计算量随长度平方增长,长对话根本跑不动。<b>代价是显存</b>:缓存要一直存着,大小 ≈ <code>2(K和V) × 层数 × 上下文长度 × 隐藏维度 × 精度字节数 × 并发数</code>——对一个 32 层、4096 维的模型,单个长上下文请求的 KV cache 就能吃掉好几 GB。这就带出两个早就见过的现象的真正原因:<b>①上下文窗口为什么有上限</b>——不只是 <a href="D14-注意力机制逐步手算.html">D14</a> 的 n² 计算,更是 KV cache 的显存线性膨胀;<b>②为什么长对话越聊越慢、越贵</b>——每一轮都要带着越来越长的历史。业界的应对包括分页管理缓存(PagedAttention/vLLM)、多个查询头共享 K/V(GQA)等,目标都是同一个:<b>把 KV cache 压下去。</b></p>
+      <figure>
+        <svg viewBox="0 0 700 240" role="img" aria-label="有无 KV cache 的对比">
+          <defs><marker id="m-kv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#14181f"/></marker></defs>
+          <text x="180" y="28" text-anchor="middle" class="el">没有 KV cache:每步重算整段</text>
+          <g>
+            <rect x="40" y="44" width="34" height="26" rx="4" class="box"/><rect x="78" y="44" width="34" height="26" rx="4" class="box"/>
+            <text x="130" y="62" class="el">第 1 步</text>
+            <rect x="40" y="76" width="34" height="26" rx="4" class="box"/><rect x="78" y="76" width="34" height="26" rx="4" class="box"/><rect x="116" y="76" width="34" height="26" rx="4" class="box"/>
+            <text x="168" y="94" class="el">第 2 步(前面又算一遍)</text>
+            <rect x="40" y="108" width="34" height="26" rx="4" class="box"/><rect x="78" y="108" width="34" height="26" rx="4" class="box"/><rect x="116" y="108" width="34" height="26" rx="4" class="box"/><rect x="154" y="108" width="34" height="26" rx="4" class="box"/>
+            <text x="206" y="126" class="el">第 3 步(再算一遍)</text>
+          </g>
+          <text x="180" y="164" text-anchor="middle" class="el">计算量随长度平方增长 → 长对话跑不动</text>
+          <line x1="360" y1="100" x2="392" y2="100" class="d-ink" marker-end="url(#m-kv)"/>
+          <text x="540" y="28" text-anchor="middle" class="el-acc">有 KV cache:只算新的那个</text>
+          <g>
+            <rect x="410" y="44" width="34" height="26" rx="4" class="box-acc"/><rect x="448" y="44" width="34" height="26" rx="4" class="box-acc"/>
+            <text x="500" y="62" class="el-acc">已算过 → 存进缓存</text>
+            <rect x="410" y="76" width="34" height="26" rx="4" class="frozen" fill="#eef1f8" stroke="#8b95a8"/><rect x="448" y="76" width="34" height="26" rx="4" class="frozen" fill="#eef1f8" stroke="#8b95a8"/><rect x="486" y="76" width="34" height="26" rx="4" class="box-acc"/>
+            <text x="538" y="94" class="el">灰=复用,蓝=只算这一个</text>
+            <rect x="410" y="108" width="34" height="26" rx="4" class="frozen" fill="#eef1f8" stroke="#8b95a8"/><rect x="448" y="108" width="34" height="26" rx="4" class="frozen" fill="#eef1f8" stroke="#8b95a8"/><rect x="486" y="108" width="34" height="26" rx="4" class="frozen" fill="#eef1f8" stroke="#8b95a8"/><rect x="524" y="108" width="34" height="26" rx="4" class="box-acc"/>
+            <text x="576" y="126" class="el">每步只加一个</text>
+          </g>
+          <text x="540" y="164" text-anchor="middle" class="el-acc">计算量线性 → 但缓存吃显存,长上下文吃得更多</text>
+          <text x="350" y="212" text-anchor="middle" class="el">这就是「上下文窗口有上限」和「长对话越聊越贵」的直接原因</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>KV cache:把已算过的 K/V 存下来复用(灰),每步只算新 Token(蓝)。计算量从平方降到线性,代价是缓存占显存、且随上下文长度线性膨胀。</figcaption>
+      </figure>
+
+      <p class="handoff">显存还是不够?那就把模型本身压小。</p>
+      <h2 id="quant"><span class="no">10</span><span>量化:把权重压小几倍</span></h2>
+      <p class="one-liner"><b>量化(quantization)</b>:把模型权重从 16 位浮点数压成 8 位甚至 4 位整数存储。<b>显存占用近似按比例下降</b>(16→4 位约省 3/4),读权重变快所以生成也更快,代价是精度略有损失。经验上 8-bit 几乎无感,4-bit 在多数任务上损失也可接受。</p>
+      <p>一个实用的估算:<b>模型显存 ≈ 参数量 × 每参数字节数</b>。一个 7B 模型,16 位(2 字节)需要约 14 GB——消费级显卡放不下;压到 4 位(0.5 字节)约 3.5 GB——一张普通游戏显卡就能跑。<b>这就是为什么"本地跑大模型"这两年忽然人人可及</b>:不是显卡便宜了,是量化把门槛砍掉了大半。要注意三点:①<b>还要留出 KV cache 的显存</b>(第 9 节),不能只按权重算;②量化分"训练后直接量化"和"量化感知训练",前者简单常用;③<b>质量损失要用自己的评测集测</b>(<a href="../应用工程/A06-评估幻觉安全成本.html">A06</a> 的评测集在这里派上用场)——不同任务对量化的敏感度差别很大,别只看别人的结论。</p>
+
+      <p class="handoff">最后把这些换算成钱,给出选型判据。</p>
+      <h2 id="cost"><span class="no">11</span><span>算一笔账:API 还是自建</span></h2>
+      <p class="one-liner">API 成本的算法很简单:<b>(输入 Token 数 × 输入单价 + 输出 Token 数 × 输出单价) × 调用次数</b>。要点是:<b>输出比输入贵得多</b>(第 8 节)、<b>长上下文会把每次调用的输入 Token 抬得很高</b>、而<b>自建的成本是固定的显卡与运维开销</b>,只有量足够大才划算。</p>
+      <p>动手算一个例子:假设做一个客服助手,每次调用输入约 2000 Token(含系统提示 + 检索到的资料)、输出约 300 Token,每天 1000 次。按"输入 $0.3 / 百万 Token、输出 $1.5 / 百万 Token"这个量级估:输入 2000×1000 = 200 万 Token/天 ≈ $0.6;输出 300×1000 = 30 万 ≈ $0.45;<b>合计约每天 $1</b>,一个月三十几美元。<b>结论很反直觉:小规模应用的 API 费用通常低到不值得自建</b>(自建至少要一张几千到几万块的显卡 + 运维)。<b>什么时候才考虑自建</b>:①量非常大(每天百万次级),边际成本占优;②数据绝对不能出内网;③需要深度定制的模型(<a href="D16-预训练微调与RLHF.html">D16</a> 微调过的私有模型);④要求极低且稳定的延迟。<b>再补三条省钱手段</b>(和 <a href="../应用工程/A07-工程化与部署.html">A07</a> 对上):把长系统提示走<b>提示缓存</b>、把重复问题走<b>结果缓存</b>、把简单任务<b>路由到小模型</b>。</p>
+
+      <p class="handoff">最后用一段代码把这笔账做成工具。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:成本估算器 + 显存估算</span></h2>
+      <p>把第 10、11 节的两个估算写成可复用的小工具,以后做方案时直接跑:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">cost_estimator.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> api_cost(in_tok, out_tok, calls, price_in, price_out):</span></span>
+<span class="line"><span style="color:#557089">    """估 API 月成本。price_* 单位:美元 / 百万 Token(去各家定价页查最新值)"""</span></span>
+<span class="line"><span style="color:#14181F">    daily </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> (in_tok </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> price_in </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> out_tok </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> price_out) </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> 1_000_000 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> calls</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> {</span><span style="color:#557089">"每次"</span><span style="color:#14181F">: round(daily </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> calls, 5), </span><span style="color:#557089">"每天"</span><span style="color:#14181F">: round(daily, 2), </span><span style="color:#557089">"每月"</span><span style="color:#14181F">: round(daily </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> 30, 2)}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 例:客服助手,输入 2000(系统提示+RAG 资料)、输出 300,每天 1000 次</span></span>
+<span class="line"><span style="color:#14181F">print(api_cost(2000, 300, 1000, price_in</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0.3, price_out</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">1.5))</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># {'每次': 0.00105, '每天': 1.05, '每月': 31.5}  ← 小规模应用,API 通常比自建便宜得多</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> vram_need(params_b, bits</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">4, ctx</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">8192, layers</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">32, dim</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">4096, batch</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">1):</span></span>
+<span class="line"><span style="color:#557089">    """估自建显存:权重 + KV cache(GB)"""</span></span>
+<span class="line"><span style="color:#14181F">    weight </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> params_b </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> 1e9 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> (bits </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> 8) </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> 1e9                     </span><span style="color:#8B95A8;font-style:italic"># 参数量 × 每参数字节</span></span>
+<span class="line"><span style="color:#14181F">    kv </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 2 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> layers </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> ctx </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> dim </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> 2 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> batch </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> 1e9                  </span><span style="color:#8B95A8;font-style:italic"># 2(K,V) × 层 × 长度 × 维 × 2字节</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> {</span><span style="color:#557089">"权重"</span><span style="color:#14181F">: round(weight, 1), </span><span style="color:#557089">"KV cache"</span><span style="color:#14181F">: round(kv, 1), </span><span style="color:#557089">"合计"</span><span style="color:#14181F">: round(weight </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> kv, 1)}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(vram_need(7, bits</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">16))   </span><span style="color:#8B95A8;font-style:italic"># 7B 半精度:权重 14 GB + KV → 消费级显卡放不下</span></span>
+<span class="line"><span style="color:#14181F">print(vram_need(7, bits</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">4))    </span><span style="color:#8B95A8;font-style:italic"># 4-bit 量化:权重 3.5 GB → 一张游戏显卡就能跑</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 注意:上下文越长,KV cache 越大——长上下文的显存往往比权重还吃紧</span></span></code></pre>
+      </div>
+      <p>两个工具对应两个决策:<code>api_cost</code> 回答"这个功能一个月烧多少钱、值不值得做";<code>vram_need</code> 回答"这个模型我这张卡跑不跑得动、要不要量化、上下文能开多长"。<b>特别留意 <code>vram_need</code> 里 KV cache 那一项随 <code>ctx</code> 线性增长</b>——把上下文从 8K 开到 128K,权重没变,但缓存会膨胀十几倍,这正是长上下文昂贵的根源(<a href="D14-注意力机制逐步手算.html">D14</a> 的 n² 之外的另一半账)。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战 · 给自己的用例算一次</span>
+        <h3>把整条链路走一遍</h3>
+        <p>①拿一个真想做的 AI 功能,用 <a href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener">tiktokenizer</a>(D12)量出真实的输入/输出 Token 数,代进 <code>api_cost</code>,算出月成本。②去查一次各家最新定价页,把 <code>price_in/price_out</code> 换成真实值——顺便体会"过时改链接不改正文"这条策展原则为什么重要。③用 <code>vram_need</code> 算:如果自建一个 7B 模型、开 32K 上下文,要多少显存?4-bit 够不够?④综合第 11 节的四条判据,写下结论:这个功能该用 API 还是自建,为什么。<b>写完这四条,就完成了一次完整的 AI 方案技术决策。</b></p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。<b>价格与硬件变化很快,以下链接是"随时去查最新值"的入口,不要背数字。</b>更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;均于 2026-08-20 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://huggingface.co/docs/transformers/llm_tutorial_optimization" target="_blank" rel="noopener">HF · LLM 推理优化指南</a></span><span class="spine">默认主线</span><span class="tags">官方文档 · 英文 · 2h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">系统讲推理瓶颈、KV cache、量化、注意力优化的官方长文。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章讲清脉络和账;它把每项优化的原理和代码补齐,是落地时的手册。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">KV cache 与量化两节;Flash Attention 部分可选读。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§9–10。</span></div>
+        </div>
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://platform.openai.com/docs/pricing" target="_blank" rel="noopener">各家 API 定价页</a></span><span class="spine">主线 · 常查</span><span class="tags">官方 · 查数字 · 5min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">按百万 Token 计的输入/输出单价(<a href="https://www.anthropic.com/pricing" target="_blank" rel="noopener">Anthropic 定价</a>同理)。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">价格几个月就变一次,本章不写死数字;要算账就去查当天的值。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">输入价、输出价、缓存价三栏;注意输出通常贵好几倍。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§11 与第 12 节的 <code>api_cost</code>。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://docs.vllm.ai/" target="_blank" rel="noopener">vLLM 文档(PagedAttention)</a></span><span class="tags">框架官方 · 英文 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">主流高性能推理框架,用分页方式管理 KV cache 大幅提升吞吐。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">真要自建服务时,它几乎是默认选项;也是理解 KV cache 工程化的最佳案例。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Quickstart + PagedAttention 的介绍。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§9 的工程化延伸;§11 自建路线。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://huggingface.co/docs/transformers/main/en/quantization/overview" target="_blank" rel="noopener">HF · Quantization 概览</a></span><span class="tags">官方文档 · 英文 · 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">各种量化方案(8-bit / 4-bit / GPTQ / AWQ)的对比与用法。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想在本地把模型跑起来时,照它选一个方案即可。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">概览表(选型)+ 选中那种的用法。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§10。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>常见理解</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>推理和训练一样吃算力</td><td>解码阶段主要吃显存带宽(每步都要读一遍全部权重),算力常大量闲置。</td></tr>
+          <tr><td>输入和输出 Token 一样贵</td><td>输出通常贵好几倍:它是逐个"跑全网络"生成的,无法并行。</td></tr>
+          <tr><td>上下文窗口只受算力限制</td><td>还有 KV cache 的显存,随长度线性膨胀——常常是它先撑不住。</td></tr>
+          <tr><td>量化会让模型明显变笨</td><td>8-bit 几乎无感,4-bit 多数任务可接受;但要用自己的评测集实测,别只看结论。</td></tr>
+          <tr><td>自建开源模型一定比调 API 省钱</td><td>小规模通常反而更贵(显卡+运维是固定成本)。自建的理由多是数据合规、定制或极大规模。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>自回归。</b>为什么回答是一个词一个词出来的、且越长越慢?<details><summary>参考答案</summary><p>每跑一遍网络只产出一个 Token,还要拼回输入再跑;后一个词依赖前一个,无法并行,所以耗时随输出长度线性增长。</p></details></li>
+        <li><b>两阶段。</b>预填充和解码各卡在哪?为什么输出比输入贵?<details><summary>参考答案</summary><p>预填充可并行、吃算力;解码每步只算一个位置却要读一遍全部权重,吃显存带宽。输出逐个生成、每个都要跑一遍全网络,所以单价更高。</p></details></li>
+        <li><b>KV cache。</b>它省了什么、代价是什么?<details><summary>参考答案</summary><p>省掉每步重算前文 K/V 的重复计算(平方→线性);代价是缓存常驻显存,且随上下文长度和并发数线性膨胀,是窗口上限的主因之一。</p></details></li>
+        <li><b>选型。</b>什么时候自建才划算?<details><summary>参考答案</summary><p>量极大、数据不能出内网、需要深度定制的私有模型、或对延迟有极严格要求。小规模应用通常 API 更便宜。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上,Track C 就全通了(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清自回归生成的循环和它的三个后果</li>
+          <li><input type="checkbox"> 我能区分预填充和解码、知道各自瓶颈</li>
+          <li><input type="checkbox"> 我知道输出为什么比输入贵</li>
+          <li><input type="checkbox"> 我能解释 KV cache 省了什么、代价是什么</li>
+          <li><input type="checkbox"> 我会用"参数量 × 字节数"估显存、知道量化能省多少</li>
+          <li><input type="checkbox"> 我能算出一个功能的 API 月成本</li>
+          <li><input type="checkbox"> 我能判断该用 API 还是自建</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>Track C 收官 · 全课程回望</span></h2>
+      <p>到这里,<b>Track C 大模型内部全通了</b>:文字怎么变成 Token(<a href="D12-Tokenizer与词表.html">D12</a>)、Token 怎么变成有含义的向量(<a href="D13-Embedding与向量空间.html">D13</a>)、注意力怎么让词与词交流(<a href="D14-注意力机制逐步手算.html">D14</a>)、这些零件怎么堆成 GPT(<a href="D15-Transformer完整结构.html">D15</a>)、随机参数怎么被训成会聊天的助手(<a href="D16-预训练微调与RLHF.html">D16</a>),以及它跑起来要花多少钱(本章)。</p>
+      <p><b>更值得回望的是整条路</b>:从<a href="../基础课程/01-人工智能全景与学习环境.html">第 1 章</a>那 17 行、只有 1 个参数的快递运费模型开始——模型、损失、训练三件套;到经典机器学习(Track A)、深度学习(Track B)、再到今天大模型的内部。<b>会发现那三件套从头到尾没变过</b>:GPT 也只是"模型形式换成几十层 Transformer、损失换成预测下一个词、找参数的方法还是梯度下降"。这正是<a href="../基础课程/01-人工智能全景与学习环境.html">第 1 章</a>许下的那个承诺:<b>打透不会变的底层逻辑,再新的模型出来也看得懂。</b></p>
+      <p>接下来怎么走:<b>①把 <a href="../应用工程/A01-提示词工程与上下文.html">应用工程 A01–A07</a> 和<a href="../index.html">项目 P1–P7</a> 做完</b>——理解已经到位,现在是把它变成能交付的东西;<b>②带着这套底层知识回看 <a href="../应用工程/A05-Agent的harness底层框架.html">A05 的 harness</a></b>,会发现 agent 的每一层都能对应到本 Track 学过的机制;<b>③保持追新</b>——地基不变,变的是上层(<a href="../资料/AI学习资源库.html">资源库</a>的论文与前沿清单就是为此准备的)。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="D16-预训练微调与RLHF.html"><span class="lb">上一章</span><span class="tt">D16 · 预训练、微调与 RLHF</span></a>
+        <a href="../index.html" class="next"><span class="lb">全课程收官</span><span class="tt">回课程首页 · 去做项目</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D17 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="autoreg" href="#autoreg"><i>7</i>自回归生成</a>
+        <a data-toc-target="phase" href="#phase"><i>8</i>预填充 vs 解码</a>
+        <a data-toc-target="kv" href="#kv"><i>9</i>KV cache</a>
+        <a data-toc-target="quant" href="#quant"><i>10</i>量化</a>
+        <a data-toc-target="cost" href="#cost"><i>11</i>算一笔账</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>成本/显存估算器</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>收官 · 全课程回望</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D17" data-kind="chapter" data-title="推理、量化与部署成本"></script>
+</body>
+</html>

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D08 · 卷积神经网络 CNN</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+.cell{fill:var(--surface);stroke:var(--ink-faint);stroke-width:1;}
+.cell-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.4;}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="D07-PyTorch与完整训练循环.html">D07 训练循环</a><span class="sep">—</span>
+      <a href="D08-卷积神经网络CNN.html" class="current">D08 卷积神经网络</a><span class="sep">—</span>
+      <span class="plan">Track B · 可做 P3</span>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D08.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track B · Chapter D08 · 让网络学会看图</p>
+        <h1>卷积神经网络 CNN</h1>
+        <p class="recap"><a href="D07-PyTorch与完整训练循环.html">D07</a> 给出一台训练发动机——那个五步循环。这一章只做一件事:<b>把循环里的"模型"换成一个会"看"图像的网络</b>,训练循环一字不改。为什么图像要专门的网络?因为把图片摊平成一长串数字丢给全连接网络,既<b>参数爆炸</b>、又<b>丢掉了像素之间的空间关系</b>。<b>卷积神经网络(CNN)</b>用一个小窗口滑过整张图、共享同一套权重来提取局部特征,既省参数又保住了空间结构——它是 2012 年引爆深度学习的那类模型,也是做<a href="../index.html">手写数字识别(P3)</a>要用的网络。</p>
+      </header>
+
+      <p>图解骨架约 30 分钟,动手 + 精读约 4~6 小时。核心只有"卷积 + 池化"两个动作,配合 D07 的循环,就能训练出第一个图像识别网络。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>为什么全连接不适合图像——参数爆炸 + 丢掉空间结构</li>
+          <li>卷积 convolution——小窗口滑过图,同一套权重提取局部特征(参数共享)</li>
+          <li>池化 pooling——下采样,缩小尺寸、保留要点、增强稳健</li>
+          <li>感受野与层级特征——浅层看边缘,中层看纹理,深层看整体</li>
+          <li>一个完整 CNN——卷积/池化反复堆叠,最后接全连接层做分类</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>网络是层的堆叠续 <a href="../基础课程/07-神经网络入门.html">第 7 章</a>;训练照旧用 <a href="D07-PyTorch与完整训练循环.html">D07</a> 的五步循环(这里只换模型)。<b>通向后面:</b>学完就能动手做 <a href="../index.html">项目 P3 手写数字识别</a>;"用卷积提取局部特征"的思路,到 <a href="D11-迁移学习与微调.html">D11 迁移学习</a>会变成"直接借用别人训好的卷积层"。</p>
+      </div>
+
+      <!-- ===== 模块 A ===== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>会用 D07 的训练循环,想让它处理图像的人。</li>
+        <li>老听到"卷积""池化""特征图",却说不清它们到底在图上干了什么的人。</li>
+        <li>准备做手写数字识别、图片分类这类项目的人。</li>
+      </ul>
+      <p><b>不适合</b>:还没搞懂"网络怎么训练"的人——请先过 <a href="D07-PyTorch与完整训练循环.html">D07</a>,这一章默认已经握住那个五步循环。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>需要:<a href="D07-PyTorch与完整训练循环.html">D07</a>(训练循环、张量)、<a href="../基础课程/07-神经网络入门.html">第 7 章</a>(层、激活、前向)、<a href="../基础课程/03-NumPy数组与形状.html">第 3 章</a>(形状意识——图像是 <code>通道×高×宽</code> 的三维张量)。数学只需一个动作:<b>把小窗口里的数字和一套权重逐个相乘再加起来</b>(就是加权求和),其余交给 PyTorch。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清为什么图像不该直接摊平喂全连接网络。</li>
+        <li>用大白话解释"卷积"在图上做了什么、为什么能省参数。</li>
+        <li>说清池化的作用(缩小尺寸、保留要点、更稳健)。</li>
+        <li>解释"浅层看边缘、深层看整体"这个层级特征的直觉。</li>
+        <li>用 PyTorch 搭一个小 CNN,套进 D07 的循环训练它。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">卷积神经网络:<b>用一个小窗口(卷积核)滑过整张图,用同一套权重在每个位置提取局部特征,再层层堆叠、逐级从"边缘"看到"整体"。</b>它靠"参数共享"和"保留空间结构"两招,把图像识别做得又省又好。</p>
+      <p>为什么全连接网络对图像不行:一张 <code>1000×1000</code> 的彩色图有三百万个像素,摊平后第一层每个神经元就要三百万个权重,几层下来参数量天文数字——训不动、也极易过拟合。更糟的是,摊平这一下就把"相邻像素本来挨在一起"的空间关系彻底打散了,可图像的意义恰恰藏在空间关系里(眼睛在鼻子上方、边缘是相邻像素的突变)。CNN 的破解办法是:不给每个像素配独立权重,而是设计一个小小的<b>卷积核</b>(比如 <code>3×3</code>),让它<b>滑过整张图的每个位置</b>,在哪儿都用<b>同一套</b>权重——这叫"参数共享",一下把参数从百万级压到几十个。而且它天然按空间局部处理,空间结构完好保留。这就是 CNN 又省参数、又懂图像的秘密。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="CNN 五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="640" y1="168" x2="480" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="540" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="220" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="120" y1="168" x2="280" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">让网络</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">学会"看"图像</text>
+          <rect x="270" y="32" width="220" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 全连接为何不适合图像</text>
+          <rect x="596" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="674" y="150" text-anchor="middle" class="nl">② 卷积</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ 池化</text>
+          <rect x="146" y="330" width="174" height="46" rx="8" class="d-ink nf"/>
+          <text x="233" y="358" text-anchor="middle" class="nl">④ 感受野/层级特征</text>
+          <rect x="8" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="86" y="150" text-anchor="middle" class="nl">⑤ 完整 CNN 结构</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。②卷积、③池化是两个核心动作,④解释它们叠起来后为什么能从边缘看到整体,⑤把它们组装成一个能分类的完整网络。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 B ===== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <div class="callout go">
+        <span class="label">默认主线 · 边看图边理解</span>
+        <p><b>《动手学深度学习》(d2l)卷积神经网络两章 + PyTorch 官方 CNN 教程。</b>为什么:d2l 用大量图示把卷积/池化讲透、还带可运行代码;PyTorch 官方教程直接演示在图像数据集上训练一个 CNN,和本章第 12 节的落点一致。链接:<a href="https://zh.d2l.ai/chapter_convolutional-neural-networks/index.html" target="_blank" rel="noopener">d2l · 卷积神经网络</a>、<a href="https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html" target="_blank" rel="noopener">PyTorch · 训练一个图像分类器</a>。</p>
+      </div>
+      <p><b>想看更深的直觉:</b></p>
+      <ul>
+        <li><b>斯坦福 CS231n 笔记</b> — <a href="https://cs231n.github.io/convolutional-networks/" target="_blank" rel="noopener">Convolutional Networks</a>,业界公认最好的 CNN 讲义之一,想彻底搞懂时读它(英文)。</li>
+      </ul>
+
+      <!-- ===== 模块 C ===== -->
+      <p class="handoff">先看清 CNN 的核心动作:卷积到底在图上做了什么。</p>
+      <h2 id="conv"><span class="no">7</span><span>卷积 convolution</span></h2>
+      <p class="one-liner">拿一个小窗口(<b>卷积核</b>,如 <code>3×3</code>),从图的左上角开始,一格一格滑过整张图;每滑到一处,就把窗口盖住的那 9 个像素和核里的 9 个权重<b>逐个相乘再加起来</b>,得到一个数——所有位置的结果拼成一张<b>特征图</b>。同一个核在每个位置用同一套权重,这就是<b>参数共享</b>。</p>
+      <p>直觉:一个卷积核就是一个"局部模式探测器"。比如某个 <code>3×3</code> 核的权重排成"左暗右亮",它滑过图时,在有"竖直边缘"的地方就会算出很大的值、在平坦处算出接近 0——于是它输出的特征图,高亮的正是图里所有竖直边缘的位置。一层里通常有很多个核(如 32 个),各自探测不同模式(横边、竖边、某种角、某种纹理),输出 32 张特征图。不用手工设计这些核里的权重,它们和普通网络的权重一样,是<b>训练时自动学出来的</b>——D07 的循环会把它们学出来。关键就记两点:<b>局部</b>(每次只看一小块)+ <b>共享</b>(同一套权重扫全图),前者保住空间结构,后者把参数压到极小。</p>
+      <figure>
+        <svg viewBox="0 0 640 250" role="img" aria-label="卷积:小窗口滑过图像">
+          <defs><marker id="m-cv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <text x="105" y="34" text-anchor="middle" class="el">输入图像</text>
+          <g>
+            <rect x="30" y="46" width="150" height="150" class="nf" stroke="#8b95a8" stroke-width="1.2"/>
+            <line x1="80" y1="46" x2="80" y2="196" stroke="#e0e5ee"/><line x1="130" y1="46" x2="130" y2="196" stroke="#e0e5ee"/>
+            <line x1="30" y1="96" x2="180" y2="96" stroke="#e0e5ee"/><line x1="30" y1="146" x2="180" y2="146" stroke="#e0e5ee"/>
+            <rect x="30" y="46" width="100" height="100" class="cell-acc"/>
+            <text x="80" y="100" text-anchor="middle" class="el-acc">3×3 窗口</text>
+          </g>
+          <line x1="192" y1="121" x2="252" y2="121" class="d-acc" marker-end="url(#m-cv)"/>
+          <text x="222" y="108" text-anchor="middle" class="el-acc">相乘</text>
+          <text x="222" y="146" text-anchor="middle" class="el">求和</text>
+          <text x="360" y="34" text-anchor="middle" class="el">卷积核(权重)</text>
+          <rect x="300" y="70" width="110" height="102" class="box"/>
+          <text x="355" y="112" text-anchor="middle" class="nl">一套权重</text>
+          <text x="355" y="134" text-anchor="middle" class="el">扫全图=共享</text>
+          <line x1="418" y1="121" x2="478" y2="121" class="d-acc" marker-end="url(#m-cv)"/>
+          <text x="558" y="34" text-anchor="middle" class="el">特征图</text>
+          <rect x="490" y="56" width="130" height="130" class="nf" stroke="#8b95a8" stroke-width="1.2"/>
+          <rect x="490" y="56" width="43" height="43" class="cell-acc"/>
+          <text x="555" y="126" text-anchor="middle" class="el">高亮=探到的</text>
+          <text x="555" y="146" text-anchor="middle" class="el">局部模式</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>卷积:一个 3×3 窗口滑过输入图,每处把像素和核的权重相乘求和,得到特征图上一个点。同一套权重扫全图(参数共享),核里的权重由训练自动学出。</figcaption>
+      </figure>
+
+      <p class="handoff">卷积之后,通常紧跟一个"缩小图"的动作:池化。</p>
+      <h2 id="pool"><span class="no">8</span><span>池化 pooling</span></h2>
+      <p class="one-liner">池化就是<b>下采样(缩小尺寸)</b>:把特征图按小块(如 <code>2×2</code>)分组,每块只留一个代表值——最常用<b>最大池化</b>(取块内最大值)。作用:让特征图变小(省算力)、保留最强的响应、并让识别对"位置的小移动"更稳健(数字歪一两个像素也不影响)。</p>
+      <p>为什么取最大值:卷积特征图上,某处值大就代表"这块检测到了那个模式"。<code>2×2</code> 最大池化把每个小块压成"这块里最强的那个响应",尺寸直接减半、算力大降,而"到底有没有这个特征"的信息基本没丢。附带的好处叫<b>平移不变性</b>:即使目标在图里挪动几个像素,最大值往往还落在同一个池化块里,输出几乎不变——所以 CNN 对"数字写偏一点、猫在画面左边还是右边"这类小变化不敏感。池化没有需要学的参数,就是个固定的缩小操作。<b>卷积(提特征)+ 池化(缩尺寸)</b>常常成对出现,反复叠加。</p>
+      <figure>
+        <svg viewBox="0 0 560 210" role="img" aria-label="2x2 最大池化">
+          <defs><marker id="m-pl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <text x="120" y="30" text-anchor="middle" class="el">特征图 4×4</text>
+          <g font-size="12">
+            <rect x="40" y="44" width="160" height="160" class="nf" stroke="#8b95a8"/>
+            <rect x="40" y="44" width="80" height="80" class="cell-acc"/>
+            <line x1="120" y1="44" x2="120" y2="204" stroke="#c9d3f2"/><line x1="40" y1="124" x2="200" y2="124" stroke="#c9d3f2"/>
+            <line x1="80" y1="44" x2="80" y2="204" stroke="#e6eaf2"/><line x1="160" y1="44" x2="160" y2="204" stroke="#e6eaf2"/>
+            <line x1="40" y1="84" x2="200" y2="84" stroke="#e6eaf2"/><line x1="40" y1="164" x2="200" y2="164" stroke="#e6eaf2"/>
+            <text x="60" y="70" text-anchor="middle" class="el">1</text><text x="100" y="70" text-anchor="middle" class="el">3</text>
+            <text x="60" y="110" text-anchor="middle" class="el">2</text><text x="100" y="110" text-anchor="middle" class="el-acc">8</text>
+          </g>
+          <line x1="214" y1="124" x2="286" y2="124" class="d-acc" marker-end="url(#m-pl)"/>
+          <text x="250" y="110" text-anchor="middle" class="el-acc">取最大</text>
+          <text x="250" y="150" text-anchor="middle" class="el">2×2</text>
+          <text x="410" y="30" text-anchor="middle" class="el">输出 2×2</text>
+          <rect x="330" y="64" width="160" height="120" class="nf" stroke="#8b95a8"/>
+          <line x1="410" y1="64" x2="410" y2="184" stroke="#c9d3f2"/><line x1="330" y1="124" x2="490" y2="124" stroke="#c9d3f2"/>
+          <rect x="330" y="64" width="80" height="60" class="cell-acc"/>
+          <text x="370" y="100" text-anchor="middle" class="nl-acc">8</text>
+          <text x="410" y="204" text-anchor="middle" class="el">尺寸减半,留下每块最强响应</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>2×2 最大池化:每个 2×2 小块只留最大值(左上块 1/3/2/8 → 8)。尺寸减半、算力大降,"有没有这个特征"的信息基本保留,还带来对小位移的稳健。</figcaption>
+      </figure>
+
+      <p class="handoff">把卷积+池化叠很多层,会发生一件神奇的事:特征逐级变抽象。</p>
+      <h2 id="hierarchy"><span class="no">9</span><span>感受野与层级特征</span></h2>
+      <p class="one-liner">越往深层,一个神经元能"看到"的原图范围越大(<b>感受野</b>变大),它检测的模式也越抽象:<b>浅层看边缘和颜色块,中层看纹理和部件(眼睛、轮子),深层看整体(人脸、汽车)。</b>这套"从局部到整体"的层级,是网络自己从数据里学出来的,不用人设计。</p>
+      <p>为什么会这样:第一层卷积核只看原图的 <code>3×3</code>,只能发现最基础的东西——某个方向的边、某种颜色过渡。第二层的卷积核看的是"第一层的特征图",相当于间接看到了原图更大的一块(感受野变大),于是能把"几条边"组合成"一个角、一段弧";再深一层,又把"角和弧"组合成"眼睛、轮子";最深层把这些部件组合成"完整物体"。这正呼应 <a href="../基础课程/01-人工智能全景与学习环境.html">第 1 章</a>说的"深度学习自己逐层提炼特征"——CNN 把这句话变成了看得见的图像层级。这也是为什么 CNN 需要"深"(多层):层数给了它从边缘一路搭到整体的台阶。</p>
+
+      <p class="handoff">把这些零件按顺序摆好,就是一个能分类的完整 CNN。</p>
+      <h2 id="arch"><span class="no">10</span><span>一个完整 CNN 的结构</span></h2>
+      <p class="one-liner">典型结构:<b>[卷积 → 激活 → 池化] 反复几组</b>(负责"提特征、缩尺寸"),最后<b>把特征图摊平、接一两层全连接</b>(负责"根据特征做分类")。前半段是 CNN 特有的"看图"部分,后半段和第 7 章的普通网络一样。</p>
+      <p>为什么这样分两段:前半段的卷积+池化,把一张大图逐步浓缩成一小叠"高层特征图"(比如从 <code>28×28</code> 缩到 <code>7×7</code>、但通道从 1 变成 64)——这时每个数字都不再是原始像素,而是"这里有没有某个高层部件"的强弱。到这一步,识别任务就退化成了 <a href="../基础课程/07-神经网络入门.html">第 7 章</a>那种"给定一组特征、判断是哪一类"的普通分类,于是把特征图摊平、接全连接层,最后用 <a href="D02-逻辑回归与分类边界.html">D02 的 softmax</a> 输出各类别的概率。整套东西从头到尾就是一串层,照样丢进 <a href="D07-PyTorch与完整训练循环.html">D07</a> 的五步循环去训练。下一节把它写成代码。</p>
+
+      <!-- ===== 模块 D ===== -->
+      <p class="handoff">把结构落成 PyTorch 代码,套进 D07 的循环——这就是手写数字识别器。</p>
+      <h2 id="assemble"><span class="no">11</span><span>组装:一个识别手写数字的小 CNN</span></h2>
+      <p>下面用 PyTorch 搭一个小 CNN(识别 <code>28×28</code> 的手写数字,10 类)。注意:<b>训练它,就是把这个 <code>model</code> 塞进 D07 那段五步循环,其余一字不改</b>:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">small_cnn.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch.nn </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> nn</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">class</span><span style="color:#14181F"> SmallCNN(nn.Module):</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    def</span><span style="color:#14181F"> __init__(self):</span></span>
+<span class="line"><span style="color:#14181F">        super().__init__()</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic">        # 前半段:卷积 + 激活 + 池化,负责"看图、提特征"</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.features </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.Sequential(</span></span>
+<span class="line"><span style="color:#14181F">            nn.Conv2d(1, 16, kernel_size</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">3, padding</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">1),  </span><span style="color:#8B95A8;font-style:italic"># 1 通道(灰度)→ 16 张特征图</span></span>
+<span class="line"><span style="color:#14181F">            nn.ReLU(),</span></span>
+<span class="line"><span style="color:#14181F">            nn.MaxPool2d(2),                             </span><span style="color:#8B95A8;font-style:italic"># 28×28 → 14×14</span></span>
+<span class="line"><span style="color:#14181F">            nn.Conv2d(16, 32, kernel_size</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">3, padding</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">1), </span><span style="color:#8B95A8;font-style:italic"># 16 → 32 张特征图</span></span>
+<span class="line"><span style="color:#14181F">            nn.ReLU(),</span></span>
+<span class="line"><span style="color:#14181F">            nn.MaxPool2d(2),                             </span><span style="color:#8B95A8;font-style:italic"># 14×14 → 7×7</span></span>
+<span class="line"><span style="color:#14181F">        )</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic">        # 后半段:摊平 + 全连接,负责"根据特征分类"(和第 7 章一样)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.classifier </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.Sequential(</span></span>
+<span class="line"><span style="color:#14181F">            nn.Flatten(),               </span><span style="color:#8B95A8;font-style:italic"># 32×7×7 摊成一长串</span></span>
+<span class="line"><span style="color:#14181F">            nn.Linear(32 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> 7 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> 7, 128),</span></span>
+<span class="line"><span style="color:#14181F">            nn.ReLU(),</span></span>
+<span class="line"><span style="color:#14181F">            nn.Linear(128, 10),         </span><span style="color:#8B95A8;font-style:italic"># 10 个输出 = 10 个数字类别</span></span>
+<span class="line"><span style="color:#14181F">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    def</span><span style="color:#14181F"> forward(self, x):</span></span>
+<span class="line"><span style="color:#14181F">        x </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F;font-weight:bold"> self</span><span style="color:#14181F">.features(x)            </span><span style="color:#8B95A8;font-style:italic"># 先看图</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        return</span><span style="color:#14181F;font-weight:bold"> self</span><span style="color:#14181F">.classifier(x)       </span><span style="color:#8B95A8;font-style:italic"># 再分类</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">model </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> SmallCNN()</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 训练:把这个 model 放进 D07 的五步循环即可,损失用 nn.CrossEntropyLoss()(分类)</span></span></code></pre>
+      </div>
+      <p>逐块对照第 10 节:<code>self.features</code> 就是"[卷积→ReLU→池化]×2",把 <code>1×28×28</code> 的图浓缩成 <code>32×7×7</code> 的高层特征;<code>self.classifier</code> 把它摊平、接全连接,输出 10 个类别分数。<code>nn.Module</code> 是 PyTorch 里"自定义模型"的标准写法:<code>__init__</code> 里定义有哪些层,<code>forward</code> 里写数据怎么流过它们。训练时,损失换成分类专用的 <code>nn.CrossEntropyLoss()</code>(<a href="D02-逻辑回归与分类边界.html">D02 的交叉熵</a>),其余 <a href="D07-PyTorch与完整训练循环.html">D07</a> 五步一字不改。<b>这就是项目 P3——现在有了它的全部零件。</b></p>
+      <div class="challenge">
+        <span class="label">进阶挑战 · 上手做 P3</span>
+        <h3>训练一个真的手写数字识别器</h3>
+        <p>①用 <code>torchvision.datasets.MNIST</code> 下载手写数字数据集(一行代码),用 DataLoader 切批。②把上面的 <code>SmallCNN</code> 塞进 D07 的五步循环,损失用 <code>CrossEntropyLoss</code>,训练几个 epoch。③在测试集上算准确率(<a href="D05-评价指标与验证深挖.html">D05</a>),小 CNN 通常能到 98%+。④拿掉两个池化层看准确率和训练速度怎么变,体会池化的作用。跑通它,就完成了项目 <a href="../index.html">P3</a>、也真正"训练"出了一个能看图的网络。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">12</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;下列链接均于 2026-08-19 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://zh.d2l.ai/chapter_convolutional-neural-networks/index.html" target="_blank" rel="noopener">动手学深度学习 · 卷积神经网络</a></span><span class="spine">默认主线</span><span class="tags">中文 · 书+代码 · 3–4h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">中文免费深度学习教材的 CNN 两章,大量图示 + 可运行代码。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">把卷积/池化讲得又直观又落地,顺序和本章骨架对得上,跟完就会搭 CNN。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">"卷积神经网络"章的卷积层、池化层几节;想深入再看"现代卷积神经网络"。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§7↔卷积、§8↔池化、§10↔完整结构;先看我们的图,再读它的推导 + 代码。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://poloclub.github.io/cnn-explainer/" target="_blank" rel="noopener">CNN Explainer(交互可视化)</a></span><span class="tags">网页 · 交互 · 20min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">在浏览器里逐层看一个真实 CNN 怎么算的交互可视化。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">"滑窗相乘求和"看文字不如看动画;它把抽象的卷积变得看得见。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">点开任一卷积层,鼠标悬停看单个输出怎么由窗口算出。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 7 节(卷积)玩一遍,图 2 就活了。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html" target="_blank" rel="noopener">PyTorch · 训练一个图像分类器</a></span><span class="tags">官方 · 动手 · 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">官方教程:在真实图像数据集上从头训练一个 CNN。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">把本章的 CNN 塞进 D07 五步循环真跑一遍——从"看懂"到"训出来"。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全教程;重点是"定义网络"和"训练循环"那两段。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 11 节(小 CNN 代码)+ 进阶挑战 P3 一起做。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://cs231n.github.io/convolutional-networks/" target="_blank" rel="noopener">斯坦福 CS231n · ConvNets 笔记</a></span><span class="tags">英文 · 深读 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">业界公认最好的 CNN 讲义之一,把卷积/池化/感受野讲透。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想从"会用"升到"彻底懂原理"时,这是最扎实的一站。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Convolution / Pooling / 感受野几节;数学吃力可跳,先抓直觉。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 9 节(感受野 / 层级特征)深读。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">13</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>卷积核里的权重要人工设计</td><td>不用。核的权重和普通权重一样,由训练自动学出;只定核的大小和数量。</td></tr>
+          <tr><td>图像也可以直接摊平喂全连接</td><td>能跑但很差:参数爆炸、丢空间结构。CNN 用参数共享+局部连接解决这两点。</td></tr>
+          <tr><td>池化会丢掉重要信息</td><td>丢的是冗余的精确位置,保留的是"有没有这个特征"。还带来对小位移的稳健。</td></tr>
+          <tr><td>CNN 是和普通网络完全不同的东西</td><td>它只是把前几层换成卷积/池化;训练照旧用同一个五步循环,后段还是全连接。</td></tr>
+          <tr><td>层数越多一定越准</td><td>太深会更难训、更易过拟合(第 6 章 / D10)。深度要和数据量、任务匹配。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">14</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>为什么不摊平。</b>图像为什么不直接摊平喂全连接网络?<details><summary>参考答案</summary><p>两点:①参数爆炸(每像素一套权重,百万级);②摊平打散了像素的空间关系,而图像意义正藏在空间结构里。CNN 用局部连接+参数共享解决。</p></details></li>
+        <li><b>卷积做了什么。</b>一句话说清卷积在图上的动作。<details><summary>参考答案</summary><p>一个小窗口(核)滑过整张图,每处把窗口内像素与核权重相乘求和得一个值,拼成特征图;同一套权重扫全图(参数共享),权重由训练学出。</p></details></li>
+        <li><b>池化的作用。</b>最大池化有哪些好处?<details><summary>参考答案</summary><p>缩小尺寸省算力、保留每块最强响应、带来对小位移的稳健(平移不变性)。它没有可学参数。</p></details></li>
+        <li><b>层级特征。</b>为什么说"浅层看边缘、深层看整体"?<details><summary>参考答案</summary><p>越深的层感受野越大、看到的原图范围越大,于是把浅层的边组合成部件、再组合成整体——网络自动学出从局部到整体的层级。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">15</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上,就理解了 CNN、可动手做 P3(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清图像为什么不该直接摊平喂全连接</li>
+          <li><input type="checkbox"> 我能用大白话解释卷积在图上做了什么</li>
+          <li><input type="checkbox"> 我理解"参数共享"为什么能省一大堆参数</li>
+          <li><input type="checkbox"> 我知道池化(最大池化)的作用</li>
+          <li><input type="checkbox"> 我理解"浅层看边缘、深层看整体"的层级特征</li>
+          <li><input type="checkbox"> 我能看懂一个小 CNN 的结构(前卷积池化、后全连接)</li>
+          <li><input type="checkbox"> 我知道训练 CNN 就是把它塞进 D07 的五步循环</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">16</span><span>本章与下一章的连接</span></h2>
+      <p>CNN 让网络学会了"看"——处理有<b>空间结构</b>的数据(图像)。但还有一大类数据是<b>按顺序</b>展开的:一句话里的词、一段时间的股价、一串语音——它们的意义藏在"先后顺序和前后依赖"里。<a href="D09-序列模型RNN到注意力.html">D09 序列模型:RNN 到注意力</a>就来处理这类序列数据:先看 RNN 怎么"带着记忆"逐个读,再看它为什么被<b>注意力机制</b>取代——而注意力,正是通向大模型(Track C)的那道门。训练循环?还是 D07 那五步。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="D07-PyTorch与完整训练循环.html"><span class="lb">上一章</span><span class="tt">D07 · PyTorch 与完整训练循环</span></a>
+        <a href="D09-序列模型RNN到注意力.html" class="next"><span class="lb">下一章</span><span class="tt">D09 · 序列模型:RNN 到注意力</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D08 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="conv" href="#conv"><i>7</i>卷积</a>
+        <a data-toc-target="pool" href="#pool"><i>8</i>池化</a>
+        <a data-toc-target="hierarchy" href="#hierarchy"><i>9</i>感受野/层级特征</a>
+        <a data-toc-target="arch" href="#arch"><i>10</i>完整 CNN 结构</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>11</i>手写数字小 CNN</a>
+        <a data-toc-target="reflist" href="#reflist"><i>12</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>13</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>14</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>15</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>16</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D08" data-kind="chapter" data-title="卷积神经网络 CNN"></script>
+</body>
+</html>

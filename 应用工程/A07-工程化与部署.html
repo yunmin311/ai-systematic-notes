@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A07 · 工程化与部署</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="A06-评估幻觉安全成本.html">A06 评估·安全·成本</a><span class="sep">—</span>
+      <a href="A07-工程化与部署.html" class="current">A07 工程化与部署</a><span class="sep">—</span>
+      <span class="plan">应用工程 · 收官</span>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-A07.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">应用工程 · Chapter A07 · 收官</p>
+        <h1>工程化与部署</h1>
+        <p class="recap">前六章让人做出了一个<b>可信、可控、可负担</b>的 AI 应用。最后一步:把它<b>真正交到用户手里,并让它稳定持续地运行</b>。这一章讲从"能在本机上跑一次"到"很多人能天天用"之间那段路——后端封装与密钥安全、流式输出、缓存限流、上线与监控。学完它,就走通了"从想法到能用的 AI 应用"整条路,也补齐了推进治理体系所需的最后一块工程拼图。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,动手部署约 4~6 小时。所有话题接着 A06 的成本与安全、A05 的日志往下落地。每个新词当场白话解释。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>从 demo 到产品——差的不是功能,是稳定、安全、可持续</li>
+          <li>后端封装与密钥——模型调用必须走后端,密钥永不进前端/git</li>
+          <li>流式输出——边生成边显示,别让用户干等</li>
+          <li>缓存与限流——省钱省时、防滥用防爆预算(接 A06 成本)</li>
+          <li>部署与监控——上线到哪、上线后盯延迟/错误/成本/质量四块表</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>缓存限流落实 <a href="A06-评估幻觉安全成本.html">A06</a> 的成本控制;监控延续 A06 的评测闭环 + <a href="A05-Agent的harness底层框架.html">A05</a> 的日志;密钥与权限接 A06 安全。<b>通向后面:</b>本章是应用工程 A 系列的<b>收官</b>——学完就能做 <a href="../index.html">项目 P4/P6/P7</a>(命令行助手、小 agent、完整应用)。<b>连向目标:</b>监控四块表就是治理体系日常要盯的运营仪表。</p>
+      </div>
+
+      <!-- ========== 模块 A ========== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>做出了 demo、想把它<b>变成别人能真正用上</b>的产品的人。</li>
+        <li>担心"密钥泄露、被刷爆、一上线就崩"的人。</li>
+        <li>要把 AI 应用<b>纳入日常运营和治理</b>、需要一套监控口径的人。</li>
+      </ul>
+      <p><b>不适合</b>:已经在跑生产 LLM 服务、做 SRE 的人——这章是入门到能上线,不是大规模运维。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>核心是 <a href="A06-评估幻觉安全成本.html">A06</a>(成本、安全、评估)和 <a href="A05-Agent的harness底层框架.html">A05</a>(日志)。再有一点点后端概念(什么是 API、什么是服务器)会更顺,但不懂也能跟着图理解——本章会把它讲清。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清 demo 和产品的真正差距在哪。</li>
+        <li>画出正确的生产架构,并说明密钥为什么必须在后端。</li>
+        <li>解释流式输出为什么对体验关键。</li>
+        <li>说出缓存和限流各解决什么问题。</li>
+        <li>列出上线后要监控的四块表。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">工程化与部署:把"<b>能跑一次的脚本</b>"改造成"<b>很多人能稳定、安全、持续用的服务</b>"。差距不在功能,在<b>稳(不崩)、安全(不泄密不被刷)、可持续(不烧穿预算、坏了能发现)</b>。</p>
+      <p>一个在本机终端里 <code>python app.py</code> 能跑的脚本,离产品还很远:密钥直接写在代码里(一上线就泄露)、用户点了要干等十几秒(体验差)、有人恶意狂刷就破产(没限流)、半夜挂了没人知道(没监控)。工程化就是补齐这一整套"看不见但缺了就出事"的东西。它不新增炫酷功能,却决定应用能不能真的活在真实世界里。对做治理的人尤其重要:<b>密钥、限流、监控这些正是 AI 系统的运营与安全底盘</b>,是治理要落到的具体抓手。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="A07 五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">稳定持续地</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">交到用户手里</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① demo → 产品</text>
+          <rect x="596" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="674" y="150" text-anchor="middle" class="nl">② 后端与密钥</text>
+          <rect x="446" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="528" y="358" text-anchor="middle" class="nl">③ 流式输出</text>
+          <rect x="150" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="232" y="358" text-anchor="middle" class="nl">④ 缓存与限流</text>
+          <rect x="8" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="86" y="150" text-anchor="middle" class="nl">⑤ 部署与监控</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。合起来就是把一个脚本推上线的完整清单——第 12 节的后端代理会把它们串起来。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 B ========== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>部署路子很多,别一次学全。选一条最短的能上线路径走通,再按需深入。</p>
+      <div class="callout go">
+        <span class="label">默认主线 · 一手最佳实践</span>
+        <p><b>模型厂商的"生产最佳实践"文档 + 一个后端框架。</b>为什么:厂商文档把密钥、限流、流式、错误处理这些讲得最准;后端框架(推荐 <b>FastAPI</b>,Python、上手快)让人几十行搭出一个能上线的服务。链接:<a href="https://platform.openai.com/docs/guides/production-best-practices" target="_blank" rel="noopener">OpenAI 生产最佳实践</a>、<a href="https://docs.anthropic.com/" target="_blank" rel="noopener">Anthropic API 文档</a>、<a href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener">FastAPI 文档</a>。</p>
+      </div>
+      <p><b>再配一件:</b></p>
+      <ul>
+        <li><b>Chip Huyen《AI Engineering》部署/推理章</b> — <a href="https://huyenchip.com/" target="_blank" rel="noopener">把部署放进整个应用工程里权衡</a>,理解延迟、成本、可靠性怎么取舍。</li>
+      </ul>
+
+      <!-- ========== 模块 C ========== -->
+      <p class="handoff">先认清:一个能跑的脚本,到底缺了哪些才不算产品。</p>
+      <h2 id="gap"><span class="no">7</span><span>从 demo 到产品:差的是什么</span></h2>
+      <p class="one-liner">demo 只需<b>在手里、跑通一次</b>;产品要<b>在别人手里、天天跑、还不出事</b>。差的四样:<b>稳</b>(并发/出错不崩)、<b>安全</b>(密钥不泄、不被刷)、<b>可持续</b>(预算不爆、坏了能发现)、<b>体验</b>(别让人干等)。</p>
+      <p>这一步的心态转变最关键:写 demo 想的是"功能能不能实现",做产品想的是"出错了会怎样"。用户会同时点、会输入奇怪的东西、会有人恶意刷;网络会抖、模型接口会超时、预算会被烧。产品化就是把这些"边缘情况"当成主线来设计。好消息是:这些几乎都是<b>成熟套路</b>,后面几节逐个给出——不需要重新发明,照着做即可。</p>
+
+      <p class="handoff">四样里最不能错的一样,是密钥——它决定会不会一上线就出事。</p>
+      <h2 id="backend"><span class="no">8</span><span>后端封装与密钥安全(最不能错的一条)</span></h2>
+      <p class="one-liner">模型调用<b>必须走自己的后端服务器</b>,由后端保管密钥、再去调模型 API。<b>密钥绝不能出现在前端代码、也绝不能提交进 git</b>——前端代码人人可见,git 历史删不干净。这是红线中的红线。</p>
+      <p>为什么:API 密钥就是钱包,谁拿到谁能花钱。如果前端(浏览器里的网页/App)直接拿着密钥调模型,任何用户按 F12 就能看到它、复制走、疯狂盗刷——几小时烧光预算是常事。正确做法:前端只跟<b>后端</b>说话,后端从<b>环境变量</b>(不是代码里)读密钥,替用户去调模型,再把结果转回来。后端这一层顺便还是放<b>限流、缓存、A06 的安全拦截和日志</b>的地方——它是整个应用的"关口"。同理,密钥要用环境变量或密钥管理服务,<b>永远不 <code>git commit</code> 进仓库</b>;真不小心提交了,要立刻作废重发,而不是删一次 commit 了事。</p>
+      <figure>
+        <svg viewBox="0 0 640 230" role="img" aria-label="正确的生产架构:前端经后端再到模型">
+          <defs><marker id="m-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <text x="320" y="24" text-anchor="middle" class="nl-acc">✓ 正确:密钥锁在后端</text>
+          <rect x="30" y="40" width="120" height="48" rx="8" class="box"/><text x="90" y="62" text-anchor="middle" class="nl">前端</text><text x="90" y="79" text-anchor="middle" class="el">浏览器/App</text>
+          <line x1="150" y1="64" x2="202" y2="64" class="d-acc" marker-end="url(#m-b)"/>
+          <rect x="206" y="36" width="184" height="56" rx="8" class="box-acc"/><text x="298" y="58" text-anchor="middle" class="nl-acc">后端</text><text x="298" y="76" text-anchor="middle" class="el">🔑密钥 · 限流 · 缓存 · 日志</text>
+          <line x1="390" y1="64" x2="436" y2="64" class="d-acc" marker-end="url(#m-b)"/>
+          <rect x="440" y="40" width="120" height="48" rx="8" class="box"/><text x="500" y="62" text-anchor="middle" class="nl">模型 API</text><text x="500" y="79" text-anchor="middle" class="el">OpenAI/Claude</text>
+          <line x1="30" y1="120" x2="610" y2="120" class="d-soft"/>
+          <text x="320" y="150" text-anchor="middle" class="el">✗ 错误:前端直接拿密钥调模型</text>
+          <rect x="120" y="164" width="130" height="44" rx="8" class="box"/><text x="185" y="186" text-anchor="middle" class="el">前端(带🔑密钥)</text><text x="185" y="202" text-anchor="middle" class="el-acc">F12 就能偷走</text>
+          <line x1="250" y1="186" x2="386" y2="186" class="d-soft" marker-end="url(#m-b)"/>
+          <rect x="390" y="164" width="130" height="44" rx="8" class="box"/><text x="455" y="190" text-anchor="middle" class="el">模型 API</text>
+          <text x="320" y="224" text-anchor="middle" class="el-acc">→ 密钥泄露,预算被盗刷</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>生产架构:前端只跟后端说话,密钥锁在后端(顺带做限流/缓存/日志)。前端直连模型 = 密钥人人可见,必被盗刷。</figcaption>
+      </figure>
+
+      <p class="handoff">关口搭好,接着解决体验第一杀手:让用户干等。</p>
+      <h2 id="stream"><span class="no">9</span><span>流式输出</span></h2>
+      <p class="one-liner">流式输出<span class="en">streaming</span>:模型是<b>一个字一个字生成</b>的,别等它整段写完再给用户,而是<b>边生成边推给前端逐字显示</b>——就是在各种 AI 对话里看到的"打字机效果"。它把"干等十几秒"变成"立刻开始看见"。</p>
+      <p>为什么重要:一段长回答模型可能要生成十几秒,一次性返回的话,用户对着空白屏干等,体感极差、还以为卡死了。流式让第一个字几乎立刻出现,用户一边读一边等,体感快了好几倍——虽然总时间没变。技术上,后端从模型那边<b>逐块接收</b>、再<b>逐块转发</b>给前端(常用 SSE / 流式响应)。代价是代码比"一次性返回"略复杂(要处理流、要处理中途断开),但对任何面向人的 AI 应用,这几乎是必备体验。</p>
+      <figure>
+        <svg viewBox="0 0 600 180" role="img" aria-label="一次性返回与流式输出的时间轴对比">
+          <text x="70" y="28" class="nl">一次性返回</text>
+          <line x1="60" y1="50" x2="560" y2="50" class="d-ink"/>
+          <line x1="60" y1="45" x2="60" y2="55" class="d-ink"/><text x="60" y="72" text-anchor="middle" class="el">点击</text>
+          <line x1="470" y1="45" x2="470" y2="55" class="d-ink"/><text x="470" y="72" text-anchor="middle" class="el">整段出现</text>
+          <path d="M64 40 Q 265 20 466 40" class="d-soft" fill="none"/>
+          <text x="265" y="18" text-anchor="middle" class="el">← 全程干等 →</text>
+          <text x="70" y="112" class="nl-acc">流式输出</text>
+          <line x1="60" y1="134" x2="560" y2="134" class="d-acc"/>
+          <line x1="60" y1="129" x2="60" y2="139" class="d-acc"/><text x="60" y="156" text-anchor="middle" class="el">点击</text>
+          <line x1="110" y1="129" x2="110" y2="139" class="d-acc"/><text x="120" y="156" text-anchor="middle" class="el-acc">立刻开始出字</text>
+          <circle cx="140" cy="134" r="3" class="dot-acc"/><circle cx="200" cy="134" r="3" class="dot-acc"/><circle cx="260" cy="134" r="3" class="dot-acc"/><circle cx="320" cy="134" r="3" class="dot-acc"/><circle cx="380" cy="134" r="3" class="dot-acc"/><circle cx="440" cy="134" r="3" class="dot-acc"/>
+          <text x="470" y="126" text-anchor="middle" class="el">逐字持续出现</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>流式输出:总时间没变,但第一个字几乎立刻出现、逐字持续显示,把"干等"变成"边读边等",体感快数倍。</figcaption>
+      </figure>
+
+      <p class="handoff">体验顺了,再回头把 A06 的成本账,用两个开关落地。</p>
+      <h2 id="cache"><span class="no">10</span><span>缓存与限流</span></h2>
+      <p class="one-liner"><b>缓存</b>:相同的请求别重复烧钱,把上次的答案存起来直接返回(省钱 + 秒回)。<b>限流</b><span class="en">rate limit</span>:给每个用户/每段时间的调用次数设上限,防恶意刷爆、防单点烧穿预算(保命)。</p>
+      <p>这两个开关都装在第 8 节的后端关口上。<b>缓存</b>:很多请求是重复的(同样的问题、同样的文档),把"输入→输出"存进缓存,再来相同输入就直接给,既省 A06 说的 token 钱、又快;还有厂商提供的<b>提示词缓存</b>,能把重复的长前缀(如系统提示)算一次反复用。<b>限流</b>:没有它,一个脚本或恶意用户几分钟就能把预算刷光、或把服务打垮;给每个用户设"每分钟 N 次""每天 M 次"的闸,超了就婉拒或排队。两者一个管"少花冤枉钱",一个管"别被人一次性搞破产"——都是 A06 成本与安全在工程上的落地。</p>
+
+      <p class="handoff">最后一步:把它推上线,并且——上线只是开始,得盯着它。</p>
+      <h2 id="deploy"><span class="no">11</span><span>部署与监控</span></h2>
+      <p class="one-liner"><b>部署</b>=把后端放到一台<b>一直开着的服务器</b>上(云平台/serverless/容器),让全世界能访问。<b>监控</b>=上线后持续盯<b>四块表:延迟、错误率、成本、质量</b>,坏了能第一时间发现——上线不是终点,是开始。</p>
+      <p><b>部署</b>入门有轻有重:最轻是 serverless / 平台托管(如各家云的函数或应用平台,推上去就有网址,不管服务器),适合起步;规模大了再上容器(Docker)和编排。选最省心的先上线,别一开始就搞复杂运维。<b>监控</b>才是长期的活,盯四块表:<b>延迟</b>(用户等多久,尤其首字时间)、<b>错误率</b>(调用失败/超时占比)、<b>成本</b>(每天烧多少、接 A06)、<b>质量</b>(把 A06 的评测闭环接到线上真实流量、抽检打分)。任何一块异常就告警、就排查。这四块表,正是把 AI 应用<b>纳入日常运营和治理</b>时要天天看的仪表盘——治理不是一次性审批,是持续看着这四个数。</p>
+      <figure>
+        <svg viewBox="0 0 600 190" role="img" aria-label="上线后监控四块表的闭环">
+          <defs><marker id="m-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="230" y="20" width="140" height="42" rx="8" class="box-acc"/><text x="300" y="46" text-anchor="middle" class="nl-acc">线上运行的应用</text>
+          <line x1="230" y1="50" x2="150" y2="86" class="d-acc" marker-end="url(#m-d)"/>
+          <line x1="277" y1="62" x2="255" y2="86" class="d-acc" marker-end="url(#m-d)"/>
+          <line x1="323" y1="62" x2="345" y2="86" class="d-acc" marker-end="url(#m-d)"/>
+          <line x1="370" y1="50" x2="450" y2="86" class="d-acc" marker-end="url(#m-d)"/>
+          <rect x="60" y="88" width="90" height="40" rx="6" class="box"/><text x="105" y="106" text-anchor="middle" class="el">延迟</text><text x="105" y="121" text-anchor="middle" class="el">等多久</text>
+          <rect x="210" y="88" width="90" height="40" rx="6" class="box"/><text x="255" y="106" text-anchor="middle" class="el">错误率</text><text x="255" y="121" text-anchor="middle" class="el">失败占比</text>
+          <rect x="300" y="88" width="90" height="40" rx="6" class="box"/><text x="345" y="106" text-anchor="middle" class="el">成本</text><text x="345" y="121" text-anchor="middle" class="el">每天烧多少</text>
+          <rect x="450" y="88" width="90" height="40" rx="6" class="box"/><text x="495" y="106" text-anchor="middle" class="el">质量</text><text x="495" y="121" text-anchor="middle" class="el">线上抽检</text>
+          <line x1="105" y1="128" x2="270" y2="164" class="d-soft" marker-end="url(#m-d)"/>
+          <line x1="495" y1="128" x2="330" y2="164" class="d-soft" marker-end="url(#m-d)"/>
+          <rect x="220" y="162" width="160" height="24" rx="6" class="box"/><text x="300" y="178" text-anchor="middle" class="el">异常 → 告警 → 排查修复</text>
+        </svg>
+        <figcaption><span class="fig-num">图 4</span>上线后监控四块表:延迟、错误率、成本、质量。任何一块异常就告警、排查——这也是治理 AI 系统日常要盯的运营仪表。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 D ========== -->
+      <p class="handoff">五块地基到齐。下面用一个最小后端代理,把它们落成代码。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:一个最小后端代理</span></h2>
+      <p>这段 FastAPI 后端就是第 8 节那个"关口":密钥在它手里,前端只跟它说话,它顺带做限流、缓存、流式、留痕:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">backend.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> os</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> fastapi </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> FastAPI, Request, HTTPException</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> fastapi.responses </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> StreamingResponse</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">app </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> FastAPI()</span></span>
+<span class="line"><span style="color:#14181F">client </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> Model(api_key</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">os.environ[</span><span style="color:#557089">"API_KEY"</span><span style="color:#14181F">])   </span><span style="color:#8B95A8;font-style:italic"># ⑧ 密钥从环境变量读,绝不写进代码/git</span></span>
+<span class="line"><span style="color:#14181F">cache, hits </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> {}, {}                             </span><span style="color:#8B95A8;font-style:italic"># ⑩ 简易缓存 + 计数</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">@app.post(</span><span style="color:#557089">"/ask"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">async</span><span style="color:#14181F;font-weight:bold"> def</span><span style="color:#14181F"> ask(req: Request):</span></span>
+<span class="line"><span style="color:#14181F">    body </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F;font-weight:bold"> await</span><span style="color:#14181F"> req.json()</span></span>
+<span class="line"><span style="color:#14181F">    user, question </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> body[</span><span style="color:#557089">"user"</span><span style="color:#14181F">], body[</span><span style="color:#557089">"question"</span><span style="color:#14181F">]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F"> hits.get(user, 0) </span><span style="color:#14181F;font-weight:bold">></span><span style="color:#14181F"> 100:                  </span><span style="color:#8B95A8;font-style:italic"># ⑩ 限流:防刷爆、防烧穿预算</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        raise</span><span style="color:#14181F"> HTTPException(429, </span><span style="color:#557089">"今日次数已达上限"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">    hits[user] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> hits.get(user, 0) </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> 1</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F"> question </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> cache:                         </span><span style="color:#8B95A8;font-style:italic"># ⑩ 缓存:相同问题直接返回,省钱又秒回</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        return</span><span style="color:#14181F"> {</span><span style="color:#557089">"answer"</span><span style="color:#14181F">: cache[question], </span><span style="color:#557089">"cached"</span><span style="color:#14181F">: True}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    async</span><span style="color:#14181F;font-weight:bold"> def</span><span style="color:#14181F"> stream():                           </span><span style="color:#8B95A8;font-style:italic"># ⑨ 流式:边生成边推给前端(打字机效果)</span></span>
+<span class="line"><span style="color:#14181F">        full </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089"> ""</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        async</span><span style="color:#14181F;font-weight:bold"> for</span><span style="color:#14181F"> chunk </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> client.stream(question):</span></span>
+<span class="line"><span style="color:#14181F">            full </span><span style="color:#14181F;font-weight:bold">+=</span><span style="color:#14181F"> chunk</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">            yield</span><span style="color:#14181F"> chunk                           </span><span style="color:#8B95A8;font-style:italic"># 逐字吐给前端</span></span>
+<span class="line"><span style="color:#14181F">        cache[question] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> full                     </span><span style="color:#8B95A8;font-style:italic"># 生成完存进缓存</span></span>
+<span class="line"><span style="color:#14181F">        log(user, question, len(full))            </span><span style="color:#8B95A8;font-style:italic"># ⑪ 留痕:给监控四块表供数(接 A05/A06)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> StreamingResponse(stream(), media_type</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"text/event-stream"</span><span style="color:#14181F">)</span></span></code></pre>
+      </div>
+      <p>逐块对照五块地基:<code>os.environ["API_KEY"]</code> 是<b>密钥安全</b>(⑧,从环境变量读,前端和 git 里都没有);<code>hits > 100</code> 是<b>限流</b>(⑩,防单个用户刷爆);<code>question in cache</code> 是<b>缓存</b>(⑩,重复问直接答);<code>async for chunk ... yield</code> 是<b>流式</b>(⑨,逐字推送);<code>log(...)</code> 是<b>留痕</b>(⑪,给监控的四块表喂数)。整个函数就是第 8 节那个"关口"的骨架——前端只需 POST 一个问题给 <code>/ask</code>,密钥、限流、缓存、流式、日志全在后端一处收口。真实项目会把内存里的 <code>cache/hits</code> 换成 Redis、加上错误重试和鉴权,但结构就是它。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战 · 收官项目</span>
+        <h3>把整条 A 系列跑成一个应用</h3>
+        <p>用这段后端做骨架,接上前几章的成果:①把 <a href="A03-RAG检索增强生成.html">A03 的 RAG</a> 作为回答来源(基于文档答);②按 <a href="A06-评估幻觉安全成本.html">A06</a> 加一条输出安全检查和一个最小评测集;③部署到一个 serverless 平台拿到网址;④给它接上延迟/成本两块最简监控。做完,就有了一个真正能用的 AI 应用——这正是<a href="../index.html">项目 P7</a>。想想:如果要给它<b>立治理规矩</b>,会在这段后端的哪几行加?(密钥管理 / 限流阈值 / 日志留痕 / 安全拦截)</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;下列链接均于 2026-08-16 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://platform.openai.com/docs/guides/production-best-practices" target="_blank" rel="noopener">OpenAI · 生产最佳实践</a></span><span class="spine">主线 · 上线</span><span class="tags">官方指南 · 英文 · 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">官方总结"把 AI 应用真上线要注意什么":密钥、限流、错误处理、成本。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章讲"上线四块表",它是一手的对照清单,照着排查就不容易翻车。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">密钥安全 / 限流 / 错误与重试几节。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「后端封装与密钥安全」「缓存限流」节。</span></div>
+        </div>
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener">FastAPI 文档</a></span><span class="spine">主线 · 后端</span><span class="tags">框架官方 · 可切中文 · 2–3h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">Python 最主流的后端框架,文档本身就是极好的教程。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章的"后端唯一关口"就是用它写的;跟完 Tutorial 就能自己搭一个。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Tutorial(前 6 节)+ Streaming(流式输出);可切中文。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「后端代理」「流式输出」节 + 项目 <a href="../项目/P7-完整AI应用.html">P7</a>。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://docs.anthropic.com/" target="_blank" rel="noopener">Anthropic API 文档</a></span><span class="tags">厂商官方 · 英文 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">Claude API 的用法文档,含流式、提示缓存等。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">要实现流式输出、用缓存省钱时的一手参考。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Streaming、Prompt caching 两节。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「流式输出」「缓存限流」节查用。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://huyenchip.com/" target="_blank" rel="noopener">Chip Huyen · AI Engineering</a></span><span class="tags">书/博客 · 英文 · 按需 · 部分免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">讲 AI 应用推理/部署取舍的系统性作者。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想理解"部署的更大图景"(延迟、成本、可靠性)时读她。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">推理 / 部署章。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「上线与监控四块表」节。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>demo 能跑,稍微改改就能上线</td><td>差的是稳、安全、可持续、体验一整套;功能只是其中最小的一块。</td></tr>
+          <tr><td>前端直接调模型 API 更省事</td><td>密钥会被 F12 看光、被盗刷。必须走后端,密钥锁后端、永不进 git。</td></tr>
+          <tr><td>等模型写完一次性返回就行</td><td>用户干等体感极差。流式让第一个字立刻出现,是面向人应用的必备体验。</td></tr>
+          <tr><td>上线成功就大功告成</td><td>上线是开始。要盯延迟/错误/成本/质量四块表,坏了第一时间发现。</td></tr>
+          <tr><td>没人会来刷我的小应用</td><td>公开接口一定会被扫、被刷。限流是保命项,不是可选项。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>差距。</b>demo 和产品最根本的差距是什么?<details><summary>参考答案</summary><p>不在功能,在稳(不崩)、安全(不泄密不被刷)、可持续(不爆预算、坏了能发现)、体验(别干等)。写 demo 想"能不能实现",做产品想"出错会怎样"。</p></details></li>
+        <li><b>密钥。</b>为什么密钥必须在后端、前端直连为什么危险?<details><summary>参考答案</summary><p>密钥=钱包。前端代码人人可见(F12 就能看),直连会被复制盗刷、烧光预算。必须由后端保管、从环境变量读、永不进 git。</p></details></li>
+        <li><b>流式。</b>流式输出总时间没变,为什么还值得做?<details><summary>参考答案</summary><p>第一个字几乎立刻出现、逐字显示,把"干等十几秒"变成"边读边等",体感快数倍,还避免用户以为卡死。</p></details></li>
+        <li><b>监控。</b>上线后要盯哪四块表?<details><summary>参考答案</summary><p>延迟(等多久/首字时间)、错误率(失败占比)、成本(每天烧多少)、质量(线上抽检打分)。异常就告警排查。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上,应用工程 A 系列就算通关(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清 demo 和产品的四点差距</li>
+          <li><input type="checkbox"> 我能画出正确生产架构,并说清密钥为什么在后端</li>
+          <li><input type="checkbox"> 我知道密钥永不进前端、永不 git commit</li>
+          <li><input type="checkbox"> 我理解流式输出为什么对体验关键</li>
+          <li><input type="checkbox"> 我知道缓存省钱、限流保命,且都装在后端关口</li>
+          <li><input type="checkbox"> 我能列出监控四块表:延迟/错误/成本/质量</li>
+          <li><input type="checkbox"> 我看懂了那段后端代理,知道每块对应哪个概念</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>收官:已经走通了整条路</span></h2>
+      <p>从 A01 把话讲清,到 A07 把应用推上线,已经完整走过了"<b>从想法到能用的 AI 应用</b>"这条路:提示词 → 结构化输出 → RAG → Agent → harness → 评估安全成本 → 工程化部署。<b>剩下的是动手部分</b>: <a href="../index.html">项目 P4(命令行 AI 助手)、P6(一个小 Agent)、P7(完整 AI 应用)</a>,把这七章拼成真东西。对<b>治理体系</b>而言,这七章补齐了最要紧的底层拼图:现在能看懂 AI 应用是怎么搭起来的、harness 这一层在做什么、治理的技术抓手(密钥、权限、策略、日志、监控)各落在哪里。地基已经打好,新的东西再来,也能看懂、能接住。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="A06-评估幻觉安全成本.html"><span class="lb">上一章</span><span class="tt">A06 · 评估、幻觉、安全与成本</span></a>
+        <a href="../index.html" class="next"><span class="lb">回到</span><span class="tt">课程首页 · 去做项目</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">A07 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="gap" href="#gap"><i>7</i>demo → 产品</a>
+        <a data-toc-target="backend" href="#backend"><i>8</i>后端与密钥</a>
+        <a data-toc-target="stream" href="#stream"><i>9</i>流式输出</a>
+        <a data-toc-target="cache" href="#cache"><i>10</i>缓存与限流</a>
+        <a data-toc-target="deploy" href="#deploy"><i>11</i>部署与监控</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>最小后端代理</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>收官</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="A07" data-kind="chapter" data-title="工程化与部署"></script>
+</body>
+</html>

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P3 · 手写数字识别</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg,.term .thead{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0;}
+.badge{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.04em;color:var(--ink-soft);border:1px solid var(--rule);border-radius:20px;padding:4px 12px;background:var(--surface);}
+.badge b{color:var(--acc);font-weight:700;}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.milestone{border-left:3px solid var(--acc);padding:2px 0 2px 15px;margin:18px 0 18px -18px;}
+.milestone .label{display:block;font-family:var(--sans);font-size:var(--fs-small);font-weight:600;color:var(--acc);margin:0 0 4px;}
+.milestone p{margin:4px 0;}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.term{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:#12151b;}
+.term .thead{display:flex;align-items:center;gap:8px;padding:7px 14px;background:#1b1f27;border-bottom:1px solid #2a2f3a;color:#8b95a8;}
+.term .dots{display:flex;gap:5px;}
+.term .dots i{width:9px;height:9px;border-radius:50%;display:block;background:#3a4150;}
+.term pre{margin:0;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;color:#d7dce5;}
+.term .u{color:#8fa7ff;} .term .a{color:#e6e9f0;} .term .c{color:#6b7688;} .term .p{color:#5fd39a;}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="P2-第一个预测模型.html">P2 预测模型</a><span class="sep">—</span>
+      <a href="P3-手写数字识别.html" class="current">P3 手写数字识别</a><span class="sep">—</span>
+      <a href="P4-命令行AI助手.html">P4 命令行助手</a>
+      <span class="spacer"></span>
+      <a href="#build" class="jump">开始搭建</a>
+      <a href="#pit" class="jump">常见坑</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">项目 · P3 · 第一个神经网络</p>
+        <h1>手写数字识别</h1>
+        <div class="badge-row">
+          <span class="badge">难度 ★★☆</span>
+          <span class="badge">PyTorch + CNN</span>
+          <span class="badge">约 4–6 小时</span>
+          <span class="badge">CPU 可跑(约 10 分钟)</span>
+        </div>
+        <p class="recap">前两个项目用的是表格数据、特征由人挑。这一次换战场:<b>图像</b>——特征不再手工设计,而是让 <a href="../深度课程/D08-卷积神经网络CNN.html">CNN</a> 自己从像素里学出来。这是深度学习的经典入门题:训练一个模型认出手写的 0–9,准确率能到 <b>99%</b>。用的正是 <a href="../深度课程/D07-PyTorch与完整训练循环.html">D07</a> 那个五步训练循环和 <a href="../深度课程/D08-卷积神经网络CNN.html">D08</a> 那个小 CNN——<b>把两章的东西真跑起来,深度学习就从概念变成了手艺。</b></p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">做完这个项目,会拥有</p>
+        <ul>
+          <li>一个训练好的手写数字识别模型(准确率 99% 左右)</li>
+          <li>一份可复用的 PyTorch 训练脚本模板(数据 → 模型 → 五步循环 → 评估)</li>
+          <li>训练曲线图 + 错例图:看清模型在哪些数字上会犯错</li>
+          <li>对"深度学习自己学特征"的第一手体感</li>
+        </ul>
+      </section>
+
+      <h2 id="preview"><span class="no">1</span><span>成品长什么样</span></h2>
+      <div class="term">
+        <div class="thead">终端输出 · 训练与评估</div>
+        <pre><span class="p">$</span> <span class="a">python 训练.py</span>
+<span class="c">设备: cpu | 训练集 60000 张 | 测试集 10000 张</span>
+<span class="u">epoch 1</span>  训练损失 0.281  测试准确率 <span class="p">97.6%</span>   (68s)
+<span class="u">epoch 2</span>  训练损失 0.079  测试准确率 <span class="p">98.5%</span>   (67s)
+<span class="u">epoch 3</span>  训练损失 0.056  测试准确率 <span class="p">98.9%</span>   (69s)
+<span class="u">epoch 4</span>  训练损失 0.043  测试准确率 <span class="p">99.0%</span>   (68s)
+<span class="u">epoch 5</span>  训练损失 0.035  测试准确率 <span class="p">99.1%</span>   (68s)
+<span class="c">--- 最容易认错的 ---</span>
+真 9 → 猜 4 (17 次) | 真 7 → 猜 2 (12 次) | 真 5 → 猜 3 (9 次)
+<span class="c">→ 已保存 模型.pt / 训练曲线.png / 错例.png</span></pre>
+      </div>
+      <p>三个产出:训练好的模型文件、训练曲线(损失下降 + 准确率上升)、以及<b>错例图</b>——把模型认错的数字画出来,会发现有些连人也看不清。</p>
+
+      <h2 id="prep"><span class="no">2</span><span>准备</span></h2>
+      <ol class="steps">
+        <li><p><b>装 PyTorch。</b>去 <a href="https://pytorch.org/get-started/locally/" target="_blank" rel="noopener">官方安装页</a>按系统选命令;<b>没有显卡就选 CPU 版</b>,这个项目 CPU 十分钟能跑完。</p>
+          <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span><button class="copy" type="button">复制</button></span></div><pre>pip install torch torchvision matplotlib</pre></div>
+        </li>
+        <li><p><b>确认前置。</b>这个项目直接用 <a href="../深度课程/D07-PyTorch与完整训练循环.html">D07</a> 的五步循环和 <a href="../深度课程/D08-卷积神经网络CNN.html">D08</a> 的 SmallCNN。<b>忘了的话回去扫一眼那两章的代码</b>,这里是把它们接起来。</p></li>
+        <li><p><b>建目录。</b>数据集会自动下载(约 10 MB),不用手动准备。</p>
+          <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span><button class="copy" type="button">复制</button></span></div><pre>mkdir ~\ai-lab\p3-mnist
+cd ~\ai-lab\p3-mnist</pre></div>
+        </li>
+      </ol>
+
+      <h2 id="build"><span class="no">3</span><span>分步搭建</span></h2>
+
+      <h3>第 1 步 · 数据管道</h3>
+      <div class="code-block">
+        <div class="chead"><span class="fn">训练.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch.nn </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> nn</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> torch.utils.data </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> DataLoader</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> torchvision </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> datasets, transforms</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">dev </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089"> "cuda"</span><span style="color:#14181F;font-weight:bold"> if</span><span style="color:#14181F"> torch.cuda.is_available() </span><span style="color:#14181F;font-weight:bold">else</span><span style="color:#557089"> "cpu"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">tf </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> transforms.Compose([</span></span>
+<span class="line"><span style="color:#14181F">    transforms.ToTensor(),                       </span><span style="color:#8B95A8;font-style:italic"># 图片 → 张量,像素缩到 0~1</span></span>
+<span class="line"><span style="color:#14181F">    transforms.Normalize((0.1307,), (0.3081,)),  </span><span style="color:#8B95A8;font-style:italic"># 标准化(D06 的特征缩放,用 MNIST 的统计量)</span></span>
+<span class="line"><span style="color:#14181F">])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">train_set </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> datasets.MNIST(</span><span style="color:#557089">"./data"</span><span style="color:#14181F">, train</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True,  download</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True, transform</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">tf)</span></span>
+<span class="line"><span style="color:#14181F">test_set  </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> datasets.MNIST(</span><span style="color:#557089">"./data"</span><span style="color:#14181F">, train</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">False, download</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True, transform</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">tf)</span></span>
+<span class="line"><span style="color:#14181F">train_loader </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> DataLoader(train_set, batch_size</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">128, shuffle</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)   </span><span style="color:#8B95A8;font-style:italic"># D07:切批 + 打乱</span></span>
+<span class="line"><span style="color:#14181F">test_loader  </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> DataLoader(test_set,  batch_size</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">512)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"设备: </span><span style="color:#557089">{</span><span style="color:#14181F">dev</span><span style="color:#557089">}</span><span style="color:#557089"> | 训练集 </span><span style="color:#557089">{</span><span style="color:#14181F">len(train_set)</span><span style="color:#557089">}</span><span style="color:#557089"> 张 | 测试集 </span><span style="color:#557089">{</span><span style="color:#14181F">len(test_set)</span><span style="color:#557089">}</span><span style="color:#557089"> 张"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">x, y </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> next(iter(train_loader))</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"一批的形状:"</span><span style="color:#14181F">, x.shape)      </span><span style="color:#8B95A8;font-style:italic"># torch.Size([128, 1, 28, 28]) = 批×通道×高×宽</span></span></code></pre>
+      </div>
+      <div class="milestone"><span class="label">检查点</span><p>打印出 <code>[128, 1, 28, 28]</code>。<b>形状意识很重要</b>(<a href="../基础课程/03-NumPy数组与形状.html">第 3 章</a>):1 是通道数(灰度图只有 1 个通道,彩色是 3),28×28 是像素——这正是 <a href="../深度课程/D08-卷积神经网络CNN.html">D08</a> 那个 SmallCNN 的输入。</p></div>
+
+      <h3>第 2 步 · 模型:D08 的小 CNN</h3>
+      <div class="code-block">
+        <div class="chead"><span class="fn">训练.py(续)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">class</span><span style="color:#14181F"> SmallCNN(nn.Module):</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    def</span><span style="color:#14181F"> __init__(self):</span></span>
+<span class="line"><span style="color:#14181F">        super().__init__()</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.features </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.Sequential(                    </span><span style="color:#8B95A8;font-style:italic"># 前半段:看图、提特征</span></span>
+<span class="line"><span style="color:#14181F">            nn.Conv2d(1, 16, 3, padding</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">1), nn.ReLU(), nn.MaxPool2d(2),   </span><span style="color:#8B95A8;font-style:italic"># 28×28 → 14×14</span></span>
+<span class="line"><span style="color:#14181F">            nn.Conv2d(16, 32, 3, padding</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">1), nn.ReLU(), nn.MaxPool2d(2),  </span><span style="color:#8B95A8;font-style:italic"># 14×14 → 7×7</span></span>
+<span class="line"><span style="color:#14181F">        )</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        self</span><span style="color:#14181F">.classifier </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.Sequential(                  </span><span style="color:#8B95A8;font-style:italic"># 后半段:根据特征分类</span></span>
+<span class="line"><span style="color:#14181F">            nn.Flatten(),</span></span>
+<span class="line"><span style="color:#14181F">            nn.Linear(32 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> 7 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> 7, 128), nn.ReLU(),</span></span>
+<span class="line"><span style="color:#14181F">            nn.Dropout(0.25),                             </span><span style="color:#8B95A8;font-style:italic"># D10:正则化,防过拟合</span></span>
+<span class="line"><span style="color:#14181F">            nn.Linear(128, 10),                           </span><span style="color:#8B95A8;font-style:italic"># 10 个数字类别</span></span>
+<span class="line"><span style="color:#14181F">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    def</span><span style="color:#14181F"> forward(self, x):</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        return</span><span style="color:#14181F;font-weight:bold"> self</span><span style="color:#14181F">.classifier(</span><span style="color:#14181F;font-weight:bold">self</span><span style="color:#14181F">.features(x))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">model </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> SmallCNN().to(dev)</span></span>
+<span class="line"><span style="color:#14181F">print(sum(p.numel() </span><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> p </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> model.parameters()), </span><span style="color:#557089">"个参数"</span><span style="color:#14181F">)   </span><span style="color:#8B95A8;font-style:italic"># 约 22 万</span></span></code></pre>
+      </div>
+      <div class="milestone"><span class="label">检查点</span><p>约 22 万参数——<b>比 <a href="../深度课程/D15-Transformer完整结构.html">D15</a> 那个迷你 GPT 小三个数量级,却足以把手写数字认到 99%</b>。任务难度决定模型大小,不是越大越好。</p></div>
+
+      <h3>第 3 步 · 五步训练循环</h3>
+      <div class="code-block">
+        <div class="chead"><span class="fn">训练.py(续)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> time</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">loss_fn   </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.CrossEntropyLoss()                                  </span><span style="color:#8B95A8;font-style:italic"># 分类用交叉熵(D02)</span></span>
+<span class="line"><span style="color:#14181F">optimizer </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> torch.optim.Adam(model.parameters(), lr</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">1e-3)          </span><span style="color:#8B95A8;font-style:italic"># D10:默认先用 Adam</span></span>
+<span class="line"><span style="color:#14181F">hist </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> {</span><span style="color:#557089">"loss"</span><span style="color:#14181F">: [], </span><span style="color:#557089">"acc"</span><span style="color:#14181F">: []}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> evaluate():</span></span>
+<span class="line"><span style="color:#14181F">    model.eval()                                   </span><span style="color:#8B95A8;font-style:italic"># 评估模式:Dropout 关掉(D10 的必修)</span></span>
+<span class="line"><span style="color:#14181F">    right </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 0</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    with</span><span style="color:#14181F"> torch.no_grad():                          </span><span style="color:#8B95A8;font-style:italic"># 评估不需要梯度,省显存和时间</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        for</span><span style="color:#14181F"> xb, yb </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> test_loader:</span></span>
+<span class="line"><span style="color:#14181F">            pred </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> model(xb.to(dev)).argmax(1)     </span><span style="color:#8B95A8;font-style:italic"># 取概率最大的那个类别</span></span>
+<span class="line"><span style="color:#14181F">            right </span><span style="color:#14181F;font-weight:bold">+=</span><span style="color:#14181F"> (pred.cpu() </span><span style="color:#14181F;font-weight:bold">==</span><span style="color:#14181F"> yb).sum().item()</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> right </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> len(test_set)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> epoch </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> range(1, 6):</span></span>
+<span class="line"><span style="color:#14181F">    model.train()                                  </span><span style="color:#8B95A8;font-style:italic"># 训练模式:Dropout 生效</span></span>
+<span class="line"><span style="color:#14181F">    t0, total </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> time.time(), 0.0</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    for</span><span style="color:#14181F"> xb, yb </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> train_loader:</span></span>
+<span class="line"><span style="color:#14181F">        xb, yb </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> xb.to(dev), yb.to(dev)</span></span>
+<span class="line"><span style="color:#14181F">        pred </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> model(xb)                           </span><span style="color:#8B95A8;font-style:italic"># ① 前向</span></span>
+<span class="line"><span style="color:#14181F">        loss </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> loss_fn(pred, yb)                   </span><span style="color:#8B95A8;font-style:italic"># ② 算损失</span></span>
+<span class="line"><span style="color:#14181F">        optimizer.zero_grad()                      </span><span style="color:#8B95A8;font-style:italic"># ③ 梯度清零(D07:别忘)</span></span>
+<span class="line"><span style="color:#14181F">        loss.backward()                            </span><span style="color:#8B95A8;font-style:italic"># ④ 反向</span></span>
+<span class="line"><span style="color:#14181F">        optimizer.step()                           </span><span style="color:#8B95A8;font-style:italic"># ⑤ 更新</span></span>
+<span class="line"><span style="color:#14181F">        total </span><span style="color:#14181F;font-weight:bold">+=</span><span style="color:#14181F"> loss.item() </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> len(xb)</span></span>
+<span class="line"><span style="color:#14181F">    acc </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> evaluate()</span></span>
+<span class="line"><span style="color:#14181F">    hist[</span><span style="color:#557089">"loss"</span><span style="color:#14181F">].append(total </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> len(train_set)); hist[</span><span style="color:#557089">"acc"</span><span style="color:#14181F">].append(acc)</span></span>
+<span class="line"><span style="color:#14181F">    print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"epoch </span><span style="color:#557089">{</span><span style="color:#14181F">epoch</span><span style="color:#557089">}</span><span style="color:#557089">  训练损失 </span><span style="color:#557089">{</span><span style="color:#14181F">total</span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F">len(train_set)</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089">  测试准确率 </span><span style="color:#557089">{</span><span style="color:#14181F">acc</span><span style="color:#14181F;font-weight:bold">:.1%</span><span style="color:#557089">}</span><span style="color:#557089">  (</span><span style="color:#557089">{</span><span style="color:#14181F">time.time()</span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F">t0</span><span style="color:#14181F;font-weight:bold">:.0f</span><span style="color:#557089">}</span><span style="color:#557089">s)"</span><span style="color:#14181F">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">torch.save(model.state_dict(), </span><span style="color:#557089">"模型.pt"</span><span style="color:#14181F">)</span></span></code></pre>
+      </div>
+      <div class="milestone"><span class="label">检查点</span><p>第一轮就能到 97%+,五轮后约 99%。<b>那五行带 ①–⑤ 注释的,就是 <a href="../深度课程/D07-PyTorch与完整训练循环.html">D07</a> 的五步循环,一字未改</b>——换成任何模型、任何数据,这五步都一样。这就是"底盘"的意思。</p></div>
+
+      <h3>第 4 步 · 看曲线、看错例</h3>
+      <div class="code-block">
+        <div class="chead"><span class="fn">训练.py(续)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> matplotlib</span></span>
+<span class="line"><span style="color:#14181F">matplotlib.use(</span><span style="color:#557089">"Agg"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> matplotlib.pyplot </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> plt</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> collections </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> Counter</span></span>
+<span class="line"><span style="color:#14181F">plt.rcParams[</span><span style="color:#557089">"font.sans-serif"</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [</span><span style="color:#557089">"Microsoft YaHei"</span><span style="color:#14181F">]</span></span>
+<span class="line"><span style="color:#14181F">plt.rcParams[</span><span style="color:#557089">"axes.unicode_minus"</span><span style="color:#14181F">] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> False</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 训练曲线</span></span>
+<span class="line"><span style="color:#14181F">fig, ax </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> plt.subplots(1, 2, figsize</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">(11, 4))</span></span>
+<span class="line"><span style="color:#14181F">ax[0].plot(hist[</span><span style="color:#557089">"loss"</span><span style="color:#14181F">], marker</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"o"</span><span style="color:#14181F">); ax[0].set_title(</span><span style="color:#557089">"训练损失"</span><span style="color:#14181F">); ax[0].set_xlabel(</span><span style="color:#557089">"epoch"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">ax[1].plot([a</span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F">100 </span><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> a </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> hist[</span><span style="color:#557089">"acc"</span><span style="color:#14181F">]], marker</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"o"</span><span style="color:#14181F">); ax[1].set_title(</span><span style="color:#557089">"测试准确率(%)"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">plt.tight_layout(); plt.savefig(</span><span style="color:#557089">"训练曲线.png"</span><span style="color:#14181F">, dpi</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">120)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 找出所有错例,统计最容易混的组合</span></span>
+<span class="line"><span style="color:#14181F">model.eval(); wrong </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> []</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">with</span><span style="color:#14181F"> torch.no_grad():</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    for</span><span style="color:#14181F"> xb, yb </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> test_loader:</span></span>
+<span class="line"><span style="color:#14181F">        p </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> model(xb.to(dev)).argmax(1).cpu()</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        for</span><span style="color:#14181F"> i </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> (p </span><span style="color:#14181F;font-weight:bold">!=</span><span style="color:#14181F"> yb).nonzero(as_tuple</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)[0]:</span></span>
+<span class="line"><span style="color:#14181F">            wrong.append((xb[i][0], yb[i].item(), p[i].item()))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">pairs </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> Counter((t, g) </span><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> _, t, g </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> wrong).most_common(3)</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"--- 最容易认错的 ---"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> (t, g), n </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> pairs:</span></span>
+<span class="line"><span style="color:#14181F">    print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"真 </span><span style="color:#557089">{</span><span style="color:#14181F">t</span><span style="color:#557089">}</span><span style="color:#557089"> → 猜 </span><span style="color:#557089">{</span><span style="color:#14181F">g</span><span style="color:#557089">}</span><span style="color:#557089"> (</span><span style="color:#557089">{</span><span style="color:#14181F">n</span><span style="color:#557089">}</span><span style="color:#557089"> 次)"</span><span style="color:#14181F">, end</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">" | "</span><span style="color:#14181F">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 画 10 个错例</span></span>
+<span class="line"><span style="color:#14181F">fig, axes </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> plt.subplots(2, 5, figsize</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">(10, 4.5))</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> axx, (img, t, g) </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> zip(axes.ravel(), wrong[:10]):</span></span>
+<span class="line"><span style="color:#14181F">    axx.imshow(img, cmap</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"gray"</span><span style="color:#14181F">); axx.set_title(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"真</span><span style="color:#557089">{</span><span style="color:#14181F">t</span><span style="color:#557089">}</span><span style="color:#557089"> 猜</span><span style="color:#557089">{</span><span style="color:#14181F">g</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">, fontsize</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">10); axx.axis(</span><span style="color:#557089">"off"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">plt.tight_layout(); plt.savefig(</span><span style="color:#557089">"错例.png"</span><span style="color:#14181F">, dpi</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">120)</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"\n→ 已保存 模型.pt / 训练曲线.png / 错例.png"</span><span style="color:#14181F">)</span></span></code></pre>
+      </div>
+      <div class="milestone"><span class="label">交付</span><p>打开 <code>错例.png</code>——<b>这是整个项目最值得看的一张图</b>。会发现很多错例连人也难辨认(写得潦草的 9 和 4)。这给了一个重要判断力:<b>剩下那 1% 的错误里,有相当一部分是数据本身的模糊,不是模型不够努力。</b></p></div>
+
+      <h2 id="run"><span class="no">4</span><span>跑起来之后:该看什么</span></h2>
+      <ol>
+        <li><b>训练损失和测试准确率的关系</b>:损失一直降、准确率却不再涨,就是开始过拟合了(<a href="../深度课程/D10-优化器正则化与训练技巧.html">D10</a> 的曲线诊断)。这个项目里 Dropout 已经压住了大部分。</li>
+        <li><b>和基线比</b>:随机猜是 10%;一个不带卷积的全连接网络约 97~98%;CNN 到 99%。<b>那 1~2 个百分点,正是"卷积保住了空间结构"带来的</b>(<a href="../深度课程/D08-卷积神经网络CNN.html">D08</a>)。</li>
+        <li><b>试试自己写的数字</b>:用画图软件写一个数字、存成 28×28 灰度图,喂进模型看它认不认得。<b>常常认不准</b>——因为笔迹和 MNIST 的分布不同,这就是真实世界里"分布偏移"的第一课。</li>
+      </ol>
+
+      <h2 id="pit"><span class="no">5</span><span>常见坑</span></h2>
+      <table class="tbl">
+        <caption>表 1 · 六个常见坑</caption>
+        <thead><tr><th>现象</th><th>原因与解法</th></tr></thead>
+        <tbody>
+          <tr><td>损失不降 / 一直是 2.3 左右</td><td>2.3 ≈ ln(10),说明模型在瞎猜。检查:忘了 <code>optimizer.zero_grad()</code>?学习率太大?忘了 <code>loss.backward()</code>?</td></tr>
+          <tr><td>测试准确率比训练时低很多</td><td>忘了 <code>model.eval()</code>——Dropout 还开着(<a href="../深度课程/D10-优化器正则化与训练技巧.html">D10</a> 的经典坑)。</td></tr>
+          <tr><td>形状报错 <code>mat1 and mat2 shapes...</code></td><td>Flatten 后的维度和 Linear 对不上。两次池化后是 <code>32×7×7</code>;改了结构就要跟着改这个数。</td></tr>
+          <tr><td>CPU 上慢得难受</td><td>把 <code>batch_size</code> 调大(256/512)、epoch 减到 3;或去 Colab 用免费 GPU。</td></tr>
+          <tr><td>下载数据集失败</td><td>网络问题。多试几次,或手动下载 MNIST 放进 <code>./data</code> 目录。</td></tr>
+          <tr><td>自己写的数字认不准</td><td>不是 bug:MNIST 的字是居中、白底黑字、特定粗细。要认自己的字,得做同样的预处理(居中、反色、缩放)。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="more"><span class="no">6</span><span>进阶</span></h2>
+      <ul>
+        <li><b>做消融实验</b>:把两个 <code>MaxPool2d</code> 去掉、或把 <code>Dropout</code> 去掉,各跑一次,记下准确率和耗时——<b>亲手验证 <a href="../深度课程/D08-卷积神经网络CNN.html">D08</a>/<a href="../深度课程/D10-优化器正则化与训练技巧.html">D10</a> 里那些结论</b>。</li>
+        <li><b>加数据增强</b>:在 <code>transforms</code> 里加 <code>RandomRotation(10)</code>,看泛化是否变好(<a href="../深度课程/D10-优化器正则化与训练技巧.html">D10</a> 的正则化四件套之一)。</li>
+        <li><b>换个更难的数据集</b>:<code>datasets.FashionMNIST</code>(衣服鞋包,同样 28×28),准确率会掉到 92% 左右——难度立刻显现。</li>
+        <li><b>试试迁移学习</b>:用 <a href="../深度课程/D11-迁移学习与微调.html">D11</a> 的方法,拿预训练 ResNet 微调一个真实彩色图像分类任务(如猫狗)。</li>
+      </ul>
+
+      <h2 id="learned"><span class="no">7</span><span>学到了什么</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 概念 ↔ 代码对照</caption>
+        <thead><tr><th>课程里的概念</th><th>这个项目里的哪一行</th></tr></thead>
+        <tbody>
+          <tr><td><a href="../深度课程/D07-PyTorch与完整训练循环.html">D07</a> · 五步训练循环</td><td>第 3 步带 ①–⑤ 注释的那五行</td></tr>
+          <tr><td><a href="../深度课程/D07-PyTorch与完整训练循环.html">D07</a> · Dataset / DataLoader</td><td>第 1 步 <code>DataLoader(batch_size=128, shuffle=True)</code></td></tr>
+          <tr><td><a href="../深度课程/D08-卷积神经网络CNN.html">D08</a> · 卷积 + 池化</td><td>第 2 步 <code>Conv2d</code> / <code>MaxPool2d</code>,28→14→7</td></tr>
+          <tr><td><a href="../深度课程/D10-优化器正则化与训练技巧.html">D10</a> · Dropout / Adam / train-eval</td><td>第 2、3 步的 <code>Dropout(0.25)</code>、<code>Adam</code>、<code>model.eval()</code></td></tr>
+          <tr><td><a href="../深度课程/D02-逻辑回归与分类边界.html">D02</a> · 交叉熵与 argmax</td><td>第 3 步 <code>CrossEntropyLoss</code>、<code>argmax(1)</code></td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="checklist"><span class="no">8</span><span>自查清单</span></h2>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我训练出了 98% 以上的模型并保存了 模型.pt</li>
+          <li><input type="checkbox"> 我看了训练曲线,能判断有没有过拟合</li>
+          <li><input type="checkbox"> 我看了错例图,理解剩下的错误里有多少是数据本身模糊</li>
+          <li><input type="checkbox"> 我能指出代码里哪五行是 D07 的五步循环</li>
+          <li><input type="checkbox"> 我知道 model.train() / model.eval() 为什么要切换</li>
+          <li><input type="checkbox"> 我做了至少一个消融实验(去掉池化或 Dropout)</li>
+          <li><input type="checkbox"> 我试过喂自己写的数字,并理解为什么常认不准</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">9</span><span>下一个项目</span></h2>
+      <p>到这里,<b>"自己训练模型"这条线的三个项目就全做完了</b>:表格体检(<a href="P1-数据体检报告.html">P1</a>)、表格建模(<a href="P2-第一个预测模型.html">P2</a>)、图像深度学习(P3)。接下来 <a href="P4-命令行AI助手.html">P4</a> 起换一条线:<b>不再自己训模型,而是调用别人训好的大模型做应用</b>——命令行助手、知识库问答、Agent、完整产品。两条线合起来,才是今天一个 AI 开发者的完整能力面。</p>
+      <nav class="chapter-nav" aria-label="导航">
+        <a href="P2-第一个预测模型.html"><span class="lb">上一个项目</span><span class="tt">P2 · 第一个预测模型</span></a>
+        <a href="P4-命令行AI助手.html" class="next"><span class="lb">下一个项目</span><span class="tt">P4 · 命令行 AI 助手</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本页目录">
+      <p class="toc-label">P3 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">看清目标</span>
+        <a data-toc-target="preview" href="#preview"><i>1</i>成品长什么样</a>
+        <a data-toc-target="prep" href="#prep"><i>2</i>准备</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="build" href="#build"><i>3</i>分步搭建</a>
+        <a data-toc-target="run" href="#run"><i>4</i>跑完看什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">消化</span>
+        <a data-toc-target="pit" href="#pit"><i>5</i>常见坑</a>
+        <a data-toc-target="more" href="#more"><i>6</i>进阶</a>
+        <a data-toc-target="learned" href="#learned"><i>7</i>学到了什么</a>
+        <a data-toc-target="checklist" href="#checklist"><i>8</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>9</i>下一个项目</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="P3" data-kind="project" data-title="手写数字识别"></script>
+</body>
+</html>

@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>01 · 人工智能全景与学习环境</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#f6f8fc; --raise:#f4f6fb; --bg-edge:#e9edf5; --card:#f6f8fc;
+  --ink:#14181f; --ink-soft:#55617a; --muted:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9; --line:#d8dee9;
+  --acc:#2743c7; --acc-dark:#1d33a0; --acc-soft:rgba(39,67,199,0.06); --teal:#0c6e63; --warn:#9a3412; --danger:#b42318;
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --measure:820px; --page-max:1240px; --line-h:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;scroll-padding-top:64px;}
+body{margin:0;color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line-h);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  background-color:#e6eaf1;background-image:url("../assets/paper-linen-v3.jpg");background-repeat:repeat;background-size:230px 230px;}
+main{position:relative;}
+/* 顶部进度条 + 常驻学习路径 */
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+/* 两栏栅格 */
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+/* 章首 */
+.hero{padding:6px 0 18px;border-bottom:1px solid var(--rule);margin-bottom:22px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.chip{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);border:1px solid var(--rule);border-radius:3px;padding:3px 8px;background:none;}
+.chip.teal{color:var(--teal);border-color:#bcd9d4;}
+.hero h1{font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 12px;letter-spacing:-.01em;}
+@media(max-width:640px){.hero h1{font-size:25px;}}
+.hero .lede{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+/* 正文 */
+article p,article li{font-size:var(--fs-body);line-height:var(--line-h);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;}
+article a:hover{text-decoration-color:var(--acc);}
+article ul,article ol{padding-left:22px;margin:.9em 0;}
+article li{margin:.5em 0;}
+/* 标题:字号 + 顶边线 + 等宽序号(与 02+ 一致) */
+h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;scroll-margin-top:64px;}
+h2 .no{font-family:var(--mono);font-weight:700;font-size:.62em;color:var(--acc);border:1.4px solid var(--acc);border-radius:7px;padding:0 7px;flex:none;transform:translateY(-2px);}
+h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:24px 0 8px;}
+h4{font-size:16px;margin:18px 0 6px;}
+[id]{scroll-margin-top:64px;}
+/* 说明块:统一成左竖线(替代原卡片式 note) */
+.note{border-left:3px solid var(--ink-faint);background:none;padding:2px 0 2px 15px;margin:20px 0 20px 0;font-size:var(--fs-body);border-radius:0;}
+.note.good{border-left-color:var(--teal);}
+.note.warn{border-left-color:var(--acc);}
+.note .note-t{font-family:var(--sans);font-size:var(--fs-small);font-weight:600;color:var(--ink-faint);display:block;margin-bottom:4px;}
+.note.good .note-t{color:var(--teal);} .note.warn .note-t{color:var(--acc);}
+.note>:first-child{margin-top:0;} .note>:last-child{margin-bottom:0;}
+/* 卡片 → 轻描边浅底(和图/代码同族的"纸上插件") */
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;margin:14px 0;}
+.card>:first-child{margin-top:0;} .card>:last-child{margin-bottom:0;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;} @media(max-width:700px){.grid2{grid-template-columns:1fr;}}
+/* 术语 + 一句话定义 */
+.term{font-weight:600;color:var(--ink);}
+.term-def{display:block;font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:8px 0 12px 0;padding-left:15px;border-left:3px solid var(--ink-faint);background:none;border-radius:0;}
+.term-def::before{content:"白话 · ";color:var(--ink-faint);font-weight:600;}
+/* 3W 块 */
+.w3{display:grid;grid-template-columns:84px 1fr;border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:12px 0;background:var(--surface);}
+.w3>dt{background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-weight:700;color:var(--acc);padding:10px 12px;font-size:13px;}
+.w3>dd{margin:0;padding:10px 16px;border-bottom:1px solid var(--rule);font-size:var(--fs-body);}
+.w3>dt:nth-last-of-type(1),.w3>dd:last-child{border-bottom:none;}
+/* 表格:细线,透纸(与 02+ 一致) */
+.tbl-scroll{overflow-x:auto;margin:14px 0;}
+table{border-collapse:collapse;width:100%;font-size:var(--fs-small);}
+th,td{border-bottom:1px solid var(--rule);padding:10px 13px;text-align:left;vertical-align:top;line-height:1.6;}
+th{font-weight:600;color:var(--ink);border-bottom:1.5px solid var(--ink);white-space:nowrap;}
+/* 代码块:浅底卡 + 变体A 墨黑灰上色 */
+pre{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);margin:12px 0;}
+pre .cm{color:#8b95a8;font-style:italic;} pre .kw{color:#14181f;font-weight:700;} pre .st{color:#557089;} pre .nb{color:#14181f;}
+code:not(pre code){font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);}
+pre.out{background:var(--bg-edge);border:1px dashed #c4cde0;color:#303b52;}
+pre.out::before{content:"预期输出";display:block;font-size:11px;color:var(--acc);margin-bottom:6px;font-family:var(--sans);font-weight:700;}
+/* 步骤 */
+.steps{counter-reset:st;list-style:none;padding-left:0;}
+.steps>li{counter-increment:st;position:relative;padding:0 0 16px 40px;margin:0;}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;border:1px solid var(--rule);border-radius:50%;background:var(--surface);color:var(--ink-soft);font-family:var(--mono);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;}
+.steps>li>:first-child{margin-top:0;}
+/* 折叠 */
+details{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:0 16px;margin:10px 0;}
+details summary{cursor:pointer;font-weight:600;padding:11px 0;list-style:none;display:flex;align-items:center;gap:8px;}
+details summary::-webkit-details-marker{display:none;}
+details summary::before{content:"▸";color:var(--acc);transition:transform .15s;}
+details[open] summary::before{transform:rotate(90deg);}
+details[open]{padding-bottom:12px;}
+details.hint summary{color:var(--teal);} details.answer summary{color:var(--acc-dark);}
+/* 图 */
+.fig{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:16px;margin:16px 0;overflow-x:auto;}
+.fig svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+.fig svg text{font-family:var(--sans);}
+.figcap{text-align:center;color:var(--ink-soft);font-size:var(--fs-small);margin:10px 0 0;}
+/* 自查清单 */
+.checklist{list-style:none;padding:0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:9px 14px;margin:7px 0;cursor:pointer;}
+.checklist input[type="checkbox"]{margin-top:5px;accent-color:var(--acc);width:16px;height:16px;flex:none;}
+/* 目录(章内) */
+.toc{columns:2;column-gap:26px;}
+.toc a{display:block;padding:3px 0;text-decoration:none;font-size:13px;break-inside:avoid;}
+.toc .toc-group{font-family:var(--mono);font-size:12px;color:var(--ink-faint);margin:8px 0 2px;break-inside:avoid;}
+@media(max-width:700px){.toc{columns:1;}}
+/* 模拟器 / 控件 */
+.sim{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:18px 20px;margin:16px 0;}
+.sim-tag{display:inline-block;font-family:var(--mono);font-size:11px;border-radius:4px;padding:2px 8px;margin-bottom:10px;font-weight:700;}
+.sim-tag.mock{background:var(--warn-soft,#fdeee4);color:var(--warn);border:1px solid #f0cdb4;}
+.sim label{font-size:13px;color:var(--muted);}
+.sim input[type="range"]{width:100%;accent-color:var(--acc);}
+.sim .readout{font-family:var(--mono);font-size:13px;color:var(--acc-dark);}
+.btn{display:inline-block;background:var(--acc);color:#fff !important;border:none;border-radius:7px;padding:8px 16px;font-size:13px;cursor:pointer;text-decoration:none;font-family:var(--sans);}
+.btn:hover{background:var(--acc-dark);} .btn.teal{background:var(--teal);} .btn.sm{padding:5px 13px;font-size:13px;}
+/* 章尾导航 */
+.chapter-nav,.pagefoot{margin-top:30px;padding-top:16px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-size:var(--fs-body);}
+.pagefoot a,.chapter-nav a{text-decoration:none;color:var(--acc);}
+/* 右侧常驻目录 */
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+.toc-sidebar .toc-label{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-sidebar .tg{display:block;font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);font-weight:700;margin:14px 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media print{.learning-path,.progress-bar{display:none !important;}body{background:#fff;background-image:none;}}
+</style>
+<style data-res-cards>
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body,15px);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .rrow{display:flex;gap:10px;padding:4px 0;border-top:1px dashed var(--rule);font-size:var(--fs-small,13px);line-height:1.6;}
+.res .rrow:first-of-type{border-top:0;}
+.res .rk{flex:none;width:6.5em;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-micro,11px);letter-spacing:.04em;padding-top:2px;}
+.res .rv{color:var(--ink-soft);}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="01-人工智能全景与学习环境.html" class="current">01 全景与环境</a><span class="sep">—</span>
+      <a href="02-Python基础.html">02 Python 基础</a>
+      <span class="spacer"></span>
+      <a href="../实验室/lab-01-规则与学习.html" class="jump">🧪 本章实验</a>
+      <a href="../题库/quiz-01.html" class="jump">📝 本章题库</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="hero">
+        <div class="chip-row">
+          <span class="chip">基础课程 · 第 1 章</span>
+          <span class="chip teal">阅读约 60 分钟</span>
+          <span class="chip teal">动手约 40 分钟</span>
+        </div>
+        <h1>人工智能全景与学习环境</h1>
+        <p class="lede">这一章干两件事:铺一张地图,让「人工智能、机器学习、深度学习、大模型」这些词各就各位;
+        再把本机上的学习环境装好、验证好,当天就跑通第一个实验。</p>
+      </header>
+
+
+  <!-- ============ 1 适合谁 ============ -->
+  <h2 id="fit"><span class="no">1</span>适合谁</h2>
+  <div class="card">
+    <ul>
+      <li>接触过一些编程和 AI 工具,但知识是零散的,想系统建立体系的人。</li>
+      <li>能看懂一小段代码,却不知道代码上下文如何连接的人。</li>
+      <li>设计、产品等非计算机专业背景,想真正理解 AI 而不只是「会用」的人。</li>
+    </ul>
+    <p><b>不适合:</b>已经能独立训练模型的人——这一章太浅,可以直接做<a href="../题库/quiz-01.html">本章题库</a>,全对就跳过。</p>
+  </div>
+
+  <!-- ============ 2 前置知识 ============ -->
+  <h2 id="prereq"><span class="no">2</span>前置知识</h2>
+  <div class="card">
+    <p>本章刻意做到<b>几乎零前置</b>。只需要:</p>
+    <ul>
+      <li>会打开 Windows 的「终端」并输入命令(第 8 节会手把手教,不会也没关系)。</li>
+      <li>小学乘法和加法——本章唯一的数学是「乘一下、减一下、平方、求平均」。</li>
+    </ul>
+    <p><b>不需要</b>:数据结构、线性代数、概率论、Python 经验。用到任何一点点时,当场补。</p>
+  </div>
+
+  <!-- ============ 3 读完之后能做到什么 ============ -->
+  <h2 id="outcome"><span class="no">3</span>读完之后能做到什么</h2>
+  <div class="card">
+    <ol>
+      <li>把「人工智能 / 机器学习 / 深度学习 / 生成式 AI / 大语言模型」五个词的包含关系画出来,并各举一个例子。</li>
+      <li>说清楚「规则写死的程序」和「从数据里学出来的程序」差别在哪,分别适合什么场景。</li>
+      <li>在自己电脑上建好 Python 虚拟环境,并验证它能运行。</li>
+      <li>亲手算出一个最小机器学习问题的答案(不靠任何库),再用 20 行 Python 复现它。</li>
+      <li>说出一次 ChatGPT 对话中,文字从输入到回答经过的主要环节。</li>
+    </ol>
+  </div>
+
+  <!-- ============ 4 一句话本质 ============ -->
+  <h2 id="essence"><span class="no">4</span>一句话本质</h2>
+  <div class="note">
+    <span class="note-t">本章本质</span>
+    <p style="font-size:16px;margin:4px 0"><b>机器学习 = 不再由人写规则,而是让程序从数据中自动找出规则(参数);
+    今天所有轰动的 AI,包括 ChatGPT,核心都是这一件事的放大版。</b></p>
+  </div>
+
+  <!-- ============ 5 本章位置 ============ -->
+  <h2 id="position"><span class="no">5</span>本章在完整 AI 系统中的位置</h2>
+  <div class="card">
+    <p>一套完整的 AI 应用,从下到上大致分五层。本章是最底下那层的「地基之前的勘探」——先看清整块地。</p>
+    <div class="tbl-scroll">
+      <table>
+        <tr><th>层</th><th>内容</th><th>对应课程</th></tr>
+        <tr><td>应用层</td><td>网页 / App / 聊天界面,用户真正接触的东西</td><td>D11、项目 P4–P6</td></tr>
+        <tr><td>编排层</td><td>Prompt、RAG、Agent、工具调用</td><td>D07–D09</td></tr>
+        <tr><td>模型层</td><td>神经网络、Transformer、训练与推理</td><td>07–08 章、D03–D06</td></tr>
+        <tr><td>数据层</td><td>数据收集、清洗、切分、评估</td><td>03–05 章</td></tr>
+        <tr><td style="background:var(--acc-soft)"><b>认知层</b></td><td style="background:var(--acc-soft)"><b>知道每个词是什么、整体如何连接 ← 在这里</b></td><td style="background:var(--acc-soft)"><b>本章</b></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ 6 概念地图 ============ -->
+  <h2 id="map"><span class="no">6</span>概念地图</h2>
+  <p>先看图,再读第 10 节的逐个拆解。这张图要表达的是<b>包含关系</b>:一个套一个,不是并列的四个学科。</p>
+  <div class="fig">
+    <svg viewBox="0 0 760 430" width="760" height="430" role="img" aria-label="人工智能、机器学习、深度学习、生成式AI 的包含关系图">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#55617a"/>
+        </marker>
+      </defs>
+      <!-- AI 最外层 -->
+      <rect x="20" y="18" width="560" height="394" rx="22" fill="#e8ecfb" stroke="#2743c7" stroke-width="2"/>
+      <text x="44" y="52" font-size="19" font-weight="700" fill="#1d33a0">人工智能 AI</text>
+      <text x="44" y="74" font-size="13" fill="#55617a">让机器完成需要「智能」的任务(总目标)</text>
+      <!-- 规则系统 -->
+      <rect x="44" y="92" width="200" height="86" rx="12" fill="#ffffff" stroke="#a5b2cd" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="60" y="120" font-size="14.5" font-weight="700" fill="#1d2733">规则系统(老路)</text>
+      <text x="60" y="141" font-size="12.5" fill="#55617a">人手写 if…else 规则</text>
+      <text x="60" y="160" font-size="12.5" fill="#55617a">例:早期垃圾邮件过滤</text>
+      <!-- ML -->
+      <rect x="44" y="196" width="512" height="196" rx="16" fill="#e3f0ee" stroke="#0c6e63" stroke-width="2"/>
+      <text x="64" y="226" font-size="16.5" font-weight="700" fill="#0c6e63">机器学习 ML</text>
+      <text x="64" y="246" font-size="12.5" fill="#3c5b56">从数据中自动学出规则(参数)</text>
+      <text x="64" y="278" font-size="12.5" fill="#3c5b56">例:房价预测、推荐算法、</text>
+      <text x="64" y="296" font-size="12.5" fill="#3c5b56">垃圾邮件分类(现代版)</text>
+      <!-- DL -->
+      <rect x="248" y="256" width="288" height="120" rx="13" fill="#ffffff" stroke="#2743c7" stroke-width="2"/>
+      <text x="266" y="284" font-size="15" font-weight="700" fill="#1d33a0">深度学习 DL</text>
+      <text x="266" y="303" font-size="12.5" fill="#55617a">用多层神经网络做机器学习</text>
+      <text x="266" y="322" font-size="12.5" fill="#55617a">例:人脸识别、语音转文字、</text>
+      <text x="266" y="340" font-size="12.5" fill="#55617a">图像生成、大语言模型</text>
+      <!-- GenAI 侧栏 -->
+      <rect x="600" y="130" width="140" height="200" rx="14" fill="#fdeee4" stroke="#9a3412" stroke-width="2"/>
+      <text x="618" y="160" font-size="14.5" font-weight="700" fill="#9a3412">生成式 AI</text>
+      <text x="618" y="182" font-size="12" fill="#7a4a33">会「产出内容」的</text>
+      <text x="618" y="200" font-size="12" fill="#7a4a33">深度学习模型:</text>
+      <text x="618" y="226" font-size="12" fill="#7a4a33">· 文字:GPT、Claude</text>
+      <text x="618" y="246" font-size="12" fill="#7a4a33">· 图像:SD、MJ</text>
+      <text x="618" y="266" font-size="12" fill="#7a4a33">· 其中的文字类 =</text>
+      <text x="618" y="284" font-size="12" fill="#7a4a33">  大语言模型 LLM</text>
+      <text x="618" y="312" font-size="11.5" fill="#9a3412" font-weight="700">↖ 全部属于深度学习</text>
+      <line x1="600" y1="300" x2="540" y2="316" stroke="#9a3412" stroke-width="1.6" marker-end="url(#arr)"/>
+    </svg>
+    <p class="figcap">图 1 · 包含关系:AI ⊃ 机器学习 ⊃ 深度学习;生成式 AI(含大语言模型)是深度学习里最出圈的一支</p>
+  </div>
+  <div class="note good">
+    <span class="note-t">怎么用这张图</span>
+    以后每学一个新名词,先问自己:它落在哪个圈里?比如「梯度下降」在机器学习圈(训练方法),
+    「Attention」在深度学习圈(网络结构),「Prompt」在最外面的应用层(使用大语言模型的方式)。
+  </div>
+
+  <!-- ============ 7 最先要做的事 ============ -->
+  <h2 id="first"><span class="no">7</span>最先要做的事</h2>
+  <div class="card">
+    <p>按顺序做这三件,再往下读:</p>
+    <ol>
+      <li><b>打开终端试一条命令</b>:按 <code>Win</code> 键,输入「终端」或「PowerShell」,回车打开,输入 <code>python --version</code> 回车。不管输出什么,先有「我能对电脑下命令」的手感。</li>
+      <li><b>把第 6 节的概念地图看两遍</b>,合上页面,在纸上凭记忆画一次(画错也没关系,读完第 10 节再修正)。</li>
+      <li><b>预约 40 分钟动手时间</b>:本章配套的<a href="../实验室/lab-01-规则与学习.html">实验 01</a> 需要不被打断的整块时间,读完第 12 节就去做。</li>
+    </ol>
+  </div>
+
+  <!-- ============ 8 环境安装与验证 ============ -->
+  <h2 id="env"><span class="no">8</span>环境安装与验证</h2>
+  <p>本机的基础工具<b>已经装齐了</b>(2026-07-29 实测)。这一节只做两件事:逐项验证,以及建一个「虚拟环境」。每一步都有预期输出,对不上就看排错表。</p>
+
+  <p><span class="term">终端</span>(Terminal / 命令行)</p>
+  <p class="term-def">一个用文字跟电脑对话的窗口:输入一行命令,它执行并把结果打印出来。后面所有安装、运行都在这里进行。</p>
+
+  <ol class="steps">
+    <li>
+      <p><b>验证 Python 主版本。</b>在终端输入:</p>
+      <pre>python --version</pre>
+      <pre class="out">Python 3.14.6</pre>
+      <p style="font-size:13px;color:var(--muted)">版本号略有出入没关系,能打印出 <code>Python 3.x.x</code> 就算通过。</p>
+    </li>
+    <li>
+      <p><b>验证 Python 3.10 可用。</b>电脑上还装了 3.10,通过 <code>py</code> 启动器调用:</p>
+      <pre>py -3.10 --version</pre>
+      <pre class="out">Python 3.10.x</pre>
+      <div class="note warn">
+        <span class="note-t">为什么不用最新的 3.14?</span>
+        AI 生态的很多库(尤其 PyTorch)对最新版 Python 的支持通常滞后几个月到一年。
+        3.10 是目前 AI 教程和库兼容性最稳的版本之一。<b>本课程所有实验统一用 3.10 建环境</b>,避免第 7 章装 PyTorch 时撞墙。
+      </div>
+    </li>
+    <li>
+      <p><b>建课程工作目录。</b>建议用<b>纯英文路径</b>(中文路径偶尔会让某些库报奇怪的编码错误)。
+      命令里的 <code>~</code> 在 PowerShell 中代表「当前用户的主目录」(形如 <code>C:\Users\你的用户名</code>),
+      所以这条命令<b>在任何一台 Windows 电脑上原样可用</b>——本笔记会跟着换电脑,命令不写死具体机器:</p>
+      <pre>mkdir ~\ai-lab
+cd ~\ai-lab</pre>
+      <pre class="out">(无输出即成功;第二条执行后,提示符变为 PS C:\Users\你的用户名\ai-lab)</pre>
+    </li>
+    <li>
+      <p><b>创建虚拟环境。</b></p>
+      <p><span class="term">虚拟环境</span>(virtual environment)</p>
+      <p class="term-def">一套与系统隔离的独立 Python 运行环境:在这里装的库只属于这个项目,不影响系统,也不和其他项目冲突。删掉 .venv 文件夹就等于彻底卸载。</p>
+      <pre>py -3.10 -m venv .venv</pre>
+      <pre class="out">(等待约 10 秒,无输出即成功;目录下多出一个 .venv 文件夹)</pre>
+    </li>
+    <li>
+      <p><b>激活虚拟环境。</b>PowerShell 里输入:</p>
+      <pre>.venv\Scripts\Activate.ps1</pre>
+      <pre class="out">(.venv) PS C:\Users\你的用户名\ai-lab></pre>
+      <p style="font-size:13px;color:var(--muted)">行首出现 <code>(.venv)</code> 就代表已进入这个隔离环境。以后每次做实验,先 <code>cd</code> 进目录、再激活。</p>
+    </li>
+    <li>
+      <p><b>最终验证。</b>激活状态下:</p>
+      <pre>python --version</pre>
+      <pre class="out">Python 3.10.x</pre>
+      <p>注意:同一条命令,激活前打印 3.14,激活后打印 3.10——这就是虚拟环境在起作用。<b>看到这个变化,环境部分就全部通过了。</b>本章实验只用标准库,暂时不需要 <code>pip install</code> 任何东西。</p>
+    </li>
+  </ol>
+
+  <h3>排错表:环境步骤常见报错</h3>
+  <div class="tbl-scroll">
+    <table>
+      <tr><th>现象</th><th>原因</th><th>解法</th></tr>
+      <tr><td><code>python : 无法将“python”项识别为…</code></td><td>Python 不在 PATH 里</td><td>改用 <code>py --version</code>;都不行则去 python.org 重装并勾选 “Add to PATH”</td></tr>
+      <tr><td><code>Activate.ps1 …在此系统上禁止运行脚本</code></td><td>PowerShell 执行策略限制</td><td>输入 <code>Set-ExecutionPolicy -Scope CurrentUser RemoteSigned</code> 后按 Y,再重试激活</td></tr>
+      <tr><td><code>py : 无法识别…</code></td><td>没装 py 启动器</td><td>用 <code>python -m venv .venv</code> 代替(版本会是 3.14,本章实验不受影响)</td></tr>
+      <tr><td>激活后行首没有 <code>(.venv)</code></td><td>激活的不是当前目录的环境</td><td>确认已 <code>cd</code> 到 ai-lab 目录再执行激活命令</td></tr>
+      <tr><td>中文显示乱码</td><td>终端编码不是 UTF-8</td><td>输入 <code>chcp 65001</code> 后重试</td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    <span class="note-t">编辑器</span>
+    推荐用 <b>VS Code</b>(免费)写代码:打开 <a href="https://code.visualstudio.com/" target="_blank" rel="noopener">code.visualstudio.com</a> 下载安装,
+    再装扩展 “Python”(微软官方,搜索第一个)和 “Chinese (Simplified)”。
+    已经有其他趁手编辑器的话,用习惯的即可,课程不绑定工具。
+  </div>
+
+  <!-- ============ 9 学习路径建议 ============ -->
+  <h2 id="path"><span class="no">9</span>学习路径建议</h2>
+  <div class="card">
+    <p>本章内容分三种读法,按今天的时间选:</p>
+    <ul>
+      <li><b>25 分钟速览</b>:第 6 节地图 → 第 10 节四个概念只读 What → 第 15 节误解。适合先混个脸熟,之后必须回来补全。</li>
+      <li><b>90 分钟标准路线(推荐)</b>:按目录顺序读到第 13 节,做完可视化实验;第二天做实验 01 和题库。</li>
+      <li><b>2.5 小时一次通关</b>:全文 + 实验 01 + 题库连续完成。中途在第 12 节后休息一次。</li>
+    </ul>
+    <p>无论哪种读法,<b>第 12、13 节的动手环节不能跳</b>——本章的目标之一就是打破「只看不动手」的习惯。</p>
+  </div>
+
+  <!-- ============ 10 核心概念 ============ -->
+  <h2 id="concepts"><span class="no">10</span>核心概念 What / Why / Where</h2>
+  <p>四个概念,每个都按同一套问题拆:是什么(输入→输出)、为什么需要、位于系统哪一环,再加上游下游、怎么观察、容易误解什么。读的时候对照第 6 节的地图。</p>
+
+  <!-- 概念一 -->
+  <h3>概念一 · 人工智能(AI)</h3>
+  <p class="term-def" style="margin-top:-2px">让计算机完成过去认为「需要人类智能」的任务,这是一个<b>目标</b>,不是一种具体技术。</p>
+  <dl class="w3">
+    <dt>What</dt><dd>一个总称/目标。<b>输入</b>:某个任务(识别图片、翻译、下棋、写文案);<b>输出</b>:机器给出的完成结果。实现手段可以是人写规则,也可以是机器学习。</dd>
+    <dt>Why</dt><dd>很多任务(比如「认出照片里的猫」)人类一眼就会,却<b>写不出明确步骤</b>。传统编程要求把每一步写死,这类任务写不动,所以需要「另一种造程序的方式」。</dd>
+    <dt>Where</dt><dd>它是整张地图的最外圈,不对应具体代码。当产品页写着「AI 驱动」,应当追问:里面用的是规则、经典机器学习,还是深度学习?</dd>
+  </dl>
+  <div class="tbl-scroll">
+    <table>
+      <tr><th style="width:130px">上游是什么</th><td>人类的任务需求(「我想让机器帮我做 X」)。</td></tr>
+      <tr><th>接收什么数据</th><td>取决于任务:图片、文字、声音、表格都可能。</td></tr>
+      <tr><th>内部做了什么</th><td>取决于实现路线:规则系统在执行人写的判断;机器学习系统在执行「学出来的参数运算」。</td></tr>
+      <tr><th>输出给谁</th><td>用户或下一个程序环节(比如识别结果交给推荐系统)。</td></tr>
+      <tr><th>如何观察生效</th><td>看任务完成质量:识别对了多少、翻译通顺程度。第 5 章会给出正式的「评价指标」。</td></tr>
+      <tr><th>最易误解</th><td>把 AI 当成一种「有意识的存在」。它是一类技术的统称,和「交通工具」一样,不是某台具体的车,更没有意识。</td></tr>
+    </table>
+  </div>
+
+  <!-- 概念二 -->
+  <h3>概念二 · 机器学习(Machine Learning,ML)</h3>
+  <p class="term-def" style="margin-top:-2px">不由人写规则,而是给程序看大量「例子」,让它自己找出输入和输出之间的规律。</p>
+  <p>先补两个马上要用的词:</p>
+  <p><span class="term">模型</span>(model)</p>
+  <p class="term-def">一个内部含有若干可调数值的数学函数:输入进去,输出出来。这些数值没调好时输出是乱的,调好后输出接近正确答案。</p>
+  <p><span class="term">参数</span>(parameter)</p>
+  <p class="term-def">就是模型里那些可调数值本身。<b>训练</b>(training)= 用数据自动调整参数的过程。GPT-4 级别的模型有上千亿个参数,本章实验的模型只有 1 个。</p>
+  <dl class="w3">
+    <dt>What</dt><dd><b>输入</b>:一批例子(数据 + 正确答案,如「1000 封邮件 + 每封是否垃圾邮件」);<b>输出</b>:一个调好参数的模型,能对<b>没见过的</b>新输入给出预测。</dd>
+    <dt>Why</dt><dd>规则写不完。垃圾邮件的花样每天在变,人手写 if…else 永远追不上;让程序从最新数据里自己学,规则才能跟着数据更新。</dd>
+    <dt>Where</dt><dd>地图第二圈。在代码里的典型形态是三行套路:<code>model = 某算法()</code> → <code>model.fit(数据, 答案)</code>(训练)→ <code>model.predict(新数据)</code>(预测)。第 5 章会亲手写这三行。</dd>
+  </dl>
+  <div class="tbl-scroll">
+    <table>
+      <tr><th style="width:130px">上游是什么</th><td>数据收集与清洗环节(第 3–4 章的 NumPy / Pandas 就干这个)。</td></tr>
+      <tr><th>接收什么数据</th><td>整理成表格/数组形状的样本。每行一个例子,每列一个特征。</td></tr>
+      <tr><th>内部做了什么</th><td>反复三步:用当前参数做预测 → 度量预测和正确答案差多远 → 朝着差距变小的方向调参数。第 12 节会手工完整走一遍。</td></tr>
+      <tr><th>输出给谁</th><td>训练好的模型交给应用程序调用;预测结果交给用户或下游逻辑。</td></tr>
+      <tr><th>如何观察生效</th><td>拿一批模型<b>没见过</b>的数据测它,看预测对不对。「没见过」三个字是重点,第 5 章展开(训练集/测试集)。</td></tr>
+      <tr><th>最易误解</th><td>以为机器学习是「把答案背下来存进数据库,预测时去查」。错:它学的是<b>规律(参数)</b>,不是答案本身,所以才能应对没见过的输入。</td></tr>
+    </table>
+  </div>
+
+  <!-- 概念三 -->
+  <h3>概念三 · 深度学习(Deep Learning,DL)</h3>
+  <p><span class="term">神经网络</span>(neural network)</p>
+  <p class="term-def">一种特定结构的模型:把大量简单的「乘加计算单元」一层一层叠起来。「深度」= 层数多。</p>
+  <dl class="w3">
+    <dt>What</dt><dd>机器学习的一个子类:模型专指多层神经网络。<b>输入</b>:数字化后的图片、文字、声音;<b>输出</b>:分类结果、生成的内容等。和上一个概念的关系是「深度学习 ⊂ 机器学习」,只是模型换成了层数很多的神经网络。</dd>
+    <dt>Why</dt><dd>经典机器学习处理表格数据很强,但面对图片、语音、自然语言,需要人先手工设计「特征」(告诉模型看什么),效果封顶。深度网络能<b>自己从原始数据里逐层提炼特征</b>:浅层看边缘,中层看纹理,深层看整体——这是 2012 年之后 AI 爆发的直接原因。</dd>
+    <dt>Where</dt><dd>地图第三圈。代码形态在第 7 章和 D03 出现:用 PyTorch 定义 <code>nn.Linear</code>、<code>nn.ReLU</code> 等层再堆叠。现在只需记住:<b>层叠结构 + 从数据学参数</b>。</dd>
+    </dl>
+  <div class="tbl-scroll">
+    <table>
+      <tr><th style="width:130px">上游是什么</th><td>同机器学习,外加更苛刻的要求:更多数据、更强算力(GPU)。</td></tr>
+      <tr><th>接收什么数据</th><td>一切都先变成数字数组(张量):图片→像素数值,文字→Token 编号(见概念四)。</td></tr>
+      <tr><th>内部做了什么</th><td>数据逐层做「乘加 + 非线性变换」向前流(前向传播);训练时误差反向流回来修正每层参数(反向传播)。第 7 章手算,现在不必懂细节。</td></tr>
+      <tr><th>输出给谁</th><td>同机器学习;在大模型场景里,输出的是「下一个词的概率表」(见第 11 节)。</td></tr>
+      <tr><th>如何观察生效</th><td>训练时看损失曲线是否下降;训练后拿没见过的数据测。D03 会让人亲眼盯着损失一轮轮变小。</td></tr>
+      <tr><th>最易误解</th><td>「深度学习和机器学习是两个并列流派」。错,是包含关系;另一个误解是「层数越多一定越好」——层数多也带来更难训练、更易过拟合(第 6 章)。</td></tr>
+    </table>
+  </div>
+
+  <!-- 概念四 -->
+  <h3>概念四 · 生成式 AI 与大语言模型(LLM)</h3>
+  <p><span class="term">生成式 AI</span>(Generative AI)</p>
+  <p class="term-def">输出不是「选一个类别」,而是「产出一段内容」(文字、图片、音频)的深度学习模型。</p>
+  <p><span class="term">大语言模型</span>(Large Language Model,LLM)</p>
+  <p class="term-def">生成式 AI 里专管文字的那类:读入一段文字,反复预测「下一个词最可能是什么」,一个词一个词地把回答续写出来。GPT、Claude 都是。</p>
+  <dl class="w3">
+    <dt>What</dt><dd><b>输入</b>:一段文字(问题 + 之前的对话);<b>输出</b>:续写出来的文字(回答)。本质是一个「超大号的下一词预测器」,由几十上百层 Transformer 网络构成(D05 拆)。</dd>
+    <dt>Why</dt><dd>以前每个语言任务(翻译、摘要、问答)都要单独训练一个模型。LLM 用「预测下一个词」这一个任务在海量文本上训练后,竟然一个模型就能做所有语言任务——这是范式变化,也是要学它的原因。</dd>
+    <dt>Where</dt><dd>地图最内圈的高亮区。代码形态:调 API(发文字、收文字,D07 起写)或本地跑开源模型。作为设计师,日常用的 ChatGPT / Claude 界面,就是包了一层聊天 UI 的 LLM。</dd>
+  </dl>
+  <div class="tbl-scroll">
+    <table>
+      <tr><th style="width:130px">上游是什么</th><td>训练阶段:互联网规模的文本语料;使用阶段:输入和应用拼好的上下文(D07)。</td></tr>
+      <tr><th>接收什么数据</th><td>文字先切成 Token(词块)再转成编号和向量,详见第 11 节的数据流图。</td></tr>
+      <tr><th>内部做了什么</th><td>对输入做几十层 Transformer 运算,得到词表中<b>每个词作为下一个词的概率</b>,按概率抽一个,拼回输入,再预测下一个……循环到回答结束。</td></tr>
+      <tr><th>输出给谁</th><td>聊天界面、或调用它的程序(Agent、RAG 系统等,阶段二全是这个)。</td></tr>
+      <tr><th>如何观察生效</th><td>最直接:去 ChatGPT/Claude 打一句话。工程上则要正式评估(D10):准确率、幻觉率、成本。</td></tr>
+      <tr><th>最易误解</th><td>「它在网上检索现成句子拼出回答」。错:不联网时它不检索任何库,每个词都是<b>现场按概率生成</b>的——这也解释了它为什么会一本正经地编造(幻觉,D10)。</td></tr>
+    </table>
+  </div>
+
+  <div class="note good">
+    <span class="note-t">四个概念一句话串联</span>
+    人工智能是目标;机器学习是实现路线(从数据学参数);深度学习是这条路线里当前最强的模型家族(多层神经网络);
+    大语言模型是这个家族里专管文字生成的明星成员。
+  </div>
+
+<!-- ============ 11 数据流 ============ -->
+  <h2 id="dataflow"><span class="no">11</span>数据流与执行流程</h2>
+  <p>用最熟悉的场景——问 ChatGPT 一句话——把「文字进去、回答出来」的黑箱拆成六站。每一站后面章节都会专门拆,这里先记住顺序。</p>
+
+  <p><span class="term">Token</span>(词块)</p>
+  <p class="term-def">模型处理文字的最小单位,通常是一个词或半个词。「人工智能」可能被切成「人工」+「智能」两个 Token。切完后每个 Token 用一个编号表示。</p>
+  <p><span class="term">推理</span>(inference)</p>
+  <p class="term-def">用训练<b>好</b>的模型做预测的过程(参数不再变动)。与之相对,「训练」是调参数的过程。每次用 ChatGPT,都是在触发一次推理。</p>
+
+  <div class="fig">
+    <svg viewBox="0 0 880 300" width="880" height="300" role="img" aria-label="一次大语言模型对话的数据流">
+      <defs>
+        <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/>
+        </marker>
+      </defs>
+      <!-- 六个站点 -->
+      <g font-size="13.5">
+        <rect x="14"  y="40" width="120" height="76" rx="10" fill="#fff" stroke="#d8dee9" stroke-width="1.5"/>
+        <text x="74" y="70" text-anchor="middle" font-weight="700" fill="#1d2733">① 文字</text>
+        <text x="74" y="92" text-anchor="middle" fill="#55617a" font-size="12">“帮我想个标题”</text>
+
+        <rect x="162" y="40" width="120" height="76" rx="10" fill="#e8ecfb" stroke="#2743c7" stroke-width="1.5"/>
+        <text x="222" y="66" text-anchor="middle" font-weight="700" fill="#1d33a0">② 分词器</text>
+        <text x="222" y="86" text-anchor="middle" fill="#55617a" font-size="12">切成 Token,</text>
+        <text x="222" y="103" text-anchor="middle" fill="#55617a" font-size="12">变成编号序列</text>
+
+        <rect x="310" y="40" width="120" height="76" rx="10" fill="#e8ecfb" stroke="#2743c7" stroke-width="1.5"/>
+        <text x="370" y="66" text-anchor="middle" font-weight="700" fill="#1d33a0">③ 变向量</text>
+        <text x="370" y="86" text-anchor="middle" fill="#55617a" font-size="12">每个编号查出</text>
+        <text x="370" y="103" text-anchor="middle" fill="#55617a" font-size="12">一长串数字</text>
+
+        <rect x="458" y="40" width="140" height="76" rx="10" fill="#111826" stroke="#111826"/>
+        <text x="528" y="66" text-anchor="middle" font-weight="700" fill="#ffffff">④ 神经网络</text>
+        <text x="528" y="86" text-anchor="middle" fill="#aeb9d0" font-size="12">几十层 Transformer</text>
+        <text x="528" y="103" text-anchor="middle" fill="#aeb9d0" font-size="12">逐层乘加运算</text>
+
+        <rect x="626" y="40" width="120" height="76" rx="10" fill="#e3f0ee" stroke="#0c6e63" stroke-width="1.5"/>
+        <text x="686" y="66" text-anchor="middle" font-weight="700" fill="#0c6e63">⑤ 概率表</text>
+        <text x="686" y="86" text-anchor="middle" fill="#55617a" font-size="12">词表里每个词</text>
+        <text x="686" y="103" text-anchor="middle" fill="#55617a" font-size="12">当下一词的概率</text>
+
+        <rect x="774" y="40" width="94" height="76" rx="10" fill="#fff" stroke="#d8dee9" stroke-width="1.5"/>
+        <text x="821" y="66" text-anchor="middle" font-weight="700" fill="#1d2733">⑥ 抽一个词</text>
+        <text x="821" y="86" text-anchor="middle" fill="#55617a" font-size="12">拼到回答</text>
+        <text x="821" y="103" text-anchor="middle" fill="#55617a" font-size="12">末尾</text>
+      </g>
+      <!-- 箭头 -->
+      <line x1="134" y1="78" x2="158" y2="78" stroke="#2743c7" stroke-width="2" marker-end="url(#arr2)"/>
+      <line x1="282" y1="78" x2="306" y2="78" stroke="#2743c7" stroke-width="2" marker-end="url(#arr2)"/>
+      <line x1="430" y1="78" x2="454" y2="78" stroke="#2743c7" stroke-width="2" marker-end="url(#arr2)"/>
+      <line x1="598" y1="78" x2="622" y2="78" stroke="#2743c7" stroke-width="2" marker-end="url(#arr2)"/>
+      <line x1="746" y1="78" x2="770" y2="78" stroke="#2743c7" stroke-width="2" marker-end="url(#arr2)"/>
+      <!-- 回环 -->
+      <path d="M 821 116 L 821 190 L 222 190 L 222 120" fill="none" stroke="#9a3412" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arr2)"/>
+      <text x="520" y="182" text-anchor="middle" font-size="13" fill="#9a3412" font-weight="700">⑦ 新词拼回输入,回到第②站再预测下一个词……直到回答结束</text>
+      <!-- 底注 -->
+      <text x="14" y="242" font-size="13" fill="#55617a">对应章节:② ③ → D04(Token 与向量)   ④ → 07 章、D05(神经网络与 Transformer)   ⑤ ⑥ → D06(推理与采样)</text>
+      <text x="14" y="268" font-size="13" fill="#55617a">看到 ChatGPT「一个字一个字往外蹦」,正是这个循环在一轮一轮地跑。</text>
+    </svg>
+    <p class="figcap">图 2 · 一次大语言模型对话的数据流(推理阶段)</p>
+  </div>
+
+  <h3>亲手跑一遍这个循环</h3>
+  <p>下面这个演示让亲手扮演第 ⑤⑥⑦ 站:每点一次按钮,就从当前的「下一词概率表」里按概率抽一个词、拼到句子上,然后出现新的概率表——循环往复,直到句子结束。</p>
+  <div class="sim" id="tokendemo">
+    <span class="sim-tag mock">机制模拟 · 循环流程真实,但概率表是手工编的教学示例,不是真实模型算出来的</span>
+    <p style="font-size:15px">当前文本:<span class="readout" id="tkctx" style="font-size:16px">今天天气真</span><span id="tkcursor" style="color:var(--acc)">▌</span></p>
+    <p style="font-size:13px;color:var(--muted);margin:2px 0 6px">模型给出的「下一个词」候选与概率:</p>
+    <div id="tkbars"></div>
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn sm" type="button" id="tksample">🎲 按概率抽一个词</button>
+      <button class="btn ghost sm" type="button" id="tkreset">↻ 重来</button>
+    </div>
+    <p id="tkmsg" style="font-size:13px;color:var(--muted);margin:10px 0 0">重来几次、每次点到结束——会发现同一个开头能长出不同的句子。
+    这就是大模型两次回答不完全一样的原因:第 ⑥ 站是「按概率抽」,不是「取最大」。
+    真实模型里,每一步的候选和概率都由前文动态算出;这里为了演示,固定了每一步的候选表。</p>
+  </div>
+
+  <h3>训练和推理是两条不同的流程</h3>
+  <div class="grid2">
+    <div class="card">
+      <h4 style="margin-top:0">🏗️ 训练(在模型厂商那边发生)</h4>
+      <p style="font-size:15px">海量文本 → 模型不断做「预测下一个词」练习 → 每次预测错就微调参数 → 重复万亿次。<b>产物:一大包调好的参数。</b>耗时数月、成本数千万美元起。</p>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0">⚡ 推理(每次提问时发生)</h4>
+      <p style="font-size:15px">文字 → 走一遍上面的图 → 输出回答。<b>参数全程不变。</b>耗时几秒,成本按 Token 计费。和 ChatGPT 聊天并不会「教会」它什么(D06 细讲)。</p>
+    </div>
+  </div>
+
+  <!-- ============ 12 最小代码实验 ============ -->
+  <h2 id="minilab"><span class="no">12</span>最小代码实验:规则 vs 学习</h2>
+  <p>这是全课程第一个实验,也是最重要的一个:<b>用一个只有 1 个参数的模型,完整走一遍「机器学习」四个字的全部含义</b>。GPT 有上千亿参数,但原理和这 1 个参数完全同构。</p>
+
+  <h3>12.1 具体问题</h3>
+  <div class="card">
+    <p>有三条快递记录(重量 → 实付运费):</p>
+    <div class="tbl-scroll">
+      <table>
+        <tr><th>重量 x(kg)</th><td>1</td><td>2</td><td>3</td></tr>
+        <tr><th>运费 y(元)</th><td>4.2</td><td>7.9</td><td>12.1</td></tr>
+      </table>
+    </div>
+    <p style="margin-bottom:0"><b>任务:预测 5kg 要多少钱。</b></p>
+  </div>
+  <p>两种做法:</p>
+  <ul>
+    <li><b>规则法</b>:拍脑袋定「每公斤 4 元」,写死在代码里。数据变了(比如涨价),人要回来改代码。</li>
+    <li><b>学习法</b>:定一个含未知参数的公式「运费 = w × 重量」,<b>让数据自己告诉我们 w 该是多少</b>。数据变了,重跑一遍就自动更新。</li>
+  </ul>
+  <p>学习法就是机器学习。下面把它拆到底。</p>
+
+  <h3>12.2 数学表达(逐个符号讲)</h3>
+  <div class="card">
+    <p><b>模型:</b>ŷ = w · x</p>
+    <ul style="font-size:15px">
+      <li><b>x</b>:输入,这里是重量。形状:一个数(标量)。</li>
+      <li><b>w</b>:参数,整个实验就是在找它的最佳取值。形状:一个数。</li>
+      <li><b>ŷ</b>:读作 “y hat”,模型的<b>预测值</b>。戴帽子是为了和真实值 y 区分。形状:一个数。</li>
+    </ul>
+    <p><b>损失函数:</b>L(w) = (1/n) · Σᵢ (yᵢ − w·xᵢ)²</p>
+    <p><span class="term">损失函数</span>(loss function)</p>
+    <p class="term-def">给「当前参数的预测有多离谱」打分的函数:预测越差,分数越大;训练的目标就是把这个分数压到最小。</p>
+    <ul style="font-size:15px">
+      <li><b>n</b>:样本个数,这里 n = 3。</li>
+      <li><b>i</b>:样本编号,从第 1 条数据取到第 n 条。</li>
+      <li><b>yᵢ − w·xᵢ</b>:第 i 条数据上,真实值减预测值 = 误差。</li>
+      <li><b>(…)²</b>:平方。两个作用:①正负误差不会互相抵消;②大错误被加倍惩罚。</li>
+      <li><b>Σᵢ … / n</b>:全部样本的平方误差<b>加起来取平均</b>。所以 L 叫「均方误差」(MSE),第 5 章还会见到它。</li>
+    </ul>
+    <p style="margin-bottom:0"><b>运算前后数据的变化:</b>进:一个候选 w(标量)+ 三对数据 → 中间:3 个误差、3 个平方 → 出:1 个平均数(标量)。数字进,数字出,没有任何神秘步骤。</p>
+  </div>
+
+  <h3>12.3 手工计算一个极小例子</h3>
+  <p>拿计算器(或口算)跟着算一遍,这一步不能跳——算过一次,「训练」两个字就再也不抽象了。试三个候选 w:</p>
+  <div class="tbl-scroll">
+    <table>
+      <tr><th>候选 w</th><th>三个预测 ŷ = w·x</th><th>三个误差 y − ŷ</th><th>误差平方</th><th>损失 L(w)</th></tr>
+      <tr><td><b>3.5</b></td><td>3.5 / 7.0 / 10.5</td><td>0.7 / 0.9 / 1.6</td><td>0.49 / 0.81 / 2.56</td><td>3.86 ÷ 3 ≈ <b>1.287</b></td></tr>
+      <tr><td><b>4.0</b></td><td>4.0 / 8.0 / 12.0</td><td>0.2 / −0.1 / 0.1</td><td>0.04 / 0.01 / 0.01</td><td>0.06 ÷ 3 = <b>0.020</b></td></tr>
+      <tr><td><b>4.021</b></td><td>4.021 / 8.043 / 12.064</td><td>0.179 / −0.143 / 0.036</td><td>0.032 / 0.020 / 0.001</td><td>0.054 ÷ 3 ≈ <b>0.018</b></td></tr>
+    </table>
+  </div>
+  <p>看到规律了吗:w 从 3.5 → 4.0,损失从 1.287 暴跌到 0.020;再微调到 4.021,损失又降了一点点。
+  <b>「训练」就是这个找损失最低点的过程。</b>顺带注意:因为数据本身有噪声(4.2、7.9 不在一条完美直线上),损失不可能降到 0——学习找的是「最不坏」,不是「完美」。</p>
+
+  <p>把「每个 w 对应一个损失」全部画出来,就是下面这条曲线。刚手算的三个点都在上面:</p>
+  <div class="fig">
+    <svg viewBox="0 0 560 300" width="560" height="300" role="img" aria-label="损失随参数 w 变化的曲线">
+      <!-- 坐标轴 -->
+      <line x1="50" y1="270" x2="530" y2="270" stroke="#8b95a8" stroke-width="1.5"/>
+      <line x1="50" y1="270" x2="50" y2="20" stroke="#8b95a8" stroke-width="1.5"/>
+      <text x="530" y="299" font-size="12" fill="#55617a" text-anchor="end">参数 w</text>
+      <text x="56" y="18" font-size="12" fill="#55617a">损失 L(w)</text>
+      <!-- 刻度 -->
+      <g font-size="11" fill="#8b95a8">
+        <text x="60" y="286" text-anchor="middle">3.0</text>
+        <text x="169" y="286" text-anchor="middle">3.5</text>
+        <text x="279" y="286" text-anchor="middle">4.0</text>
+        <text x="388" y="286" text-anchor="middle">4.5</text>
+        <text x="498" y="286" text-anchor="middle">5.0</text>
+        <text x="44" y="264" text-anchor="end">0</text>
+        <text x="44" y="172" text-anchor="end">2</text>
+        <text x="44" y="80" text-anchor="end">4</text>
+      </g>
+      <!-- 损失曲线(按公式 L(w)=(14w²−112.6w+226.46)/3 逐点算出) -->
+      <polyline fill="none" stroke="#2743c7" stroke-width="2.5" stroke-linejoin="round"
+        points="60,35 104,114 148,176 191,221 235,249 279,259 284,259 323,252 367,228 410,187 454,129 498,54"/>
+      <!-- 最低点竖虚线 -->
+      <line x1="284" y1="259" x2="284" y2="270" stroke="#0c6e63" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <!-- 手算的三个点 + 练习1的点 -->
+      <circle cx="169" cy="201" r="5.5" fill="#9a3412"/>
+      <text x="160" y="188" font-size="12" fill="#9a3412" text-anchor="end">w=3.5,L≈1.29</text>
+      <circle cx="279" cy="259" r="5.5" fill="#9a3412"/>
+      <text x="252" y="240" font-size="12" fill="#9a3412" text-anchor="end">w=4,L=0.02</text>
+      <circle cx="284" cy="259" r="4" fill="#0c6e63"/>
+      <text x="296" y="243" font-size="12" fill="#0c6e63" font-weight="700">碗底:w*≈4.02</text>
+      <circle cx="498" cy="54" r="5.5" fill="#8b95a8"/>
+      <text x="486" y="46" font-size="12" fill="#55617a" text-anchor="end">w=5(练习 1 会算它)</text>
+    </svg>
+    <p class="figcap">图 3 · 损失是一条碗形曲线,训练 = 想办法滑到碗底。第 13 节的滑杆就是在这条曲线上左右移动;
+    梯度下降(第 6 章)则是让程序自己感知坡度、一步步滑下去。</p>
+  </div>
+  <div class="note">
+    <span class="note-t">4.021 是哪来的?</span>
+    对这种最简单的模型,数学上能直接解出最优值:w* = Σxᵢyᵢ ÷ Σxᵢ² = 56.3 ÷ 14 ≈ 4.0214(分子:1×4.2 + 2×7.9 + 3×12.1;分母:1² + 2² + 3²)。
+    这个公式来自「让损失的导数等于 0」,推导第 6 章才学;现在只需知道:<b>简单模型有公式解,复杂模型(神经网络)没有,只能靠一步步试着降损失——那个方法叫梯度下降,第 13 节先体感一次。</b>
+  </div>
+
+  <h3>12.4 最少量 Python 实现</h3>
+  <p>下面 17 行就是完整的「机器学习程序」。先通读注释,然后去<a href="../实验室/lab-01-规则与学习.html">实验 01</a> 分步敲一遍(实验页可以直接在浏览器里运行)。</p>
+  <pre><span class="cm"># rule_vs_learn.py —— 规则 vs 学习:最小机器学习实验</span>
+weights = [<span class="nb">1</span>, <span class="nb">2</span>, <span class="nb">3</span>]          <span class="cm"># 数据:重量(kg),长度为 3 的列表</span>
+prices  = [<span class="nb">4.2</span>, <span class="nb">7.9</span>, <span class="nb">12.1</span>]   <span class="cm"># 数据:实付运费(元),与上面一一对应</span>
+
+<span class="kw">def</span> loss(w):
+    <span class="cm">"""算参数 w 的损失:预测得越离谱,返回值越大"""</span>
+    total = <span class="nb">0</span>
+    <span class="kw">for</span> x, y <span class="kw">in</span> zip(weights, prices):  <span class="cm"># 每次取一对 (重量, 运费)</span>
+        error = y - w * x                <span class="cm"># 公式里的 yᵢ − w·xᵢ</span>
+        total += error ** <span class="nb">2</span>              <span class="cm"># 公式里的平方与求和 Σ</span>
+    <span class="kw">return</span> total / len(weights)          <span class="cm"># 公式里的 ÷ n</span>
+
+<span class="cm"># “学习”= 在候选参数里挑损失最小的(最笨但最直观的方法)</span>
+best_w, best_loss = <span class="nb">0</span>, loss(<span class="nb">0</span>)
+<span class="kw">for</span> i <span class="kw">in</span> range(<span class="nb">20001</span>):                  <span class="cm"># 试遍 0.000, 0.001, …, 20.000</span>
+    w = i * <span class="nb">0.001</span>
+    <span class="kw">if</span> loss(w) &lt; best_loss:
+        best_w, best_loss = w, loss(w)
+
+print(f<span class="st">"学到的参数 w = {best_w:.3f},损失 = {best_loss:.4f}"</span>)
+print(f<span class="st">"预测 5kg 运费:{best_w * 5:.2f} 元"</span>)</pre>
+  <pre class="out">学到的参数 w = 4.021,损失 = 0.0179
+预测 5kg 运费:20.11 元</pre>
+
+  <h3>12.5 代码执行链:程序是怎么跑起来的</h3>
+  <div class="fig">
+    <svg viewBox="0 0 860 210" width="860" height="210" role="img" aria-label="代码执行链">
+      <defs>
+        <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#0c6e63"/>
+        </marker>
+      </defs>
+      <g font-size="13">
+        <rect x="12" y="24" width="180" height="66" rx="10" fill="#fff" stroke="#d8dee9" stroke-width="1.5"/>
+        <text x="102" y="50" text-anchor="middle" font-weight="700">第 2–3 行 先执行</text>
+        <text x="102" y="72" text-anchor="middle" fill="#55617a" font-size="12">造两个长度 3 的列表</text>
+
+        <rect x="232" y="24" width="180" height="66" rx="10" fill="#fff" stroke="#d8dee9" stroke-width="1.5"/>
+        <text x="322" y="50" text-anchor="middle" font-weight="700">第 5–11 行 只是定义</text>
+        <text x="322" y="72" text-anchor="middle" fill="#55617a" font-size="12">loss 此刻并不运行</text>
+
+        <rect x="452" y="24" width="180" height="66" rx="10" fill="#e3f0ee" stroke="#0c6e63" stroke-width="1.8"/>
+        <text x="542" y="50" text-anchor="middle" font-weight="700" fill="#0c6e63">第 14–18 行 主循环</text>
+        <text x="542" y="72" text-anchor="middle" fill="#3c5b56" font-size="12">调用 loss() 共 20002 次</text>
+
+        <rect x="672" y="24" width="176" height="66" rx="10" fill="#fff" stroke="#d8dee9" stroke-width="1.5"/>
+        <text x="760" y="50" text-anchor="middle" font-weight="700">第 20–21 行 打印</text>
+        <text x="760" y="72" text-anchor="middle" fill="#55617a" font-size="12">结果显示在终端</text>
+
+        <line x1="192" y1="57" x2="228" y2="57" stroke="#0c6e63" stroke-width="2" marker-end="url(#arr3)"/>
+        <line x1="412" y1="57" x2="448" y2="57" stroke="#0c6e63" stroke-width="2" marker-end="url(#arr3)"/>
+        <line x1="632" y1="57" x2="668" y2="57" stroke="#0c6e63" stroke-width="2" marker-end="url(#arr3)"/>
+
+        <rect x="452" y="128" width="180" height="60" rx="10" fill="#111826"/>
+        <text x="542" y="152" text-anchor="middle" fill="#fff" font-weight="700">loss(w)</text>
+        <text x="542" y="172" text-anchor="middle" fill="#aeb9d0" font-size="12">进:标量 w → 出:标量损失</text>
+        <path d="M 520 94 L 520 124" stroke="#0c6e63" stroke-width="2" marker-end="url(#arr3)"/>
+        <path d="M 564 124 L 564 94" stroke="#0c6e63" stroke-width="2" marker-end="url(#arr3)"/>
+        <text x="500" y="114" text-anchor="end" font-size="12" fill="#55617a">传入 w</text>
+        <text x="584" y="114" font-size="12" fill="#55617a">返回损失值</text>
+      </g>
+    </svg>
+    <p class="figcap">图 4 · 执行顺序与数据形状:数据始终是「长度 3 的列表」和几个标量,没有更复杂的东西</p>
+  </div>
+
+  <h3>12.6 成熟库的标准写法(对照,暂不运行)</h3>
+  <p>等第 5 章装好 scikit-learn(经典机器学习的标准库)后,同一个问题的标准写法是:</p>
+  <pre><span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LinearRegression
+
+X = [[<span class="nb">1</span>], [<span class="nb">2</span>], [<span class="nb">3</span>]]        <span class="cm"># 注意形状:3 行 1 列 = 3 个样本 × 1 个特征</span>
+y = [<span class="nb">4.2</span>, <span class="nb">7.9</span>, <span class="nb">12.1</span>]
+
+model = LinearRegression(fit_intercept=<span class="kw">False</span>)  <span class="cm"># 选定模型形式 ŷ = w·x</span>
+model.fit(X, y)                        <span class="cm"># 训练:相当于我们的整个搜索循环</span>
+print(model.coef_)                     <span class="cm"># 学到的 w ≈ [4.0214]</span>
+print(model.predict([[<span class="nb">5</span>]]))           <span class="cm"># 预测 ≈ [20.107]</span></pre>
+  <div class="tbl-scroll">
+    <table>
+      <tr><th>我们的手写版</th><th>scikit-learn 版</th><th>说明</th></tr>
+      <tr><td><code>weights / prices</code> 两个列表</td><td><code>X, y</code></td><td>库要求 X 是「样本 × 特征」的二维形状,所以 1 变 [1]</td></tr>
+      <tr><td><code>loss()</code> 函数</td><td>藏在库内部</td><td>同样是均方误差</td></tr>
+      <tr><td>8001 次搜索循环</td><td><code>model.fit(X, y)</code></td><td>库用公式直接解,不用暴力搜,快得多</td></tr>
+      <tr><td><code>best_w * 5</code></td><td><code>model.predict([[5]])</code></td><td>都是拿学到的参数算新输入</td></tr>
+    </table>
+  </div>
+  <p>请记住这个感觉:<b>库没有做任何我们没手算过的事,它只是做得更快、更通用。</b>整个课程会反复使用「手写版 ↔ 库版本」的对照法。</p>
+
+  <h3>12.7 修改参数,观察变化</h3>
+  <p>做完实验 01 后,回来试这三个改动(每个都只改一行),观察输出如何变:</p>
+  <ul>
+    <li>把 <code>12.1</code> 改成 <code>50</code>(相当于数据里混进一条错误记录)→ w 会被拉到多大?这就是「脏数据毁模型」。</li>
+    <li>把搜索范围 <code>range(20001)</code> 改成 <code>range(3001)</code>(只搜到 w=3.0)→ 学到的 w 卡在边界 3.0。搜索范围不覆盖正确答案,再多数据也没用。</li>
+    <li>把步长 <code>0.001</code> 改成 <code>0.5</code> → w 只能取到 4.0,精度变差。搜索粒度决定精度。</li>
+  </ul>
+
+  <h3>12.8 放回完整 AI 流程</h3>
+  <div class="note good">
+    <span class="note-t">这 17 行和 GPT 的关系</span>
+    <p style="margin:6px 0">GPT 的训练同样是三件套:<b>模型形式</b>(不是 w·x,而是几十层 Transformer)+
+    <b>损失函数</b>(不是运费误差,而是「下一个词预测得准不准」)+ <b>找最优参数的方法</b>(不是暴力搜——千亿参数搜不动,而是梯度下降)。</p>
+    <p style="margin:6px 0 0">往后每一章,其实都在替换这三件套里的某个零件。框架今天已经全部见过了。</p>
+  </div>
+
+  <!-- ============ 13 可视化实验 ============ -->
+  <h2 id="viz"><span class="no">13</span>可视化实验:亲手当一回训练算法</h2>
+  <p>拖动滑杆改变参数 w,看直线怎么动、损失怎么变。任务:<b>把损失降到 0.02 以下</b>。手动找完,再点按钮看「梯度下降」怎么自动找。</p>
+
+  <div class="sim">
+    <span class="sim-tag mock">机制模拟 · 算法真实(浏览器 JS 实现),非 Python 真实运行</span>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center">
+      <svg id="fitplot" viewBox="0 0 360 300" width="360" height="300" style="background:#fff;border:1px solid var(--line);border-radius:10px;flex:none">
+        <!-- 坐标轴 -->
+        <line x1="46" y1="260" x2="340" y2="260" stroke="#8b95a8" stroke-width="1.5"/>
+        <line x1="46" y1="260" x2="46" y2="18" stroke="#8b95a8" stroke-width="1.5"/>
+        <text x="336" y="294" font-size="11" fill="#55617a" text-anchor="end">重量 x (kg)</text>
+        <text x="14" y="16" font-size="11" fill="#55617a">运费 y (元)</text>
+        <!-- 刻度 -->
+        <g font-size="10" fill="#8b95a8">
+          <text x="130" y="274" text-anchor="middle">1</text>
+          <text x="214" y="274" text-anchor="middle">2</text>
+          <text x="298" y="274" text-anchor="middle">3</text>
+          <text x="40" y="194" text-anchor="end">4</text>
+          <text x="40" y="125" text-anchor="end">8</text>
+          <text x="40" y="56" text-anchor="end">12</text>
+        </g>
+        <!-- 模型直线(JS 更新) -->
+        <line id="fitline" x1="46" y1="260" x2="340" y2="100" stroke="#2743c7" stroke-width="2.5"/>
+        <!-- 误差竖线(JS 更新) -->
+        <line id="err0" stroke="#b42318" stroke-width="1.6" stroke-dasharray="4 3"/>
+        <line id="err1" stroke="#b42318" stroke-width="1.6" stroke-dasharray="4 3"/>
+        <line id="err2" stroke="#b42318" stroke-width="1.6" stroke-dasharray="4 3"/>
+        <!-- 数据点 -->
+        <circle cx="130" cy="187.4" r="6" fill="#0c6e63"/>
+        <circle cx="214" cy="123.4" r="6" fill="#0c6e63"/>
+        <circle cx="298" cy="50.8" r="6" fill="#0c6e63"/>
+      </svg>
+      <div style="flex:1;min-width:240px">
+        <label for="wslider">参数 w(每公斤价格):<span class="readout" id="wval">2.00</span></label>
+        <input type="range" id="wslider" min="0" max="8" step="0.05" value="2">
+        <p style="margin:14px 0 4px;font-size:13px;color:var(--muted)">当前损失 L(w):<span class="readout" id="lval"></span></p>
+        <div style="background:#e2e7f0;border-radius:6px;height:14px;overflow:hidden">
+          <div id="lbar" style="height:100%;width:50%;background:linear-gradient(90deg,#0c6e63,#b42318);transition:width .1s"></div>
+        </div>
+        <p id="verdict" style="font-size:13px;min-height:22px;margin:10px 0"></p>
+        <button class="btn teal sm" type="button" id="autobtn">▶ 让梯度下降自动找(每步朝损失变小的方向挪)</button>
+        <p style="font-size:12px;color:var(--muted);margin-top:10px">红色虚线 = 每个点的误差。损失就是这三段长度的平方平均。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <span class="note-t">刚才干的事,就叫「训练」</span>
+    手动拖滑杆时,大脑在执行「看误差 → 猜方向 → 微调 → 再看」;梯度下降按钮做的是同一件事,
+    只是「猜方向」被数学公式代替了(损失对 w 的导数指出方向)。第 6 章会拆开这个公式,第 13 节的体感先存着。
+  </div>
+
+  <!-- ============ 14 常见真实场景 ============ -->
+  <h2 id="scenes"><span class="no">14</span>常见真实场景</h2>
+  <p>用第 6 节的地图给日常产品「验明正身」。以后看到任何 AI 产品,都可以做这个归位练习。</p>
+  <div class="tbl-scroll">
+    <table>
+      <tr><th>天天见的功能</th><th>属于哪一圈</th><th>它在做什么</th></tr>
+      <tr><td>手机相册「按人分组」</td><td>深度学习</td><td>人脸识别网络给每张脸算一个向量,相近的归为一人</td></tr>
+      <tr><td>购物 App「猜你喜欢」</td><td>机器学习(经典)</td><td>从用户与相似用户的行为数据里学出偏好参数</td></tr>
+      <tr><td>相机人像模式抠背景</td><td>深度学习</td><td>分割网络逐像素判断「人 / 背景」</td></tr>
+      <tr><td>ChatGPT / Claude 对话</td><td>生成式 AI(LLM)</td><td>第 11 节那张图的循环</td></tr>
+      <tr><td>Excel 的 IF 公式、抢票脚本</td><td>不是机器学习</td><td>纯人写规则——注意:是程序不等于是 AI,更不等于机器学习</td></tr>
+      <tr><td>Figma/PS 的「一键去背景」</td><td>深度学习</td><td>和相机抠像同类,分割模型打包进了设计工具</td></tr>
+    </table>
+  </div>
+
+  <!-- ============ 15 常见误解 ============ -->
+  <h2 id="myths"><span class="no">15</span>常见误解</h2>
+  <div class="grid2">
+    <div class="card"><p style="margin:0"><b>❌ 「AI 有意识、会思考」</b></p><p style="font-size:15px;margin:8px 0 0">✅ 目前的 AI(包括 LLM)是概率计算:输入数字、输出数字。它没有目标、感受或立场。「聊起来像人」是海量人类文本训练出的统计效果。</p></div>
+    <div class="card"><p style="margin:0"><b>❌ 「机器学习就是把答案存起来,用时去查」</b></p><p style="font-size:15px;margin:8px 0 0">✅ 学的是参数(规律),不是答案。本章实验里模型没存过「5kg=20 元」这条记录,却能预测 5kg——因为它学到了 w。</p></div>
+    <div class="card"><p style="margin:0"><b>❌ 「深度学习是和机器学习并列的另一门技术」</b></p><p style="font-size:15px;margin:8px 0 0">✅ 是包含关系:深度学习 ⊂ 机器学习。它只是把模型换成了多层神经网络。</p></div>
+    <div class="card"><p style="margin:0"><b>❌ 「ChatGPT 在网上搜现成句子拼给我」</b></p><p style="font-size:15px;margin:8px 0 0">✅ 默认情况下它不检索任何库,每个词都是按概率现场生成的。这既是它能写出全新内容的原因,也是它会一本正经编造(幻觉)的原因。</p></div>
+    <div class="card"><p style="margin:0"><b>❌ 「必须先精通数学才能开始学 AI」</b></p><p style="font-size:15px;margin:8px 0 0">✅ 顺序反了:先像本章这样用小例子建立直觉,数学在每次需要时补一小块。今天已经用小学数学理解了损失函数。</p></div>
+    <div class="card"><p style="margin:0"><b>❌ 「损失降得越低,模型就一定越好用」</b></p><p style="font-size:15px;margin:8px 0 0">✅ 损失只衡量「在见过的数据上」的表现。死记硬背训练数据能把损失压得极低、却对新数据一塌糊涂(过拟合,第 6 章重点)。</p></div>
+  </div>
+
+  <!-- ============ 16 可展开问答 ============ -->
+  <h2 id="faq"><span class="no">16</span>可展开问答</h2>
+  <details><summary>我的电脑没有好显卡,能学吗?要买 GPU 吗?</summary>
+    <p>能学,且前半程完全不需要 GPU。基础课程和 D01–D02 都是 CPU 秒级运行;D03 的小神经网络 CPU 也能训练(几分钟);真正需要大算力时(大模型微调),用云端免费/低价资源即可,到 D06 会给具体方案。<b>现在不要买任何硬件。</b></p>
+  </details>
+  <details><summary>数学要学到什么程度?</summary>
+    <p>本课程用到的数学上限是:高中函数、求导的直觉(第 6 章现补)、矩阵乘法(第 3 章现补)、基础概率(D06 现补)。每一块都在用到的那一章即时补,不需要预先啃教材。判断标准很实用:<b>能手算本章 12.3 那张表,数学就够用了。</b></p>
+  </details>
+  <details><summary>先学 Python 还是先学概念?</summary>
+    <p>交替学,这正是课程顺序的设计:本章建全景(概念)→ 第 2 章学 Python(工具)→ 第 3 章起概念和代码一章比一章咬合更紧。纯学语法很枯燥,纯学概念会飘,交替是给非科班背景的最优解。</p>
+  </details>
+  <details><summary>为什么装了两个 Python(3.14 和 3.10)?会打架吗?</summary>
+    <p>不会。<code>py</code> 启动器就是管理多版本的官方工具,<code>py -3.10</code> 明确指定用哪个。加上虚拟环境隔离,每个项目各用各的版本和库,互不干扰。这也是第 8 节坚持建 <code>.venv</code> 的原因。</p>
+  </details>
+  <details><summary>作为设计师,学这些对我有什么独特价值?</summary>
+    <p>两点:①AI 产品的成败越来越取决于交互与体验设计,而懂原理的设计师能判断「什么做得到、什么是幻觉风险、哪里该给用户控制权」,这是稀缺能力;②阶段三的项目(尤其 P5、P6)可以把设计功底直接用上,做出既懂模型又有品质感的作品——这是纯工程背景的人反而做不出的。</p>
+  </details>
+  <details><summary>直接学 Prompt 技巧不就够用了吗?</summary>
+    <p>如果目标只是聊天,够。但只会 Prompt 意味着:模型输出不稳定时不知道为什么、做不了 RAG/Agent 这类真正的应用、和工程师协作时说不到点上。Prompt 只是 D07 一章的内容,它上下游的一切才是竞争力所在。</p>
+  </details>
+  <details><summary>大概学多久能做出真东西?</summary>
+    <p>按每周 5–6 小时:基础课程约 6–8 周(P1、P2 已经能产出);阶段二再 8–10 周(P3–P5);P6 完整应用在此之后。这不是慢——是「每章真学懂再往前」的代价,比囤 100 小时视频课但从不动手快得多。</p>
+  </details>
+  <details><summary>要不要同时看视频课(吴恩达等)?</summary>
+    <p>可以作为补充,不建议并行主修两套体系(容易两头都半途)。推荐做法:以本课程为主线,某个概念卡住时,去第 23 节列的对应官方资料/公开课看那一小节,看懂就回来。</p>
+  </details>
+
+  <!-- ============ 17 手把手练习 ============ -->
+  <h2 id="practice"><span class="no">17</span>手把手练习</h2>
+  <ol class="steps">
+    <li>
+      <p><b>手算一次损失。</b>用 12.3 节同样的数据,算出 w = 5 时的损失 L(5)。步骤:先算三个预测值,再算三个误差,平方、求和、除以 3。</p>
+      <details class="hint"><summary>提示</summary><p>三个预测值是 5、10、15。注意:误差可以是负数,平方后就都正了。</p></details>
+    </li>
+    <li>
+      <p><b>改代码做新预测。</b>在实验 01 的代码里增加一行,让程序同时输出 <b>0.5kg</b> 的预测运费。</p>
+      <details class="hint"><summary>提示</summary><p>照抄最后一行 print,把 <code>5</code> 换成 <code>0.5</code>。f-string 里的 <code>{best_w * 0.5:.2f}</code> 表示保留两位小数。</p></details>
+    </li>
+    <li>
+      <p><b>污染数据,观察后果。</b>往数据里追加一条错误记录:重量 <code>3</code>、运费 <code>50</code>(两个列表各加一个元素),重跑程序。记下新的 w 和对 5kg 的预测,和原来对比。</p>
+      <details class="hint"><summary>提示</summary><p>改成 <code>weights = [1, 2, 3, 3]</code> 和 <code>prices = [4.2, 7.9, 12.1, 50]</code>。想想:为什么只加一条数据,w 却被拉动这么多?和「平方惩罚大误差」有关。</p></details>
+    </li>
+  </ol>
+
+  <!-- ============ 18 参考答案 ============ -->
+  <h2 id="answers"><span class="no">18</span>参考答案</h2>
+  <details class="answer"><summary>练习 1 · L(5) 的完整计算</summary>
+    <p>预测:5×1=5,5×2=10,5×3=15。误差:4.2−5=−0.8;7.9−10=−2.1;12.1−15=−2.9。
+    平方:0.64、4.41、8.41。求和 13.46,除以 3 ≈ <b>4.487</b>。
+    对照 12.3 的表:L(5)≈4.49 远大于 L(4.021)≈0.018,说明 w=5 是个差参数——「每公斤 5 元」明显收贵了。</p>
+  </details>
+  <details class="answer"><summary>练习 2 · 新增预测行</summary>
+    <pre>print(f"预测 0.5kg 运费:{best_w * 0.5:.2f} 元")</pre>
+    <p>输出 <code>预测 0.5kg 运费:2.01 元</code>。注意:模型敢对任何输入给出预测,哪怕 0.5kg 在训练数据范围(1–3kg)之外——预测值是否可信是另一回事,这个问题叫「外推」,第 5 章讨论。</p>
+  </details>
+  <details class="answer"><summary>练习 3 · 脏数据的破坏力</summary>
+    <p>新的最优 w = Σxy ÷ Σx² = (56.3 + 3×50) ÷ (14 + 9) = 206.3 ÷ 23 ≈ <b>8.97</b>,对 5kg 的预测变成约 <b>44.8 元</b>——翻了一倍多。
+    一条脏数据(占比仅 25%)就把模型拉偏成这样,因为平方损失对大误差极其敏感,模型被迫向离群点妥协。
+    <b>结论先记住:数据质量 ≥ 算法聪明程度。</b>这也是为什么课程把 Pandas(数据清洗)排在所有模型课之前。</p>
+  </details>
+
+  <!-- ============ 19 进阶小项目 ============ -->
+  <h2 id="miniproject"><span class="no">19</span>进阶小项目:用自己的数据学一个 w</h2>
+  <div class="card">
+    <p><b>任务:</b>找一组自己生活里的「x → y」数据(3–6 条即可),替换实验代码里的两个列表,学出 w 并做一次预测。</p>
+    <p>可选题材:导出图片的像素尺寸 → 文件大小;跑步距离 → 消耗卡路里;设计稿页数 → 完稿耗时。</p>
+    <p><b>交付物(写在实验目录的 notes.md 里):</b>①数据;②学到的 w 和它的现实含义(「每页大约要 X 小时」);③一条预测和对它的信任程度;④这个模型明显不合理的地方(比如:耗时其实不过原点——0 页也要开会,这正是第 5 章引入截距 b 的理由)。</p>
+  </div>
+
+  <!-- ============ 20 自查清单 ============ -->
+  <h2 id="checklist"><span class="no">20</span>学完之后自查清单</h2>
+  <p>逐条自查,能勾 8 条以上再进入第 2 章(勾选状态会保存在本机浏览器里):</p>
+  <ul class="checklist">
+    <li><input type="checkbox">我能凭记忆画出 AI ⊃ 机器学习 ⊃ 深度学习的包含图,并把生成式 AI 放对位置</li>
+    <li><input type="checkbox">我能用快递例子向别人解释「规则法」和「学习法」的区别</li>
+    <li><input type="checkbox">我能说出「模型、参数、训练、损失」四个词各自的意思</li>
+    <li><input type="checkbox">我在自己电脑上建好了 .venv 虚拟环境,并看到激活前后 python 版本不同</li>
+    <li><input type="checkbox">我手算过至少一个 w 的损失,结果和表格对得上</li>
+    <li><input type="checkbox">我跑通了实验 01 的完整代码,输出 w ≈ 4.021</li>
+    <li><input type="checkbox">我改过数据/参数并观察到了输出变化(12.7 节三个改动至少做了一个)</li>
+    <li><input type="checkbox">我能按顺序说出一次 ChatGPT 对话的六站数据流</li>
+    <li><input type="checkbox">我能说出「训练」和「推理」的区别,以及我每次提问触发的是哪个</li>
+    <li><input type="checkbox">我做完了<a href="../题库/quiz-01.html">第 1 章题库</a>,正确率 70% 以上</li>
+  </ul>
+
+  <!-- ============ 21 与下一章的连接 ============ -->
+  <h2 id="next"><span class="no">21</span>本章与下一章的连接</h2>
+  <div class="card">
+    <p>本章的 17 行代码里,「看懂了」<code>def</code>、<code>for</code>、<code>zip</code>、f-string——但如果现在让人从空白文件写出它们,大概率卡住。
+    <b>常见痛点:看得懂一小块,连不起来。</b></p>
+    <p>第 2 章「Python 基础:为 AI 准备的最小集」专治这个:不求全(Python 语法书有 600 页,AI 常用的不到 60 页),
+    只把 AI 代码里高频出现的那一小圈语法练到「能默写、能组装」。学完后回头看本章代码,应该是「每一行我都能自己写出来」的状态。</p>
+    <p style="margin-bottom:0">进入条件:上面的自查清单勾满 8 条。</p>
+  </div>
+
+  <!-- ============ 22 全章知识地图 ============ -->
+  <h2 id="fullmap"><span class="no">22</span>全章知识地图</h2>
+  <div class="card">
+    <ul style="line-height:2">
+      <li><b>四层概念</b>:人工智能(目标)⊃ 机器学习(从数据学参数)⊃ 深度学习(多层神经网络)⊃ 生成式 AI / LLM(生成内容 / 预测下一个词)</li>
+      <li><b>机器学习三件套</b>:模型形式(ŷ = w·x)+ 损失函数(均方误差 L(w))+ 找参数的方法(本章暴力搜索 → 以后梯度下降)</li>
+      <li><b>关键区分</b>:训练(调参数,厂商做)vs 推理(用参数,每次提问);规则(人写)vs 学习(数据定)</li>
+      <li><b>数据流六站</b>:文字 → Token → 向量 → 神经网络 → 概率表 → 采样,循环出回答</li>
+      <li><b>工程底座</b>:终端 · py 启动器 · 虚拟环境(.venv)· 纯英文路径 · 预期输出核对法</li>
+      <li><b>已埋伏笔</b>:评价指标与外推(第 5 章)/ 梯度下降与过拟合(第 6 章)/ 截距 b(第 5 章)/ Transformer(D05)/ 幻觉(D10)</li>
+    </ul>
+  </div>
+
+  <!-- ============ 23 官方资料入口 ============ -->
+  <h2 id="refs"><span class="no">23</span>官方资料入口</h2>
+  <p>链接只是补充,不替代本章讲解。每条都注明了什么时候打开、重点看哪部分。</p>
+  <div class="reslist">
+      <div class="res">
+        <div class="rh"><span class="rt2"><a href="https://docs.python.org/zh-cn/3/tutorial/index.html" target="_blank" rel="noopener">Python 官方教程(中文)</a></span></div>
+        <div class="rrow"><span class="rk">什么时候打开</span><span class="rv">第 2 章学 Python 时作为字典查;现在不用读</span></div>
+        <div class="rrow"><span class="rk">重点看哪部分</span><span class="rv">第 3–5 节(数字、字符串、列表、流程控制)</span></div>
+      </div>
+      <div class="res">
+        <div class="rh"><span class="rt2"><a href="https://code.visualstudio.com/docs/python/python-tutorial" target="_blank" rel="noopener">VS Code 官方 Python 入门</a></span></div>
+        <div class="rrow"><span class="rk">什么时候打开</span><span class="rv">装完 VS Code 后想确认配置是否正确时</span></div>
+        <div class="rrow"><span class="rk">重点看哪部分</span><span class="rv">“Create a Python source file” 和 “Run Python code” 两节</span></div>
+      </div>
+      <div class="res">
+        <div class="rh"><span class="rt2"><a href="https://scikit-learn.org/stable/user_guide.html" target="_blank" rel="noopener">scikit-learn 用户指南</a></span></div>
+        <div class="rrow"><span class="rk">什么时候打开</span><span class="rv">第 5 章正式用它训练模型时</span></div>
+        <div class="rrow"><span class="rk">重点看哪部分</span><span class="rv">1.1 Linear Models 的开头(会看到本章 12.6 那三行套路)</span></div>
+      </div>
+      <div class="res">
+        <div class="rh"><span class="rt2"><a href="https://pytorch.org/tutorials/" target="_blank" rel="noopener">PyTorch 官方教程</a></span></div>
+        <div class="rrow"><span class="rk">什么时候打开</span><span class="rv">D03 章;现在点开只会劝退,别点</span></div>
+        <div class="rrow"><span class="rk">重点看哪部分</span><span class="rv">“Learn the Basics” 系列</span></div>
+      </div>
+      <div class="res">
+        <div class="rh"><span class="rt2"><a href="https://huggingface.co/learn" target="_blank" rel="noopener">Hugging Face 官方课程</a></span></div>
+        <div class="rrow"><span class="rk">什么时候打开</span><span class="rv">阶段二 D04 起(Token、Transformer、LLM)</span></div>
+        <div class="rrow"><span class="rk">重点看哪部分</span><span class="rv">LLM Course 的 Chapter 1(有中文版可切换)</span></div>
+      </div>
+      <div class="res">
+        <div class="rh"><span class="rt2"><a href="https://zh.d2l.ai/" target="_blank" rel="noopener">《动手学深度学习》(中文,免费)</a></span></div>
+        <div class="rrow"><span class="rk">什么时候打开</span><span class="rv">第 7 章之后想加深某个主题时</span></div>
+        <div class="rrow"><span class="rk">重点看哪部分</span><span class="rv">只按需查对应章节,不要从头通读</span></div>
+      </div>
+    </div>
+
+      <div class="pagefoot">
+        <a href="../index.html">← 课程首页</a>
+        <a href="../实验室/lab-01-规则与学习.html">下一步:去做实验 01 →</a>
+      </div>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">01 · 目录</p>
+      <span class="tg">开始之前</span>
+      <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+      <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+      <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+      <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+      <a data-toc-target="position" href="#position"><i>5</i>本章在系统中的位置</a>
+      <a data-toc-target="map" href="#map"><i>6</i>概念地图</a>
+      <span class="tg">动手准备</span>
+      <a data-toc-target="first" href="#first"><i>7</i>最先要做的事</a>
+      <a data-toc-target="env" href="#env"><i>8</i>环境安装与验证</a>
+      <a data-toc-target="path" href="#path"><i>9</i>学习路径建议</a>
+      <span class="tg">核心内容</span>
+      <a data-toc-target="concepts" href="#concepts"><i>10</i>核心概念 W/W/W</a>
+      <a data-toc-target="dataflow" href="#dataflow"><i>11</i>数据流与执行</a>
+      <a data-toc-target="minilab" href="#minilab"><i>12</i>最小代码实验</a>
+      <a data-toc-target="viz" href="#viz"><i>13</i>可视化实验</a>
+      <span class="tg">消化吸收</span>
+      <a data-toc-target="scenes" href="#scenes"><i>14</i>常见真实场景</a>
+      <a data-toc-target="myths" href="#myths"><i>15</i>常见误解</a>
+      <a data-toc-target="faq" href="#faq"><i>16</i>可展开问答</a>
+      <a data-toc-target="practice" href="#practice"><i>17</i>手把手练习</a>
+      <a data-toc-target="answers" href="#answers"><i>18</i>参考答案</a>
+      <a data-toc-target="miniproject" href="#miniproject"><i>19</i>进阶小项目</a>
+      <span class="tg">收尾</span>
+      <a data-toc-target="checklist" href="#checklist"><i>20</i>自查清单</a>
+      <a data-toc-target="next" href="#next"><i>21</i>连接下一章</a>
+      <a data-toc-target="fullmap" href="#fullmap"><i>22</i>全章知识地图</a>
+      <a data-toc-target="refs" href="#refs"><i>23</i>官方资料入口</a>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+</script>
+<script>
+/* ===== 第 13 节可视化实验(机制模拟) ===== */
+(function () {
+  'use strict';
+  var xs = [1, 2, 3], ys = [4.2, 7.9, 12.1];
+  /* 画布坐标换算:x∈[0,3.5]→[46,340] ; y∈[0,14]→[260,18] */
+  function px(x) { return 46 + x / 3.5 * (340 - 46); }
+  function py(y) { return 260 - y / 14 * (260 - 18); }
+  var slider = document.getElementById('wslider');
+  var line = document.getElementById('fitline');
+  var wval = document.getElementById('wval');
+  var lval = document.getElementById('lval');
+  var lbar = document.getElementById('lbar');
+  var verdict = document.getElementById('verdict');
+  var errLines = [document.getElementById('err0'), document.getElementById('err1'), document.getElementById('err2')];
+
+  function loss(w) {
+    var t = 0;
+    for (var i = 0; i < xs.length; i++) { var e = ys[i] - w * xs[i]; t += e * e; }
+    return t / xs.length;
+  }
+  function render() {
+    var w = parseFloat(slider.value);
+    wval.textContent = w.toFixed(2);
+    /* 直线:从 (0,0) 画到 x=3.5(超出纵轴范围就截到 y=14) */
+    var xEnd = 3.5, yEnd = w * 3.5;
+    if (yEnd > 14) { yEnd = 14; xEnd = w > 0 ? 14 / w : 3.5; }
+    line.setAttribute('x1', px(0)); line.setAttribute('y1', py(0));
+    line.setAttribute('x2', px(xEnd)); line.setAttribute('y2', py(yEnd));
+    /* 误差虚线 */
+    for (var i = 0; i < 3; i++) {
+      var pred = Math.min(w * xs[i], 14);
+      errLines[i].setAttribute('x1', px(xs[i])); errLines[i].setAttribute('y1', py(ys[i]));
+      errLines[i].setAttribute('x2', px(xs[i])); errLines[i].setAttribute('y2', py(pred));
+    }
+    var L = loss(w);
+    lval.textContent = L.toFixed(4);
+    lbar.style.width = Math.min(100, L / 12 * 100) + '%';
+    verdict.textContent = L < 0.02 ? '🎉 达标!手动完成了一次“训练”。'
+      : L < 0.1 ? '很接近了,再微调一点点。'
+      : L < 1 ? '方向对了,继续。'
+      : '损失还很大,看看直线离绿点有多远。';
+  }
+  slider.addEventListener('input', render);
+  render();
+
+  /* 梯度下降动画:w ← w − 学习率 × dL/dw,dL/dw = (2/n)Σ(w·x−y)·x */
+  var timer = null;
+  document.getElementById('autobtn').addEventListener('click', function () {
+    if (timer) { clearInterval(timer); timer = null; }
+    var w = parseFloat(slider.value);
+    timer = setInterval(function () {
+      var g = 0;
+      for (var i = 0; i < xs.length; i++) { g += 2 * (w * xs[i] - ys[i]) * xs[i]; }
+      g /= xs.length;
+      w = w - 0.02 * g;               /* 0.02 是学习率(第 6 章正式讲) */
+      slider.value = w.toFixed(3);
+      render();
+      if (Math.abs(g) < 0.001) { clearInterval(timer); timer = null; }
+    }, 120);
+  });
+})();
+
+/* ===== 第 11 节逐词生成演示(机制模拟:流程真实,概率为教学示例) ===== */
+(function () {
+  'use strict';
+  var START = '今天天气真';
+  /* 每一步的「下一词候选 + 概率」,为演示固定;真实模型由前文动态算出 */
+  var STEPS = [
+    [['好', 0.55], ['不错', 0.20], ['冷', 0.15], ['差', 0.10]],
+    [[',', 0.50], ['!', 0.30], ['啊,', 0.20]],
+    [['适合', 0.45], ['我们', 0.25], ['出去', 0.20], ['很想', 0.10]],
+    [['散步', 0.40], ['晒太阳', 0.35], ['出门走走', 0.25]],
+    [['。', 0.70], ['!', 0.30]]
+  ];
+  var ctxEl = document.getElementById('tkctx');
+  var barsEl = document.getElementById('tkbars');
+  var cursorEl = document.getElementById('tkcursor');
+  var btn = document.getElementById('tksample');
+  var step = 0;
+
+  function renderBars() {
+    barsEl.innerHTML = '';
+    if (step >= STEPS.length) {
+      barsEl.innerHTML = '<p style="font-size:13px;color:var(--teal);font-weight:700;margin:4px 0">'
+        + '【生成结束】句子完成。点「重来」再走一遍,大概率得到不同的句子。</p>';
+      btn.disabled = true;
+      cursorEl.style.display = 'none';
+      return;
+    }
+    STEPS[step].forEach(function (c) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;margin:5px 0';
+      var label = document.createElement('span');
+      label.style.cssText = 'font-family:Consolas,monospace;font-size:13px;width:76px;flex:none;color:var(--ink)';
+      label.textContent = c[0];
+      var track = document.createElement('div');
+      track.style.cssText = 'flex:1;background:#e2e7f0;border-radius:5px;height:16px;overflow:hidden';
+      var bar = document.createElement('div');
+      bar.style.cssText = 'height:100%;width:' + (c[1] * 100) + '%;background:var(--acc);opacity:.85';
+      track.appendChild(bar);
+      var pct = document.createElement('span');
+      pct.style.cssText = 'font-family:Consolas,monospace;font-size:12px;color:var(--muted);width:44px;flex:none;text-align:right';
+      pct.textContent = Math.round(c[1] * 100) + '%';
+      row.appendChild(label); row.appendChild(track); row.appendChild(pct);
+      barsEl.appendChild(row);
+    });
+  }
+
+  btn.addEventListener('click', function () {
+    if (step >= STEPS.length) return;
+    /* 按概率加权抽样:r 落在哪个候选的概率区间里,就选谁 */
+    var r = Math.random(), acc = 0, chosen = STEPS[step][0][0];
+    for (var i = 0; i < STEPS[step].length; i++) {
+      acc += STEPS[step][i][1];
+      if (r <= acc) { chosen = STEPS[step][i][0]; break; }
+    }
+    ctxEl.textContent += chosen;
+    step++;
+    renderBars();
+  });
+
+  document.getElementById('tkreset').addEventListener('click', function () {
+    step = 0;
+    ctxEl.textContent = START;
+    btn.disabled = false;
+    cursorEl.style.display = '';
+    renderBars();
+  });
+
+  renderBars();
+})();
+</script>
+<script src="../assets/study-tracker.js" data-ch="01" data-kind="chapter" data-title="人工智能全景与学习环境"></script>
+</body>
+</html>

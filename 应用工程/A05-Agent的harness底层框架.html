@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A05 · AI Agent 的 harness / 底层框架</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="A04-Agent基础.html">A04 Agent 基础</a><span class="sep">—</span>
+      <a href="A05-Agent的harness底层框架.html" class="current">A05 harness</a><span class="sep">—</span>
+      <a href="A06-评估幻觉安全成本.html">A06 评估安全成本</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-A05.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">应用工程 · Chapter A05</p>
+        <h1>AI Agent 的 harness / 底层框架</h1>
+        <p class="recap">A04 从外面看清了 agent 的样子。这一章<b>掀开盖子</b>:模型只是发动机,真正让它能干活的,是外面那圈工程外壳——<b>harness</b>。它负责给模型接工具、管上下文、控制循环、处理错误、协调多个 agent。<b>此刻正在用的 Claude Code,就是一个 harness。</b>看懂这一层,就看懂了 AI 助手底层怎么运转——这正是推进治理体系时反复要打交道的地方,也是本课程为目标专门铺设的一章。</p>
+      </header>
+
+      <p>图解骨架约 50 分钟,精读约 6~8 小时。这一章比前面重,因为它是<b>治理目标的正门</b>。所有机制都用 A04 的循环作对照。每个新词当场白话解释。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>harness 是什么——模型之外那圈"外壳",让模型变成能干活的系统</li>
+          <li>agent loop 工程化——A04 的循环在真实系统里长什么样</li>
+          <li>上下文管理——上下文有限又贵,长任务怎么裁、压、检索(harness 最核心的活)</li>
+          <li>工具调用协议 MCP——工具像 USB 一样标准化插拔(治理关键拼图)</li>
+          <li>多 agent 编排——一个不够时,主 agent 派活给子 agent</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>这一章是 <a href="A04-Agent基础.html">A04</a> 的"打开引擎盖"——A04 的 loop、工具、状态,在这里被工程化。<b>通向后面:</b>harness 里"怎么知道 agent 干得好不好、怎么防它闯祸、怎么算账"是 <a href="../index.html">A06 评估安全成本</a>;"怎么把它部署成产品"是 A07。<b>连向目标:</b>治理体系要管的,正是 harness 这一层的行为。</p>
+      </div>
+
+      <!-- ========== 模块 A ========== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>想真正搞懂 <b>Claude Code、Cursor、各种 AI 助手底层怎么跑</b>的人。</li>
+        <li>要推进 AI 治理体系、却卡在"不熟 harness / AI 底层框架"的人(本课程为此专设)。</li>
+        <li>准备自己搭一个稳、能扩展的 agent,而不只是玩具 demo 的人。</li>
+      </ul>
+      <p><b>门槛提示</b>:这一章建立在 A04 之上。没读 A04 的话,先回去把"循环+工具+状态"立起来。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>核心是 <a href="A04-Agent基础.html">A04</a> 的三样:agent loop(想→做→看)、工具(A02 函数调用)、状态(历史累积在上下文)。再加 <a href="A01-提示词工程与上下文.html">A01</a> 的上下文窗口概念——这一章大半在讲怎么"管"这个窗口。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>用"发动机 vs 整辆车"讲清模型和 harness 的关系。</li>
+        <li>列出 harness 在 A04 裸循环之外多做的那几件事。</li>
+        <li>说清上下文为什么要管、有哪几种管法(裁、压、检索)。</li>
+        <li>解释 MCP 解决了什么问题、为什么像 USB。</li>
+        <li>判断什么时候值得上多 agent、什么时候是过度设计。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">harness(承载框架)=模型<b>之外</b>的全部工程外壳:它把模型这台"只会输出文字的发动机",接线成一辆<b>能感知、能行动、能持续干活</b>的车——工具接线、上下文管理、循环控制、错误处理、多 agent 协调,全在这一层。</p>
+      <p>A04 那段十几行的 agent loop 是玩具:工具写死、上下文一长就爆、工具报错就崩、只有一个 agent。真实系统要在它外面包一大圈:动态注册几十个工具、上下文满了自动压缩、工具失败了重试或换路、必要时派子 agent 分工……这一整圈就是 <b>harness</b>(也叫 agent runtime / scaffold / 承载框架)。一个关键认知:<b>近年 AI 能力的跃升,很大一部分不是模型本身变强,而是 harness 变强了</b>——同一个模型,套上好 harness 就能写代码、查资料、连续操作几十步。正在用的 Claude Code 就是把 Claude 这台发动机装进了一辆精心调校的车。理解 harness,就是理解"AI 系统"而不只是"AI 模型"。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="harness 五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">模型的外壳:接成</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">能干活的系统</text>
+          <rect x="288" y="32" width="184" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① harness 是什么</text>
+          <rect x="596" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="674" y="150" text-anchor="middle" class="nl">② loop 工程化</text>
+          <rect x="446" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="528" y="358" text-anchor="middle" class="nl">③ 上下文管理</text>
+          <rect x="150" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="232" y="358" text-anchor="middle" class="nl">④ 工具协议 MCP</text>
+          <rect x="8" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="86" y="150" text-anchor="middle" class="nl">⑤ 多 agent</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。合起来就是一个真实 harness 的骨架——第 12 节的代码会把它们串成 A04 裸循环的"加固版"。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 B ========== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>harness 是活跃前沿,概念还在成形。选官方一手资料作主线,别读二手炒作。</p>
+      <div class="callout go">
+        <span class="label">默认主线 · 两份一手</span>
+        <p><b>①Anthropic《Building Effective Agents》</b>(A04 已读,这里重看"编排/多 agent"部分)+ <b>②MCP 官方文档</b>。为什么:一份讲清 harness 该怎么设计(含多 agent),一份是当下最重要的工具协议标准的一手来源。链接:<a href="https://www.anthropic.com/research/building-effective-agents" target="_blank" rel="noopener">Building Effective Agents</a>、<a href="https://modelcontextprotocol.io/" target="_blank" rel="noopener">modelcontextprotocol.io</a>。</p>
+      </div>
+      <p><b>再配两件(直连治理目标):</b></p>
+      <ul>
+        <li><b>Anthropic 多 agent 研究系统复盘</b> — <a href="https://www.anthropic.com/engineering/building-a-multi-agent-research-system" target="_blank" rel="noopener">一线工程博客</a>,真实讲多 agent 怎么分工、上下文怎么隔离、代价在哪。</li>
+        <li><b>上下文工程</b> — <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">Anthropic:给 agent 做上下文工程</a>,本章第 9 节的展开。</li>
+      </ul>
+      <div class="callout warn"><span class="label">最好的活教材就在手边</span><p>正在用的 <b>Claude Code</b> 本身就是一个成熟 harness。读完本章,回头观察它:它怎么把工具列给模型、上下文长了怎么压缩、报错怎么处理、什么时候派子 agent——书上每个概念都能在它身上找到对应。这是理解治理对象最直接的办法。</p></div>
+
+      <!-- ========== 模块 C ========== -->
+      <p class="handoff">先把"模型"和"外壳"彻底分开——这是全章的地基。</p>
+      <h2 id="what"><span class="no">7</span><span>harness 是什么:发动机与整辆车</span></h2>
+      <p class="one-liner">模型=<b>发动机</b>(接收上下文、输出下一步);harness=<b>整辆车</b>(方向盘、油门、传动、仪表、安全带)。同一台发动机,装进不同的车,能跑的路天差地别。</p>
+      <p>把它们分开,很多事就清楚了:模型负责"这一步该干什么"的判断;harness 负责把判断变成实际行动、把世界的反馈拿回来、并让整件事能持续、安全、可控地进行。所以"AI 能不能做某件事",往往不取决于模型,而取决于 harness 给没给它对应的工具、管没管好上下文、兜没兜住错误。<b>治理 AI 系统,治的主要就是 harness 这一层</b>——因为行动、权限、边界都在这里落地,而不在模型权重里。</p>
+      <figure>
+        <svg viewBox="0 0 620 250" role="img" aria-label="模型被 harness 包裹">
+          <rect x="40" y="30" width="540" height="190" rx="12" class="d-ink nf"/>
+          <text x="60" y="54" class="nl">harness(整辆车)</text>
+          <circle cx="310" cy="130" r="52" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="310" y="126" text-anchor="middle" class="nl-acc">模型</text>
+          <text x="310" y="144" text-anchor="middle" class="el">发动机</text>
+          <rect x="70" y="96" width="104" height="34" rx="6" class="box"/><text x="122" y="117" text-anchor="middle" class="el">工具接线</text>
+          <rect x="70" y="150" width="104" height="34" rx="6" class="box"/><text x="122" y="171" text-anchor="middle" class="el">上下文管理</text>
+          <rect x="446" y="96" width="104" height="34" rx="6" class="box"/><text x="498" y="117" text-anchor="middle" class="el">循环控制</text>
+          <rect x="446" y="150" width="104" height="34" rx="6" class="box"/><text x="498" y="171" text-anchor="middle" class="el">错误处理</text>
+          <rect x="256" y="196" width="108" height="20" rx="6" class="box"/><text x="310" y="210" text-anchor="middle" class="el">多 agent 协调</text>
+          <line x1="174" y1="113" x2="258" y2="122" class="d-soft"/><line x1="174" y1="167" x2="258" y2="140" class="d-soft"/>
+          <line x1="446" y1="113" x2="362" y2="122" class="d-soft"/><line x1="446" y1="167" x2="362" y2="140" class="d-soft"/>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>harness 全景:模型(发动机)居中,外面一圈工程外壳把它接成能上路的车。AI 系统 = 模型 + 这一圈。</figcaption>
+      </figure>
+
+      <p class="handoff">先看这圈外壳里最像 A04 的一块:被加固过的循环。</p>
+      <h2 id="loop"><span class="no">8</span><span>agent loop 工程化</span></h2>
+      <p class="one-liner">A04 的裸循环搬进真实 harness,要补齐:<b>系统提示词</b>(定角色和规矩)、<b>动态工具注册</b>、<b>明确的停止条件</b>、<b>错误重试/降级</b>、以及每轮的<b>日志与观测</b>。骨架没变,健壮性天差地别。</p>
+      <p>逐条看它比玩具多什么:开头有一段<b>系统提示词</b>,把 agent 的身份、可用工具的用法、红线规矩讲清(这是 A01 提示词工程的用武之地,也是治理最直接的抓手);工具不再写死,而是<b>动态注册</b>一批、并把说明喂给模型;<b>停止条件</b>不止步数上限,还有"任务完成""预算耗尽""触发红线"等多个出口;工具报错时会<b>重试或换条路</b>,而不是整个崩掉;每一轮都<b>留痕</b>,好在 A06 里观测和排错。这些"不起眼"的外围,决定了 agent 是能上生产还是只能演示。</p>
+
+      <p class="handoff">而这圈外壳里最难、最核心的一块,是管那块会被撑爆的上下文。</p>
+      <h2 id="context"><span class="no">9</span><span>上下文管理(harness 最核心的活)</span></h2>
+      <p class="one-liner">上下文窗口<b>有限又贵</b>,而 agent 每转一轮就往里塞更多(想法、工具结果……),很快撑爆。harness 必须<b>持续地裁、压、检索</b>,给模型留下"最该看见的那些",而不是全部历史。这门手艺叫<b>上下文工程</b>。</p>
+      <p>三种基本管法,常常混用:<b>裁剪</b>——扔掉不再相关的旧轮次(比如十步前一个失败的尝试);<b>压缩/总结</b>——把一大段历史让模型概括成几句要点再留下(在 Claude Code 里见过的"压缩上下文"就是它);<b>检索</b>——把全部历史存到外部,每轮只<b>取回</b>与当前最相关的几段(即把 <a href="A03-RAG检索增强生成.html">A03 的 RAG</a> 用在 agent 自己的记忆上)。为什么这是命门:上下文塞太多,模型会<b>抓不住重点</b>(A01 的"lost in the middle")、还更贵更慢;塞太少,它又<b>忘了关键信息</b>办砸事。管好这一块,是长任务 agent 能不能稳的关键。</p>
+      <figure>
+        <svg viewBox="0 0 620 210" role="img" aria-label="上下文满了之后压缩与检索">
+          <defs><marker id="m-x" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <text x="120" y="26" text-anchor="middle" class="nl">窗口快满了</text>
+          <rect x="60" y="40" width="120" height="140" rx="6" class="d-ink nf"/>
+          <rect x="66" y="46" width="108" height="20" class="nf-acc" stroke="none"/><text x="120" y="60" text-anchor="middle" class="el">系统提示(留)</text>
+          <rect x="66" y="70" width="108" height="16" fill="#dbe2ef" stroke="none"/><text x="120" y="82" text-anchor="middle" class="el">旧轮次</text>
+          <rect x="66" y="90" width="108" height="16" fill="#dbe2ef" stroke="none"/><text x="120" y="102" text-anchor="middle" class="el">旧轮次</text>
+          <rect x="66" y="110" width="108" height="16" fill="#dbe2ef" stroke="none"/><text x="120" y="122" text-anchor="middle" class="el">旧轮次</text>
+          <rect x="66" y="130" width="108" height="16" fill="#dbe2ef" stroke="none"/><text x="120" y="142" text-anchor="middle" class="el">旧轮次</text>
+          <rect x="66" y="152" width="108" height="22" class="nf-acc" stroke="none"/><text x="120" y="167" text-anchor="middle" class="el">当前任务(留)</text>
+          <line x1="190" y1="110" x2="252" y2="110" class="d-acc" marker-end="url(#m-x)"/>
+          <text x="221" y="102" text-anchor="middle" class="el-acc">管理</text>
+          <text x="400" y="26" text-anchor="middle" class="nl-acc">给模型的:精简后</text>
+          <rect x="300" y="40" width="200" height="140" rx="6" class="d-acc nf"/>
+          <rect x="306" y="46" width="188" height="22" class="nf-acc" stroke="none"/><text x="400" y="61" text-anchor="middle" class="el">系统提示</text>
+          <rect x="306" y="72" width="188" height="30" fill="#dbe2ef" stroke="none"/><text x="400" y="91" text-anchor="middle" class="el">旧历史 → 压成几句要点</text>
+          <rect x="306" y="106" width="188" height="30" fill="#dbe2ef" stroke="none"/><text x="400" y="125" text-anchor="middle" class="el">检索回来的相关片段</text>
+          <rect x="306" y="150" width="188" height="24" class="nf-acc" stroke="none"/><text x="400" y="166" text-anchor="middle" class="el">当前任务</text>
+          <text x="560" y="114" text-anchor="middle" class="el">↑ 裁 · 压 · 检索</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>上下文管理:窗口快满时,harness 保留系统提示与当前任务,把旧历史压成要点、只检索回相关片段——给模型"最该看见的",而非全部。</figcaption>
+      </figure>
+
+      <p class="handoff">工具是 harness 的手脚,但几十个工具怎么标准化接进来?这就是 MCP。</p>
+      <h2 id="mcp"><span class="no">10</span><span>工具调用协议 MCP(治理关键拼图)</span></h2>
+      <p class="one-liner">MCP<span class="en">Model Context Protocol</span>:一个<b>开放标准</b>,规定"AI 应用(host)怎么连接外部工具和数据源(server)"。它之于工具,就像 <b>USB</b> 之于设备——插口统一了,任何工具都能即插即用,不必为每个应用单独接线。</p>
+      <p>没有标准之前,每个 AI 应用要连每个工具/数据源,都得单独写一遍适配——n 个应用 × m 个工具 = 一场噩梦。MCP 把它变成"一个口":工具方按 MCP 规范做一个 <b>server</b>(暴露它能提供的工具、数据、提示),AI 应用作为 <b>host</b> 按同一规范去连——任何符合 MCP 的工具,任何符合 MCP 的应用都能用。<b>为什么它是治理关键拼图</b>:agent 能碰到哪些数据、能执行哪些动作,都从这个标准接口进出;要管住 agent 的权限边界、要审计它做过什么,MCP 这一层正是最自然的抓手。理解 MCP,就摸到了治理"AI 能动什么"的闸门。</p>
+      <figure>
+        <svg viewBox="0 0 640 210" role="img" aria-label="MCP:host 通过统一接口连接多个 server">
+          <defs><marker id="m-u" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="30" y="76" width="150" height="58" rx="10" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="105" y="100" text-anchor="middle" class="nl-acc">AI 应用 host</text>
+          <text x="105" y="118" text-anchor="middle" class="el">( harness)</text>
+          <line x1="180" y1="105" x2="250" y2="60" class="d-acc" marker-end="url(#m-u)"/>
+          <line x1="180" y1="105" x2="250" y2="105" class="d-acc" marker-end="url(#m-u)"/>
+          <line x1="180" y1="105" x2="250" y2="150" class="d-acc" marker-end="url(#m-u)"/>
+          <text x="215" y="86" text-anchor="middle" class="el-acc">MCP</text>
+          <text x="215" y="140" text-anchor="middle" class="el">统一接口</text>
+          <rect x="254" y="36" width="180" height="42" rx="8" class="box"/><text x="344" y="62" text-anchor="middle" class="el">server:文件系统</text>
+          <rect x="254" y="84" width="180" height="42" rx="8" class="box"/><text x="344" y="110" text-anchor="middle" class="el">server:数据库 / 公司知识库</text>
+          <rect x="254" y="132" width="180" height="42" rx="8" class="box"/><text x="344" y="158" text-anchor="middle" class="el">server:第三方 API</text>
+          <text x="530" y="100" text-anchor="middle" class="el">像 USB:</text>
+          <text x="530" y="120" text-anchor="middle" class="el">插口统一,</text>
+          <text x="530" y="140" text-anchor="middle" class="el">即插即用</text>
+        </svg>
+        <figcaption><span class="fig-num">图 4</span>MCP:host(应用/harness)通过一个统一接口连接任意 server(工具、数据源)。像 USB 统一了插口——也因此成为治理"AI 能碰什么"的天然闸门。</figcaption>
+      </figure>
+
+      <p class="handoff">最后一块:一个 agent 忙不过来时,怎么让好几个协同。</p>
+      <h2 id="multi"><span class="no">11</span><span>多 agent 编排</span></h2>
+      <p class="one-liner">任务太大、太杂时,让一个<b>主 agent(orchestrator)</b>把活拆成几块,分给多个<b>子 agent(worker)</b>并行去做,各自开一份独立上下文,最后主 agent 汇总。好处是分工 + 上下文隔离;代价是更贵、更难协调。</p>
+      <p>为什么要拆:单个 agent 的上下文会被一个大任务塞爆,而且什么都自己干容易顾此失彼。拆成主-从后,主 agent 只管规划和汇总,每个子 agent 拿一小段清晰任务、用自己那份干净上下文专注做——这既扩了总的"上下文容量",也让每部分更聚焦。但别滥用:多 agent 会成倍烧 token、协调本身也会出错(子任务划错、结果拼不拢)。判据和 A04 一致——<b>先问能不能用更简单的办法(单 agent、甚至工作流)解决,真扛不住了再上多 agent</b>。这正是 Anthropic 多 agent 研究系统那篇复盘的核心教训。</p>
+      <figure>
+        <svg viewBox="0 0 560 220" role="img" aria-label="主 agent 派活给子 agent 再汇总">
+          <defs><marker id="m-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker><marker id="m-o2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <rect x="200" y="20" width="160" height="46" rx="8" class="box-acc"/><text x="280" y="42" text-anchor="middle" class="nl-acc">主 agent</text><text x="280" y="59" text-anchor="middle" class="el">拆活 + 汇总</text>
+          <line x1="240" y1="66" x2="120" y2="110" class="d-acc" marker-end="url(#m-o)"/>
+          <line x1="280" y1="66" x2="280" y2="110" class="d-acc" marker-end="url(#m-o)"/>
+          <line x1="320" y1="66" x2="440" y2="110" class="d-acc" marker-end="url(#m-o)"/>
+          <rect x="50" y="112" width="140" height="46" rx="8" class="box"/><text x="120" y="134" text-anchor="middle" class="el">子 agent A</text><text x="120" y="150" text-anchor="middle" class="el">独立上下文</text>
+          <rect x="210" y="112" width="140" height="46" rx="8" class="box"/><text x="280" y="134" text-anchor="middle" class="el">子 agent B</text><text x="280" y="150" text-anchor="middle" class="el">独立上下文</text>
+          <rect x="370" y="112" width="140" height="46" rx="8" class="box"/><text x="440" y="134" text-anchor="middle" class="el">子 agent C</text><text x="440" y="150" text-anchor="middle" class="el">独立上下文</text>
+          <line x1="120" y1="158" x2="240" y2="196" class="d-soft" marker-end="url(#m-o2)"/>
+          <line x1="280" y1="158" x2="280" y2="196" class="d-soft" marker-end="url(#m-o2)"/>
+          <line x1="440" y1="158" x2="320" y2="196" class="d-soft" marker-end="url(#m-o2)"/>
+          <rect x="210" y="196" width="140" height="20" rx="6" class="box"/><text x="280" y="210" text-anchor="middle" class="el">结果回收 → 主 agent 合并</text>
+        </svg>
+        <figcaption><span class="fig-num">图 5</span>多 agent 编排(主-从):主 agent 拆活派给多个子 agent 并行做,各用独立上下文,再回收合并。扩容量,但更贵更难协调——扛不住才上。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 D ========== -->
+      <p class="handoff">五块地基到齐。把它们叠到 A04 的裸循环上,就是一个真实 harness 的骨架。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:harness 比裸循环多了什么</span></h2>
+      <p>还是 A04 那个循环,但补上了 harness 的外围。对照着看多出来的每一块:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">harness.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> run_harness(task, tools, policy):</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic">    # ⑧ 系统提示词:定角色、工具用法、红线规矩(治理的抓手)</span></span>
+<span class="line"><span style="color:#14181F">    ctx </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> Context(system_prompt</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">policy.system_prompt)</span></span>
+<span class="line"><span style="color:#14181F">    ctx.add_user(task)</span></span>
+<span class="line"><span style="color:#14181F">    tools </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> registry.load(tools)          </span><span style="color:#8B95A8;font-style:italic"># ④ 动态注册工具(可来自 MCP server)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    for</span><span style="color:#14181F"> step </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> range(policy.max_steps):  </span><span style="color:#8B95A8;font-style:italic"># ⑧ 停止条件之一:步数</span></span>
+<span class="line"><span style="color:#14181F">        ctx </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> context_manager.fit(ctx)    </span><span style="color:#8B95A8;font-style:italic"># ⑨ 核心:裁/压/检索,喂给模型前先"瘦身"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">        reply </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> model.chat(ctx, tools</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">tools)</span></span>
+<span class="line"><span style="color:#14181F">        ctx.add(reply)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        if</span><span style="color:#14181F"> reply.is_final:                </span><span style="color:#8B95A8;font-style:italic"># ⑧ 停止条件之二:任务完成</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">            return</span><span style="color:#14181F"> reply.content</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        if</span><span style="color:#14181F"> policy.violates(reply):         </span><span style="color:#8B95A8;font-style:italic"># ⑧ 停止条件之三:触发红线 → 拦截(A06)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">            return</span><span style="color:#14181F"> refuse(reply)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        try</span><span style="color:#14181F">:</span></span>
+<span class="line"><span style="color:#14181F">            result </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> run_tool(reply.tool_call)     </span><span style="color:#8B95A8;font-style:italic"># ② 做</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        except</span><span style="color:#14181F"> ToolError </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> e:</span></span>
+<span class="line"><span style="color:#14181F">            result </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> retry_or_degrade(e)           </span><span style="color:#8B95A8;font-style:italic"># ⑧ 错误处理:重试/换路,而非崩溃</span></span>
+<span class="line"><span style="color:#14181F">        ctx.add_tool_result(result)                </span><span style="color:#8B95A8;font-style:italic"># ③ 喂回,下一轮再想</span></span>
+<span class="line"><span style="color:#14181F">        log(step, reply, result)                   </span><span style="color:#8B95A8;font-style:italic"># ⑧ 留痕:给 A06 观测/审计用</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#557089"> "超预算未完成"</span><span style="color:#8B95A8;font-style:italic">                            # ⑧ 兜底</span></span></code></pre>
+      </div>
+      <p>和 A04 逐行对照:多出来的全是 harness 的活——<code>system_prompt</code> 立规矩(治理抓手)、<code>registry.load</code> 动态接工具(可来自 MCP)、<code>context_manager.fit</code> 每轮给上下文瘦身(第 9 节的命门)、<code>policy.violates</code> 拦红线(A06)、<code>try/except</code> 兜住工具错误、<code>log</code> 留痕供审计。<b>模型那一行 <code>model.chat</code> 几乎没变——变强的是它外面这一圈。</b>这就是"AI 能力跃升多来自 harness"的具体样子,也是治理 AI 时真正能动手的地方。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战 · 直连目标</span>
+        <h3>把 Claude Code 当标本解剖</h3>
+        <p>①在 Claude Code 里观察:它是怎么把一批工具的说明摆给模型的?(对应 <code>registry.load</code>)②触发过"压缩上下文"吗?那就是 <code>context_manager.fit</code>。③它拒绝某个危险操作时,是模型自觉还是 harness 的 <code>policy.violates</code> 拦的?④如果要给这套系统<b>立治理规矩</b>,会加在这段代码的哪几行?(提示:system_prompt / policy.violates / 工具注册白名单 / 日志)——把答案写下来,这就是治理体系的技术落点。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——这一章直指治理目标,更值得往深读。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;下列链接均于 2026-08-16 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://modelcontextprotocol.io/" target="_blank" rel="noopener">MCP(Model Context Protocol)官方文档</a></span><span class="spine">默认主线</span><span class="tags">协议官方 · 英文 · 1–2h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">让模型统一发现、调用外部工具/数据源的开放协议的一手文档。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">harness 怎么把工具接进来,MCP 是当下的标准答案;懂它才懂 agent 的"手脚"怎么长。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Introduction 建立概念 + Architecture 看 client/server/传输三块怎么拼。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「工具调用协议 MCP」节;想动手就照它跑一个最小 server。</span></div>
+        </div>
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.anthropic.com/research/building-effective-agents" target="_blank" rel="noopener">Building Effective Agents</a></span><span class="spine">并列主线</span><span class="tags">工程博客 · 英文 · 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">一线厂商讲 agent/harness 设计与编排模式的经典文。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">它把"agent loop、编排、多 agent"讲得最系统,是本章的设计蓝本。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">编排与多 agent 那几段(A04 已读过前半,这里补后半)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「agent loop」「多 agent 编排」节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.anthropic.com/engineering/building-a-multi-agent-research-system" target="_blank" rel="noopener">多 Agent 研究系统复盘</a></span><span class="tags">工程博客 · 英文 · 40min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">一个真实多 agent 系统"怎么建、踩了哪些坑"的工程复盘。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">直连治理目标:多个 agent 协作时的真实教训(协调、成本、失控)在这里。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全篇;重点看"编排者-子 agent"的分工与代价。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「多 agent 编排」节 + 本章的治理落点。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">Effective Context Engineering</a></span><span class="tags">工程博客 · 英文 · 40min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">专讲"怎么给 agent 组织上下文"(放什么、怎么裁、怎么压)的工程文。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">上下文管理是 harness 的核心难题之一,本章第 9 节的展开读物。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全篇。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「上下文管理」节。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>AI 变强主要靠模型变大</td><td>很大一部分来自 harness 变强:同一模型套上好外壳,能连续干几十步复杂活。</td></tr>
+          <tr><td>上下文窗口够大就不用管理</td><td>再大也会被长任务塞爆,且塞太多模型抓不住重点、更贵更慢。裁/压/检索是长任务的命门。</td></tr>
+          <tr><td>MCP 是某家公司的私有接口</td><td>它是开放标准,像 USB:任何符合规范的工具和应用都能互通;也因此是治理 AI 权限的天然闸门。</td></tr>
+          <tr><td>多 agent 总比单 agent 强</td><td>它成倍烧钱、协调也会出错。先用单 agent / 工作流,扛不住再上多 agent。</td></tr>
+          <tr><td>治理 AI 就是约束模型本身</td><td>行动、权限、边界都落在 harness 层(system prompt / 策略 / 工具白名单 / 日志),那才是能动手治理的地方。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>一句话本质。</b>用"发动机/整辆车"说清模型和 harness。<details><summary>参考答案</summary><p>模型是发动机(判断下一步),harness 是整辆车(接工具、管上下文、控循环、兜错、协调多 agent),让模型变成能上路干活的系统。</p></details></li>
+        <li><b>上下文管理。</b>agent 长任务上下文要爆了,有哪三种管法?<details><summary>参考答案</summary><p>裁剪(扔无关旧轮次)、压缩/总结(把历史概括成要点)、检索(存外部、每轮取回相关片段=对自身记忆做 RAG)。</p></details></li>
+        <li><b>MCP。</b>它像 USB 是什么意思?为什么是治理抓手?<details><summary>参考答案</summary><p>统一了 AI 应用连工具/数据源的接口,即插即用,免去 n×m 适配。agent 能碰什么数据、能做什么动作都从这接口进出,故是管权限、做审计的天然闸门。</p></details></li>
+        <li><b>治理落点。</b>要给一个 agent 系统立规矩,技术上加在哪几处?<details><summary>参考答案</summary><p>系统提示词(定规矩)、策略校验 policy.violates(拦红线)、工具注册白名单(限能力)、日志(可审计)。都在 harness 层,不在模型权重里。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上再进 A06(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能用"发动机/整辆车"讲清模型和 harness 的分工</li>
+          <li><input type="checkbox"> 我能说出 harness 在裸循环之外多做的几件事</li>
+          <li><input type="checkbox"> 我理解上下文为什么要管,以及裁/压/检索三种管法</li>
+          <li><input type="checkbox"> 我能解释 MCP 解决了什么、为什么像 USB</li>
+          <li><input type="checkbox"> 我知道什么时候值得上多 agent、什么时候是过度设计</li>
+          <li><input type="checkbox"> 我看懂了 harness 代码比 A04 裸循环多出来的每一块</li>
+          <li><input type="checkbox"> 我知道治理 AI 的技术落点主要在 harness 层(提示/策略/工具/日志)</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>现在看清了 agent 系统的骨架:模型 + harness。但骨架能跑,不等于跑得好、跑得安全、跑得起——<b>怎么知道它变好了?怎么防它闯祸?怎么算这笔账?</b>这就是 <a href="A06-评估幻觉安全成本.html">A06 · 评估、幻觉、安全与成本</a>。它接着本章第 8 节的"留痕"和第 12 节的"拦红线"往下讲:可观测性、幻觉止损、越狱与防护、成本控制——把一个能跑的 harness,变成一个<b>可信、可控、可负担</b>的系统。这也正是治理体系最终要落地的那几件事。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="A04-Agent基础.html"><span class="lb">上一章</span><span class="tt">A04 · Agent 基础</span></a>
+        <a href="A06-评估幻觉安全成本.html" class="next"><span class="lb">下一章</span><span class="tt">A06 · 评估、幻觉、安全与成本</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">A05 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="what" href="#what"><i>7</i>harness 是什么</a>
+        <a data-toc-target="loop" href="#loop"><i>8</i>loop 工程化</a>
+        <a data-toc-target="context" href="#context"><i>9</i>上下文管理</a>
+        <a data-toc-target="mcp" href="#mcp"><i>10</i>工具协议 MCP</a>
+        <a data-toc-target="multi" href="#multi"><i>11</i>多 agent 编排</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>harness 骨架</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="A05" data-kind="chapter" data-title="AI Agent 的 harness / 底层框架"></script>
+</body>
+</html>

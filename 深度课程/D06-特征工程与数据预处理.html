@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D06 · 特征工程与数据预处理</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="D05-评价指标与验证深挖.html">D05 评价与验证</a><span class="sep">—</span>
+      <a href="D06-特征工程与数据预处理.html" class="current">D06 特征工程</a><span class="sep">—</span>
+      <span class="plan">Track A 收官 · 可做 P2</span>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D06.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track A · Chapter D06 · 经典机器学习收官</p>
+        <h1>特征工程与数据预处理</h1>
+        <p class="recap">前五章都在讲"用什么模型、怎么评估"。但从业者有句老话:<b>数据和特征决定了模型的上限,算法只是逼近这个上限。</b>喂进去的特征是烂的,再强的模型也救不回——<b>垃圾进,垃圾出</b>。这一章讲喂模型<b>之前</b>那些决定成败的功夫:缺失值怎么补、文字类别怎么变数字、数值要不要缩放、怎么选出真正有用的特征。最后把它们打包成一个<b>防数据泄露的流水线</b>(呼应 D05)。学完它,Track A 经典机器学习就全通了,手握做项目 <a href="../index.html">P2</a> 的全部工具。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,动手 + 精读约 5~7 小时。用前几章的模型作对象——会看到"同一个模型,换套特征,效果天差地别"。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>为什么特征工程最重要——数据/特征质量常比模型选择更决定成败</li>
+          <li>缺失值——删还是填?怎么填?</li>
+          <li>类别编码——文字类别变数字:one-hot 为什么不能编成 1/2/3</li>
+          <li>数值缩放——线性/神经网络/KNN 需要,树不需要(呼应 D03)</li>
+          <li>特征选择与构造——去冗余、造新特征;少而精 + 用流水线防泄露</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>缩放"谁需要谁不需要"直接续 <a href="D03-决策树随机森林与梯度提升.html">D03</a>(树不受量纲影响)和 <a href="D01-线性回归全拆解.html">D01/D02</a>(线性模型对尺度敏感);流水线防泄露续 <a href="D05-评价指标与验证深挖.html">D05</a> 的数据泄露。<b>通向后面:</b>Track A 到此收官——已备齐做 <a href="../index.html">P2 第一个预测模型</a>的全部工具。深度学习(Track B)对特征的依赖会不同:它常常<b>自己学特征</b>,这正是它的魅力。</p>
+      </div>
+
+      <!-- ===== 模块 A ===== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>模型调不动、准确率上不去,怀疑"是不是数据本身有问题"的人。</li>
+        <li>手里数据又脏又杂(有缺失、有文字类别、量纲乱),不知从何下手的人。</li>
+        <li>准备做表格数据预测项目、想少踩坑的人。</li>
+      </ul>
+      <p><b>不适合</b>:只做纯图像/文本深度学习、很少碰表格数据的人——重点看第 4 节和第 11 节的流水线/防泄露思想即可。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>会 <a href="../基础课程/04-Pandas表格数据.html">第 4 章 Pandas</a>(读表、处理列)最好;再有 D01–D03(模型对尺度的不同敏感)和 <a href="D05-评价指标与验证深挖.html">D05</a>(数据泄露)的概念即可。这一章几乎不涉数学,重在"处理数据的判断力"。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清为什么"特征"常比"模型"更决定结果。</li>
+        <li>面对缺失值,能判断该删还是该填、怎么填。</li>
+        <li>正确地把文字类别编码成数字(知道为什么用 one-hot)。</li>
+        <li>判断一个模型要不要做特征缩放。</li>
+        <li>用 scikit-learn 的 Pipeline 把预处理和模型打包、避免数据泄露。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">特征工程:<b>把原始的、脏的、模型看不懂的数据,加工成干净的、模型吃得下的、信息量高的特征。</b>这一步常常比"换个更高级的模型"带来的提升还大——因为<b>模型只能从喂的特征里学,喂不进去的信息它永远学不到。</b></p>
+      <p>为什么它是"性价比之王":换模型的提升往往是边际的(随机森林换成 XGBoost,可能就好一两个点),而一个好特征、或修好一处数据问题,可能让效果<b>跳一大截</b>。原始数据几乎从不是"开箱即用"的:有缺失(有人没填年龄)、有文字("北京/上海/广州"模型不认)、有量纲差异(收入几万、年龄几十,尺度差千倍)、有冗余和噪声。特征工程就是把这些一一收拾干净,再想办法<b>把领域知识变成特征</b>喂进去(比如"注册到首单的天数"往往比"注册日期"和"首单日期"分开更有用)。这活儿没有华丽公式,却最考功力、最见效——也最需要对数据和业务的理解。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="特征工程五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">喂模型之前,</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">决定成败的功夫</text>
+          <rect x="284" y="32" width="192" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 为什么它最重要</text>
+          <rect x="608" y="122" width="144" height="46" rx="8" class="d-ink nf"/>
+          <text x="680" y="150" text-anchor="middle" class="nl">② 缺失值</text>
+          <rect x="446" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="528" y="358" text-anchor="middle" class="nl">③ 类别编码</text>
+          <rect x="150" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="232" y="358" text-anchor="middle" class="nl">④ 数值缩放</text>
+          <rect x="8" y="122" width="160" height="46" rx="8" class="d-ink nf"/>
+          <text x="88" y="150" text-anchor="middle" class="nl">⑤ 选择/构造+流水线</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。②③④是三类最常见的清洗加工,⑤讲怎么选好特征、并用流水线把整套安全地串起来。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 B ===== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <div class="callout go">
+        <span class="label">默认主线 · 边做边学</span>
+        <p><b>Kaggle《Feature Engineering》+《Data Cleaning》微课 + Google ML 速成课「数据准备」章。</b>为什么:特征工程最忌纸上谈兵,Kaggle 微课用真实数据集手把手演示补缺失、编码、造特征,做完就会用;Google 速成课补上"为什么"。链接:<a href="https://www.kaggle.com/learn/feature-engineering" target="_blank" rel="noopener">Kaggle · Feature Engineering</a>、<a href="https://www.kaggle.com/learn/data-cleaning" target="_blank" rel="noopener">Data Cleaning</a>、<a href="https://developers.google.com/machine-learning/data-prep" target="_blank" rel="noopener">Google · Data Prep</a>。</p>
+      </div>
+      <p><b>再配一件:</b></p>
+      <ul>
+        <li><b>scikit-learn 文档</b> — <a href="https://scikit-learn.org/stable/modules/preprocessing.html" target="_blank" rel="noopener">Preprocessing</a> 与 <a href="https://scikit-learn.org/stable/modules/compose.html" target="_blank" rel="noopener">Pipeline / ColumnTransformer</a>,动手一手参考(第 12 节要用)。</li>
+      </ul>
+
+      <!-- ===== 模块 C ===== -->
+      <p class="handoff">先认清这件事到底有多重要。</p>
+      <h2 id="why"><span class="no">7</span><span>为什么特征工程最重要</span></h2>
+      <p class="one-liner">一句业界共识:<b>"垃圾进,垃圾出"</b>。模型只是从特征里学规律的机器——没喂进去的信息,它永远学不到;喂了误导性的脏数据,它就学歪。所以在真实项目里,<b>数据清洗 + 特征构造常常占掉大半时间,也带来大半提升。</b></p>
+      <p>一个直观对比:同样用随机森林,A 组直接把原始脏数据丢进去,B 组花两天补好缺失、编好类别、造了两个业务相关的新特征——B 组的效果往往甩开 A 组一大截,远超"把随机森林换成 XGBoost"那点提升。这不是说模型不重要,而是说<b>特征是地基、模型是楼</b>:地基不牢,楼盖多高都晃。对从产品视角切入的人,这其实是好消息——特征工程拼的不是数学,而是<b>对数据和业务的理解</b>,这正是长处。接下来三节,是三类最常见、几乎每个项目都要做的清洗加工。</p>
+
+      <p class="handoff">最常见的第一个脏问题:数据有窟窿。</p>
+      <h2 id="missing"><span class="no">8</span><span>缺失值处理</span></h2>
+      <p class="one-liner">真实数据总有缺失(没填的年龄、漏采的传感器读数)。多数模型不能直接吃带窟窿的数据,得先处理:<b>要么删(删行或删列),要么填(用均值/中位数/众数,或用模型预测)</b>。选哪种看"缺多少、为什么缺"。</p>
+      <p>判断的诀窍:<b>删</b>——某列缺了绝大部分(如 90% 是空),这列基本没信息,删列;某几行零星缺、且样本很多,删这几行也无妨。但别轻易删:删行会丢样本,某列缺失本身可能就是信号(比如"没填收入"的人可能有共性)。<b>填(imputation)</b>——数值列常用<b>中位数</b>(比均值抗离群点),类别列用<b>众数</b>(最常见的那个),讲究的用其它特征<b>预测</b>缺失值。还有个实用技巧:填的同时<b>加一列"这里原本是不是缺的"</b>(缺失标记),把"缺失"这个信息也保留给模型。<b>关键纪律</b>:填充用的统计量(如中位数)必须只从<b>训练集</b>算,再套用到验证/测试——否则就是 D05 说的数据泄露(第 12 节的流水线自动守住这条)。</p>
+
+      <p class="handoff">第二个:模型只认数字,但很多特征是文字。</p>
+      <h2 id="encoding"><span class="no">9</span><span>类别编码</span></h2>
+      <p class="one-liner">模型只吃数字,可"城市=北京/上海/广州""颜色=红/黄/蓝"是文字。得编码成数字。最常用 <b>one-hot(独热)编码</b>:每个类别拆成一列 0/1。<b>切忌</b>简单编成 1/2/3——那会凭空给类别强加"大小顺序",误导模型。</p>
+      <p>为什么不能编成 1/2/3:如果把 红=1、黄=2、蓝=3,模型会以为"蓝 > 黄 > 红"、甚至"红+蓝的平均=黄",可颜色之间根本没有这种大小关系,这是无中生有的误导。<b>one-hot</b> 解决它:红黄蓝变成三列 <code>是否红/是否黄/是否蓝</code>,每个样本在对应列填 1、其余填 0——彼此平等、没有强加顺序。<b>例外</b>:如果类别本身<b>有序</b>(如"小/中/大""差/中/好"),编成 1/2/3(序数编码)反而合理,因为顺序是真实的。<b>注意</b>:类别特别多时(几千个城市),one-hot 会炸出几千列,这时改用其它编码(如目标编码/频数编码)。<b>树模型</b>(D03)对类别编码更宽容,线性/神经网络更依赖 one-hot。</p>
+      <figure>
+        <svg viewBox="0 0 560 210" role="img" aria-label="one-hot 编码:一列颜色变三列 0/1">
+          <defs><marker id="m-oh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <text x="90" y="30" text-anchor="middle" class="el">原始(文字)</text>
+          <rect x="40" y="42" width="100" height="34" class="box"/><text x="90" y="64" text-anchor="middle" class="el">红</text>
+          <rect x="40" y="76" width="100" height="34" class="box"/><text x="90" y="98" text-anchor="middle" class="el">蓝</text>
+          <rect x="40" y="110" width="100" height="34" class="box"/><text x="90" y="132" text-anchor="middle" class="el">黄</text>
+          <line x1="150" y1="93" x2="200" y2="93" class="d-acc" marker-end="url(#m-oh)"/><text x="175" y="84" text-anchor="middle" class="el-acc">one-hot</text>
+          <text x="360" y="30" text-anchor="middle" class="el-acc">编码后(三列 0/1)</text>
+          <text x="250" y="34" text-anchor="middle" class="el">红</text><text x="360" y="34" text-anchor="middle" class="el">蓝</text><text x="470" y="34" text-anchor="middle" class="el">黄</text>
+          <rect x="215" y="42" width="70" height="34" class="box-acc"/><text x="250" y="64" text-anchor="middle" class="nl-acc">1</text>
+          <rect x="325" y="42" width="70" height="34" class="box"/><text x="360" y="64" text-anchor="middle" class="el">0</text>
+          <rect x="435" y="42" width="70" height="34" class="box"/><text x="470" y="64" text-anchor="middle" class="el">0</text>
+          <rect x="215" y="76" width="70" height="34" class="box"/><text x="250" y="98" text-anchor="middle" class="el">0</text>
+          <rect x="325" y="76" width="70" height="34" class="box-acc"/><text x="360" y="98" text-anchor="middle" class="nl-acc">1</text>
+          <rect x="435" y="76" width="70" height="34" class="box"/><text x="470" y="98" text-anchor="middle" class="el">0</text>
+          <rect x="215" y="110" width="70" height="34" class="box"/><text x="250" y="132" text-anchor="middle" class="el">0</text>
+          <rect x="325" y="110" width="70" height="34" class="box"/><text x="360" y="132" text-anchor="middle" class="el">0</text>
+          <rect x="435" y="110" width="70" height="34" class="box-acc"/><text x="470" y="132" text-anchor="middle" class="nl-acc">1</text>
+          <text x="360" y="176" text-anchor="middle" class="el">每类一列,是则 1、否则 0——彼此平等,不强加大小顺序</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>one-hot 编码:一列文字"颜色"拆成三列 0/1,每类各占一列。这样类别之间彼此平等,不像 1/2/3 那样凭空强加大小关系。</figcaption>
+      </figure>
+
+      <p class="handoff">第三个:数值特征的量纲差太多。</p>
+      <h2 id="scaling"><span class="no">10</span><span>数值缩放</span></h2>
+      <p class="one-liner">不同数值特征常量纲悬殊:月收入几万、年龄几十——差上千倍。对<b>靠距离/权重</b>的模型(线性回归、逻辑回归、KNN、神经网络),大数值特征会<b>盖过</b>小的,得<b>缩放到同一尺度</b>(标准化或归一化)。<b>树模型不用</b>——它按特征逐个切,不在乎尺度(D03)。</p>
+      <p>两种常见缩放:<b>标准化</b>(减均值、除标准差,变成"均值 0、标准差 1")最常用,适合大多数场景;<b>归一化</b>(压到 0~1 区间)在需要固定范围时用。为什么重要:靠距离的模型里,"收入差 1000 元"和"年龄差 1000 岁"在数值上一样大,但后者荒谬——不缩放的话,模型会被大数值特征绑架,几乎忽略小数值特征。缩放后大家站在同一起跑线,模型才公平地看待每个特征;梯度下降(D01)也会收敛得更快更稳。<b>务必记住</b>:缩放的均值/标准差只能从训练集算,再套到测试集——又是数据泄露的高发区,交给流水线来守。</p>
+
+      <p class="handoff">收拾干净之后:留哪些特征、怎么造新的、怎么安全地串起来。</p>
+      <h2 id="select"><span class="no">11</span><span>特征选择、构造与流水线</span></h2>
+      <p class="one-liner"><b>选择</b>:去掉没用/冗余的特征(它们只添噪声、拖慢模型、还助长过拟合)——少而精。<b>构造</b>:用领域知识造出信息量更高的新特征(把两列组合、把连续值分箱)。<b>流水线</b>:把"预处理 + 模型"打包成一个整体,让预处理只在训练集上拟合——从机制上杜绝数据泄露(D05)。</p>
+      <p><b>选择</b>的直觉:不是特征越多越好。冗余特征(如"身高厘米"和"身高米")、无关特征只会稀释信号、增加过拟合风险;可以看特征重要性(D03)、相关性来砍。<b>构造</b>是最能体现功力的一环:模型学不会的关系,可以手动喂给它——例如把"注册日期"和"首单日期"相减,造出"决策天数"这个强特征;把连续的年龄<b>分箱</b>成"少年/青年/中年/老年"有时更稳。<b>流水线(Pipeline)</b>是工程上的定海神针:它把填充、编码、缩放、模型串成一条链,<code>fit</code> 时全部只学训练集的统计量,<code>predict</code> 时原样套用——再也不会手滑在划分前就标准化全量数据(D05 的经典泄露)。<b>先清洗、再选择、边构造,全程装进流水线</b>——这就是专业的数据准备姿势。</p>
+
+      <!-- ===== 模块 D ===== -->
+      <p class="handoff">把这一整套——填充、编码、缩放、模型——用一条流水线安全地串起来。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:一条防泄露的预处理流水线</span></h2>
+      <p>scikit-learn 的 <code>Pipeline + ColumnTransformer</code> 是专业做法:数值列走"填充+缩放",类别列走"填充+one-hot",再接模型,整条一起 <code>fit</code>——泄露无处发生:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">preprocess_pipeline.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.pipeline </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> Pipeline</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.compose </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> ColumnTransformer</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.impute </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> SimpleImputer</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.preprocessing </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> StandardScaler, OneHotEncoder</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.ensemble </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> RandomForestClassifier</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">num_cols </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [</span><span style="color:#557089">"age"</span><span style="color:#14181F">, </span><span style="color:#557089">"income"</span><span style="color:#14181F">]        </span><span style="color:#8B95A8;font-style:italic"># 数值列</span></span>
+<span class="line"><span style="color:#14181F">cat_cols </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [</span><span style="color:#557089">"city"</span><span style="color:#14181F">, </span><span style="color:#557089">"gender"</span><span style="color:#14181F">]       </span><span style="color:#8B95A8;font-style:italic"># 类别列</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># ② 数值:中位数填充 → ④ 标准化</span></span>
+<span class="line"><span style="color:#14181F">num_pipe </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> Pipeline([(</span><span style="color:#557089">"impute"</span><span style="color:#14181F">, SimpleImputer(strategy</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"median"</span><span style="color:#14181F">)),</span></span>
+<span class="line"><span style="color:#14181F">                     (</span><span style="color:#557089">"scale"</span><span style="color:#14181F">,  StandardScaler())])</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># ② 类别:众数填充 → ⑨ one-hot</span></span>
+<span class="line"><span style="color:#14181F">cat_pipe </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> Pipeline([(</span><span style="color:#557089">"impute"</span><span style="color:#14181F">, SimpleImputer(strategy</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"most_frequent"</span><span style="color:#14181F">)),</span></span>
+<span class="line"><span style="color:#14181F">                     (</span><span style="color:#557089">"onehot"</span><span style="color:#14181F">, OneHotEncoder(handle_unknown</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"ignore"</span><span style="color:#14181F">))])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">pre </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> ColumnTransformer([(</span><span style="color:#557089">"num"</span><span style="color:#14181F">, num_pipe, num_cols),      </span><span style="color:#8B95A8;font-style:italic"># 各列走各自的处理</span></span>
+<span class="line"><span style="color:#14181F">                         (</span><span style="color:#557089">"cat"</span><span style="color:#14181F">, cat_pipe, cat_cols)])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># ⑪ 把「预处理 + 模型」打包成一条链</span></span>
+<span class="line"><span style="color:#14181F">model </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> Pipeline([(</span><span style="color:#557089">"prep"</span><span style="color:#14181F">, pre),</span></span>
+<span class="line"><span style="color:#14181F">                  (</span><span style="color:#557089">"clf"</span><span style="color:#14181F">,  RandomForestClassifier(random_state</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0))])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">model.fit(X_train, y_train)         </span><span style="color:#8B95A8;font-style:italic"># 预处理只在训练集上拟合 → 天然防泄露(D05)</span></span>
+<span class="line"><span style="color:#14181F">print(model.score(X_test, y_test))  </span><span style="color:#8B95A8;font-style:italic"># 测试时自动套用同一套变换</span></span></code></pre>
+      </div>
+      <p>逐块对照:数值列用中位数填(②)+ 标准化(④);类别列用众数填(②)+ one-hot(⑨);<code>ColumnTransformer</code> 让不同列走不同处理;最外层 <code>Pipeline</code> 把整套预处理和模型<b>捆成一个对象</b>。最关键的是:<code>model.fit(X_train, ...)</code> 时,填充的中位数、缩放的均值、one-hot 的类别<b>全部只从训练集学</b>;<code>model.score(X_test, ...)</code> 时原样套用——<b>从机制上不可能再犯"划分前标准化全量数据"的泄露错误</b>(D05)。这也让整套东西能干净地进 D05 的交叉验证和网格搜索。<b>这就是专业项目里数据准备的标准姿势。</b></p>
+      <div class="challenge">
+        <span class="label">进阶挑战 · 收官练习</span>
+        <h3>把 Track A 串成一个项目</h3>
+        <p>①拿一个带缺失和文字列的真实数据集(如 Titanic),用上面这条流水线跑通。②对比"手动在划分前标准化全量" vs "用流水线",看离线分数差多少(体会泄露的假象)。③造一个新特征(如 Titanic 里"家庭人数=兄妹数+父母子女数+1"),看重要性排第几。④把整条流水线丢进 <a href="D05-评价指标与验证深挖.html">D05 的 GridSearchCV</a>,同时搜"填充策略"和"模型参数"——就完成了一个专业级的建模流程,这正是<a href="../index.html">项目 P2</a>。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;下列链接均于 2026-08-17 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.kaggle.com/learn/feature-engineering" target="_blank" rel="noopener">Kaggle · Feature Engineering 微课</a></span><span class="spine">默认主线 · 边做边学</span><span class="tags">互动课 · 英文 · 3–4h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">用真实数据集手把手演示补缺失、编码、造特征的免费互动微课。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">特征工程最忌纸上谈兵;这门课让人在浏览器里边做边学,做完就会用。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全微课(每课都有练习,一定动手)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「类别编码」「特征选择/构造」几节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.kaggle.com/learn/data-cleaning" target="_blank" rel="noopener">Kaggle · Data Cleaning 微课</a></span><span class="tags">互动课 · 英文 · 2–3h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">专讲缺失值、异常值、编码问题实战处理的微课。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">"垃圾进垃圾出";这门课把清洗的手上功夫补齐。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全微课。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「缺失值处理」节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://scikit-learn.org/stable/modules/compose.html" target="_blank" rel="noopener">scikit-learn · Pipeline / ColumnTransformer</a></span><span class="tags">官方 · 必读 · 30min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">把预处理和模型串成一条防泄露流水线的一手文档。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章第 12 节那段防泄露流水线就是它;想改造自己的要看它。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Pipeline + ColumnTransformer。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「防泄露流水线」节 + 收官练习。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://scikit-learn.org/stable/modules/preprocessing.html" target="_blank" rel="noopener">scikit-learn · Preprocessing</a></span><span class="tags">官方 · 当字典查 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">缩放、编码等预处理的一手文档。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">写 <code>StandardScaler</code>/<code>OneHotEncoder</code> 时查用法。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Scaling / Encoding 两节。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「数值缩放」「类别编码」节。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>换个更强的模型是提升的关键</td><td>多数时候修数据/造特征提升更大。特征是地基,模型是楼。</td></tr>
+          <tr><td>缺失值直接删了最省事</td><td>会丢样本、丢信息(缺失本身可能是信号)。多数时候该填,并加缺失标记。</td></tr>
+          <tr><td>文字类别编成 1/2/3 就行</td><td>会强加不存在的大小顺序,误导模型。无序类别用 one-hot;有序才用 1/2/3。</td></tr>
+          <tr><td>所有模型都要先标准化</td><td>线性/KNN/神经网络要;树模型不用(不受量纲影响)。</td></tr>
+          <tr><td>先对全量数据预处理再划分更方便</td><td>数据泄露!用 Pipeline 让预处理只在训练集拟合,从机制上杜绝。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>一句话本质。</b>为什么特征常比模型更决定结果?<details><summary>参考答案</summary><p>模型只能从喂的特征里学,喂不进去的信息学不到("垃圾进垃圾出");修数据/造特征的提升常大于换模型。</p></details></li>
+        <li><b>编码。</b>为什么不能把无序类别编成 1/2/3?<details><summary>参考答案</summary><p>会强加不存在的大小/顺序关系(蓝&gt;黄&gt;红),误导模型。要用 one-hot 让各类平等;有序类别才用 1/2/3。</p></details></li>
+        <li><b>缩放。</b>哪些模型需要缩放、哪些不用?<details><summary>参考答案</summary><p>靠距离/权重的(线性、逻辑、KNN、神经网络)需要;树模型不用,它按特征逐个切、不受量纲影响。</p></details></li>
+        <li><b>流水线。</b>Pipeline 怎么防数据泄露?<details><summary>参考答案</summary><p>把预处理和模型打包,fit 时统计量(中位数/均值/类别)只从训练集学,predict 时套用——不可能在划分前污染全量。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上,Track A 经典机器学习就通关、可动手做 P2(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我理解"特征常比模型更决定成败"</li>
+          <li><input type="checkbox"> 面对缺失值,我能判断该删还是该填、怎么填</li>
+          <li><input type="checkbox"> 我知道无序类别要 one-hot、为什么不能编 1/2/3</li>
+          <li><input type="checkbox"> 我能判断一个模型要不要做特征缩放</li>
+          <li><input type="checkbox"> 我理解特征选择(少而精)和构造(造新特征)</li>
+          <li><input type="checkbox"> 我会用 Pipeline+ColumnTransformer 打包预处理并防泄露</li>
+          <li><input type="checkbox"> 我备齐了做项目 P2 的全部工具</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>Track A 收官 · 通向 Track B</span></h2>
+      <p>恭喜——<b>Track A 经典机器学习全通了</b>:从线性回归的三件套,到分类、树与集成、无监督、科学评估,再到这一章的数据准备。已经能独立完成一个像样的表格数据建模项目——<b>去做 <a href="../index.html">项目 P2 第一个预测模型</a>吧</b>,把这六章拧成一次真实的实战。</p>
+      <p>接下来 <b>Track B 深度学习</b>(D07 起)会带来一次思路转变:经典机器学习靠<b>人</b>手工做特征工程,而深度学习让<b>网络自己从原始数据里学特征</b>——这既是它的威力(省去大量手工),也是它的代价(要海量数据和算力、可解释性变差)。<a href="../index.html">D07 · PyTorch 与完整训练循环</a>会把 D01 那个手写梯度下降升级成真正的深度学习训练循环。地基已经打牢,上楼吧。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="D05-评价指标与验证深挖.html"><span class="lb">上一章</span><span class="tt">D05 · 评价指标与验证深挖</span></a>
+        <a href="D07-PyTorch与完整训练循环.html" class="next"><span class="lb">下一 Track</span><span class="tt">D07 · PyTorch 与完整训练循环</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D06 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="why" href="#why"><i>7</i>为什么最重要</a>
+        <a data-toc-target="missing" href="#missing"><i>8</i>缺失值</a>
+        <a data-toc-target="encoding" href="#encoding"><i>9</i>类别编码</a>
+        <a data-toc-target="scaling" href="#scaling"><i>10</i>数值缩放</a>
+        <a data-toc-target="select" href="#select"><i>11</i>选择/构造/流水线</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>防泄露流水线</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>收官 · 通向 Track B</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D06" data-kind="chapter" data-title="特征工程与数据预处理"></script>
+</body>
+</html>

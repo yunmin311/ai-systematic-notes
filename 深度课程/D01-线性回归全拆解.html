@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D01 · 线性回归全拆解</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <span class="plan">深度课程 · 经典机器学习</span><span class="sep">—</span>
+      <a href="D01-线性回归全拆解.html" class="current">D01 线性回归</a><span class="sep">—</span>
+      <a href="D02-逻辑回归与分类边界.html">D02 逻辑回归</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D01.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track A · Chapter D01</p>
+        <h1>线性回归全拆解</h1>
+        <p class="recap">深度课程从最简单、也最透彻的模型开始:<b>用一条直线去拟合数据</b>。别小看它——机器学习的三件套「<b>模型、损失、训练</b>」在它身上第一次能被完整看清、甚至手算一遍。学透线性回归,后面所有模型(逻辑回归、神经网络、乃至大模型)都是在这套骨架上加零件。基础课第 5、6 章给了直觉,这一章把它拆到<b>能自己写出来</b>。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,动手 + 精读约 4~6 小时。所有概念都用基础课 <a href="../基础课程/05-机器学习核心概念.html">第 5 章</a>(模型/训练)、<a href="../基础课程/06-训练的本质.html">第 6 章</a>(损失/梯度下降)作对照。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>什么是线性回归——找一条最贴数据的直线,用来预测</li>
+          <li>损失——用均方误差量「这条线拟合得好不好」</li>
+          <li>怎么求最优——解析解(一步到位)vs 梯度下降(一步步逼近)</li>
+          <li>从一元到多元——多个特征时,直线变成「超平面」,w 变成向量</li>
+          <li>三个版本——手算 / 手写 Python / scikit-learn 一行,同一件事三层抽象</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>用到 <a href="../基础课程/06-训练的本质.html">第 6 章</a>的损失与梯度下降——这一章把那套抽象落到最具体的直线上。<b>通向后面:</b><a href="../index.html">D02 逻辑回归</a>把这条直线改造成「分类边界」;再往后神经网络就是「一堆线性回归 + 非线性」的叠加。做完 <a href="../index.html">D05</a> 就能上手项目 <a href="../index.html">P2 第一个预测模型</a>。</p>
+      </div>
+
+      <!-- ===== 模块 A ===== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>学完基础课、想把「机器学习到底怎么算的」<b>拆到能自己写出来</b>的人。</li>
+        <li>被各种公式吓到过、想要一个「先看图、再看一行代码、最后才看符号」路径的人。</li>
+        <li>准备做数据预测项目(P2)、需要一个扎实起点的人。</li>
+      </ul>
+      <p><b>不适合</b>:已经会推最小二乘、手写过梯度下降的人——快速扫一遍图和代码即可,直接看 D02。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>两样,都在基础课:<a href="../基础课程/05-机器学习核心概念.html">第 5 章</a>的「模型=从数据里学到的函数」、<a href="../基础课程/06-训练的本质.html">第 6 章</a>的「损失 + 梯度下降 = 训练」。再有一点点初中数学(直线 y=kx+b、平方)就够——真正的数学这一章会边走边补。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>用一句话说清线性回归在做什么、为什么用平方误差。</li>
+        <li>解释「求最优」的两条路,并说清各自适合什么场景。</li>
+        <li>把一元线性回归推广到多个特征。</li>
+        <li>读懂并改写一段手写梯度下降拟合直线的代码。</li>
+        <li>用 scikit-learn 一行完成同样的事,并知道它背后在算什么。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">线性回归:假设「结果 ≈ 各特征的加权和」,然后<b>调权重,让预测值和真实值的平方误差最小</b>——找到那条(或那个高维平面)最贴数据的线。它是「模型-损失-训练」三件套最干净的一次示范。</p>
+      <p>为什么从它开始:机器学习千变万化,但骨架永远是三步——先<b>假设一个带参数的模型</b>(这里是 <code>y = w·x + b</code>),再<b>定义一个损失</b>衡量「猜得多离谱」,最后<b>调参数把损失压到最小</b>(训练)。线性回归把这三步摆得最清楚:模型就是一条直线、损失就是「竖直距离的平方和」、训练就是把这条线转到最贴数据的角度。别的模型只是把「直线」换成更复杂的函数,三步骨架分毫不变。所以吃透它,等于拿到了理解一切模型的模板。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="线性回归五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">一条直线,把</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">三件套看到底</text>
+          <rect x="288" y="32" width="184" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 什么是线性回归</text>
+          <rect x="612" y="122" width="140" height="46" rx="8" class="d-ink nf"/>
+          <text x="682" y="150" text-anchor="middle" class="nl">② 损失 MSE</text>
+          <rect x="440" y="330" width="176" height="46" rx="8" class="d-ink nf"/>
+          <text x="528" y="358" text-anchor="middle" class="nl">③ 两条路求最优</text>
+          <rect x="150" y="330" width="176" height="46" rx="8" class="d-ink nf"/>
+          <text x="238" y="358" text-anchor="middle" class="nl">④ 一元到多元</text>
+          <rect x="8" y="122" width="152" height="46" rx="8" class="d-ink nf"/>
+          <text x="84" y="150" text-anchor="middle" class="nl">⑤ 三个版本</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。合起来,就能看懂第 12 节那段「手写梯度下降拟合一条直线」的代码。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 B ===== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>线性回归是所有 ML 课的第一课,好资源极多。选一条直觉派主线,别一上来就啃线性代数。</p>
+      <div class="callout go">
+        <span class="label">默认主线 · 直觉优先</span>
+        <p><b>StatQuest《Linear Regression》+ Google 机器学习速成课「线性回归」章。</b>为什么:StatQuest 用画图把「拟合、残差、最小化」讲得极直观(几乎零公式恐惧);Google 速成课配可交互的图和小练习。链接:<a href="https://www.youtube.com/watch?v=nk2CQITm_eo" target="_blank" rel="noopener">StatQuest · Linear Regression</a>、<a href="https://developers.google.com/machine-learning/crash-course/linear-regression" target="_blank" rel="noopener">Google ML Crash Course</a>。</p>
+      </div>
+      <p><b>再配两件:</b></p>
+      <ul>
+        <li><b>scikit-learn 官方文档</b> — <a href="https://scikit-learn.org/stable/modules/linear_model.html" target="_blank" rel="noopener">Linear Models</a>,动手那步的一手参考。</li>
+        <li><b>《动手学深度学习》线性回归章</b> — <a href="https://zh.d2l.ai/chapter_linear-networks/linear-regression.html" target="_blank" rel="noopener">中文、可运行</a>,想把梯度下降版一行行跑通时看。</li>
+      </ul>
+
+      <!-- ===== 模块 C ===== -->
+      <p class="handoff">先把这条「线」本身看清楚:它是什么、参数是哪几个。</p>
+      <h2 id="what"><span class="no">7</span><span>什么是线性回归</span></h2>
+      <p class="one-liner">线性回归假设:<b>要预测的值 ≈ 输入特征的加权和再加一个偏置</b>,写成 <code>ŷ = w·x + b</code>。<code>w</code>(斜率/权重)和 <code>b</code>(截距/偏置)是要<b>学</b>的两个旋钮;学习就是把这两个旋钮调到让直线最贴数据点。</p>
+      <p>举个具体例子:用「房子面积」预测「房价」。每个点是一套真实的房子(面积, 价格)。线性回归要找一条直线 <code>价格 ≈ w×面积 + b</code>:<code>w</code> 是「每平米大概值多少」,<code>b</code> 是「基础价」。找到这条线后,给一个新面积,代进去就能预测价格。<b>"线性"的意思就是:关系是一条直线(不弯)。</b>这既是它的简单之处,也是它的局限——真实世界很多关系不是直的(D02 起就会松开这个假设)。</p>
+      <figure>
+        <svg viewBox="0 0 560 260" role="img" aria-label="数据点、拟合直线与残差">
+          <line x1="50" y1="220" x2="520" y2="220" class="d-ink"/><line x1="50" y1="220" x2="50" y2="30" class="d-ink"/>
+          <text x="285" y="248" text-anchor="middle" class="el">面积 →</text>
+          <text x="24" y="130" text-anchor="middle" class="el" transform="rotate(-90 24 130)">价格 →</text>
+          <line x1="70" y1="200" x2="500" y2="70" class="d-acc"/>
+          <text x="430" y="80" class="el-acc">拟合直线 ŷ = w·x + b</text>
+          <circle cx="120" cy="180" r="4" class="dot"/><line x1="120" y1="180" x2="120" y2="194" class="d-soft"/>
+          <circle cx="200" cy="130" r="4" class="dot"/><line x1="200" y1="130" x2="200" y2="151" class="d-soft"/>
+          <circle cx="280" cy="145" r="4" class="dot"/><line x1="280" y1="145" x2="280" y2="127" class="d-soft"/>
+          <circle cx="360" cy="90" r="4" class="dot"/><line x1="360" y1="90" x2="360" y2="103" class="d-soft"/>
+          <circle cx="440" cy="100" r="4" class="dot"/><line x1="440" y1="100" x2="440" y2="85" class="d-soft"/>
+          <text x="300" y="175" class="el">竖直虚线 = 残差(预测与真实的差)</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>每个点是一套真实房子;直线是模型的预测。每条竖直虚线是「残差」——预测值和真实值的差。训练的目标,就是把这些残差整体压到最小。</figcaption>
+      </figure>
+
+      <p class="handoff">「最贴数据」得能量化——这就要一把尺子:损失。</p>
+      <h2 id="loss"><span class="no">8</span><span>损失:均方误差 MSE</span></h2>
+      <p class="one-liner">用<b>均方误差</b><span class="en">MSE</span>当尺子:把每个点的残差(预测−真实)<b>平方</b>后<b>求平均</b>。这个数越小,直线越贴。训练就是找让 MSE 最小的 <code>w、b</code>。</p>
+      <p>为什么是「平方」而不是直接加差值?两个原因,都很实在:一是<b>差有正有负</b>,直接加会正负抵消(明明离得远,加起来却像很准),平方后全变正,不会互相抵消;二是<b>平方放大大误差</b>——离谱的点被惩罚得更狠,逼着直线优先照顾它们,不敢摆烂。这就是第 6 章说的「损失函数」在线性回归里的具体样子。它还有个好处:平方误差是个光滑的「碗形」,好优化(下一节的两条路都靠它)。</p>
+      <div class="callout"><span class="label">一眼记住</span><p>MSE = 所有(预测−真实)² 的平均。<b>越小越好;0 = 完美穿过所有点</b>(现实里几乎不可能,也不该追求,否则就是 <a href="../基础课程/05-机器学习核心概念.html">第 5 章</a>说的过拟合)。</p></div>
+
+      <p class="handoff">尺子有了,怎么真的找到让它最小的 w、b?有两条路。</p>
+      <h2 id="solve"><span class="no">9</span><span>求最优:解析解 vs 梯度下降</span></h2>
+      <p class="one-liner">两条路殊途同归:<b>解析解(最小二乘)</b>——用一个公式<b>一步算出</b>最优 w、b,精确但只对线性这种简单模型管用;<b>梯度下降</b>——从随便一组 w、b 出发,<b>顺着损失下降最快的方向一小步一小步挪</b>,通用到能训练神经网络。</p>
+      <p><b>解析解</b>:因为 MSE 是个碗形,数学上能直接解出碗底在哪(令导数为零,一个矩阵公式搞定)。优点是精确、一步到位;缺点是只有线性回归这类简单模型有这种「闭式公式」,复杂模型没有。<b>梯度下降</b>(第 6 章那套「下山」):站在碗壁上,看哪个方向最陡,朝反方向迈一小步,重复,直到滚到碗底。它慢一点、要调步长(学习率),但<b>什么模型都能用</b>——正因如此,它才是深度学习的通用引擎。学线性回归,两条都要懂:解析解让看清「最优确实存在且可求」,梯度下降让人拿到通向后面所有模型的钥匙。</p>
+      <figure>
+        <svg viewBox="0 0 600 240" role="img" aria-label="解析解与梯度下降两条路">
+          <defs><marker id="m-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <path d="M60 40 Q 160 210 260 40" class="d-ink"/>
+          <text x="160" y="30" text-anchor="middle" class="el">损失(碗形)</text>
+          <circle cx="160" cy="188" r="5" class="dot-acc"/><text x="160" y="212" text-anchor="middle" class="el-acc">碗底 = 最优 w,b</text>
+          <text x="70" y="120" class="el">← 一元时 w 在横轴</text>
+          <line x1="300" y1="30" x2="300" y2="215" class="d-soft"/>
+          <text x="450" y="30" text-anchor="middle" class="nl-acc">两条路到碗底</text>
+          <rect x="330" y="60" width="240" height="46" rx="8" class="box-acc"/><text x="450" y="80" text-anchor="middle" class="nl-acc">解析解:一个公式直达</text><text x="450" y="97" text-anchor="middle" class="el">精确,仅限线性等简单模型</text>
+          <rect x="330" y="130" width="240" height="56" rx="8" class="box"/><text x="450" y="152" text-anchor="middle" class="nl">梯度下降:一步步下山</text><text x="450" y="170" text-anchor="middle" class="el">要调步长,但什么模型都能用</text>
+          <text x="450" y="212" text-anchor="middle" class="el">→ 深度学习全靠它</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>损失是个碗:解析解用公式直接算出碗底(精确,限简单模型);梯度下降从任意点一步步滑到碗底(通用,深度学习的引擎)。</figcaption>
+      </figure>
+
+      <p class="handoff">现实里输入往往不止一个特征——一元怎么长成多元。</p>
+      <h2 id="multi"><span class="no">10</span><span>从一元到多元</span></h2>
+      <p class="one-liner">预测房价通常不只看面积,还看地段、楼层、房龄……每个特征给一个权重:<code>ŷ = w₁x₁ + w₂x₂ + … + b</code>。一元时是「一条直线」,多元时是「一个高维平面」,但<b>骨架完全一样</b>:加权和 + 偏置,再用同一套损失和训练去调权重。</p>
+      <p>换个视角就更清爽:把所有权重排成一个向量 <code>w</code>、所有特征排成一个向量 <code>x</code>,预测就是它们的<b>点积</b> <code>w·x + b</code>(第 3 章 NumPy 讲过点积)。特征从 1 个变成 100 个,代码和数学几乎不变,只是向量变长——这正是<b>向量化</b>的威力,也是为什么线性代数是机器学习的通用语言。每个权重 <code>wᵢ</code> 还有直观含义:<b>「其它不变时,这个特征每增加一点,预测值变化多少」</b>,所以线性回归天然「可解释」——这是它至今仍被大量使用的原因之一。</p>
+
+      <p class="handoff">概念齐了。同一个线性回归,在三个抽象层各长什么样?</p>
+      <h2 id="threeway"><span class="no">11</span><span>三个版本:手算 / 手写 / 一行</span></h2>
+      <p>理解一个算法,最好的办法是看它在不同抽象层的样子。同一件事——拟合一条直线——有三种写法,从繁到简:</p>
+      <table class="tbl">
+        <caption>表 1 · 同一件事的三个抽象层</caption>
+        <thead><tr><th>版本</th><th>要亲手做的</th><th>价值</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td>① 手算(纸笔)</td><td>代最小二乘公式,算出 w、b</td><td>看清「最优真的可求」,不再神秘</td></tr>
+          <tr class="sel"><td>② 手写 Python</td><td>自己写梯度下降循环调 w、b</td><td>看清训练每一步在干嘛(第 12 节)</td></tr>
+          <tr class="sel"><td>③ scikit-learn 一行</td><td><code>LinearRegression().fit(X, y)</code></td><td>生产就这么用;但已知道它在算什么</td></tr>
+        </tbody>
+      </table>
+      <p>关键心法:<b>先懂②,再用③</b>。很多人跳过②直接调库,结果模型一出问题就抓瞎。自己写过梯度下降,才真正拥有这个算法,而不是租用它。</p>
+
+      <!-- ===== 模块 D ===== -->
+      <p class="handoff">下面把版本②写出来——十几行,拟合一条直线的完整训练循环。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:手写梯度下降拟合直线</span></h2>
+      <p>这段代码就是「模型-损失-训练」三件套的最小可运行版,每一块都标了对应第几节:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">linreg_gd.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> numpy </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> np</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 造一批「大致在一条直线上」的数据:真实规律 y ≈ 2x + 1(加点噪声)</span></span>
+<span class="line"><span style="color:#14181F">X </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([1, 2, 3, 4, 5], dtype</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">float)</span></span>
+<span class="line"><span style="color:#14181F">y </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([3.1, 4.8, 7.2, 8.9, 11.1])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">w, b </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 0.0, 0.0           </span><span style="color:#8B95A8;font-style:italic"># ⑦ 模型参数:先随便设成 0</span></span>
+<span class="line"><span style="color:#14181F">lr </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 0.01                 </span><span style="color:#8B95A8;font-style:italic"># ⑨ 学习率:每步迈多大</span></span>
+<span class="line"><span style="color:#14181F">n </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> len(X)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> step </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> range(1000):                 </span><span style="color:#8B95A8;font-style:italic"># ⑨ 梯度下降:一步步逼近</span></span>
+<span class="line"><span style="color:#14181F">    y_hat </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> w </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> X </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> b                     </span><span style="color:#8B95A8;font-style:italic"># ⑦ 模型:预测</span></span>
+<span class="line"><span style="color:#14181F">    error </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> y_hat </span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F"> y                     </span><span style="color:#8B95A8;font-style:italic"># 残差(预测 − 真实)</span></span>
+<span class="line"><span style="color:#14181F">    loss </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.mean(error </span><span style="color:#14181F;font-weight:bold">**</span><span style="color:#14181F"> 2)            </span><span style="color:#8B95A8;font-style:italic"># ⑧ 损失:MSE</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic">    # 损失对 w、b 的梯度(斜率):告诉我们往哪调、调多少</span></span>
+<span class="line"><span style="color:#14181F">    grad_w </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 2 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> np.mean(error </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> X)</span></span>
+<span class="line"><span style="color:#14181F">    grad_b </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 2 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> np.mean(error)</span></span>
+<span class="line"><span style="color:#14181F">    w </span><span style="color:#14181F;font-weight:bold">-=</span><span style="color:#14181F"> lr </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> grad_w                       </span><span style="color:#8B95A8;font-style:italic"># ⑨ 顺着下降方向挪一小步</span></span>
+<span class="line"><span style="color:#14181F">    b </span><span style="color:#14181F;font-weight:bold">-=</span><span style="color:#14181F"> lr </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> grad_b</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F"> step </span><span style="color:#14181F;font-weight:bold">%</span><span style="color:#14181F"> 200 </span><span style="color:#14181F;font-weight:bold">==</span><span style="color:#14181F"> 0:</span></span>
+<span class="line"><span style="color:#14181F">        print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"step </span><span style="color:#557089">{</span><span style="color:#14181F">step</span><span style="color:#14181F;font-weight:bold">:4d</span><span style="color:#557089">}</span><span style="color:#557089">  loss=</span><span style="color:#557089">{</span><span style="color:#14181F">loss</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089">  w=</span><span style="color:#557089">{</span><span style="color:#14181F">w</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089">  b=</span><span style="color:#557089">{</span><span style="color:#14181F">b</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"学到:y ≈ </span><span style="color:#557089">{</span><span style="color:#14181F">w</span><span style="color:#14181F;font-weight:bold">:.2f</span><span style="color:#557089">}</span><span style="color:#557089">x + </span><span style="color:#557089">{</span><span style="color:#14181F">b</span><span style="color:#14181F;font-weight:bold">:.2f</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)     </span><span style="color:#8B95A8;font-style:italic"># 应接近 2x + 1</span></span></code></pre>
+      </div>
+      <p>逐块对照:<code>y_hat = w*X + b</code> 是<b>模型</b>(⑦);<code>np.mean(error**2)</code> 是<b>损失 MSE</b>(⑧);<code>grad_w/grad_b</code> 加 <code>w -= lr*grad_w</code> 是<b>梯度下降</b>(⑨)——顺着让损失变小的方向挪一小步,重复一千次,<code>w、b</code> 就慢慢滑到碗底。跑起来会看到 <code>loss</code> 一路下降、<code>w</code> 趋近 2、<code>b</code> 趋近 1。<b>这十几行,就是后面所有深度学习训练循环的胚胎。</b>而生产里只需版本③:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">linreg_sklearn.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.linear_model </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> LinearRegression</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">model </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> LinearRegression().fit(X.reshape(</span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F">1, 1), y)   </span><span style="color:#8B95A8;font-style:italic"># ③ 一行搞定(内部用解析解)</span></span>
+<span class="line"><span style="color:#14181F">print(model.coef_, model.intercept_)                  </span><span style="color:#8B95A8;font-style:italic"># w, b —— 和手写版结果一致</span></span></code></pre>
+      </div>
+      <p>两版结果一致,但现在<b>知道那一行背后发生了什么</b>——这就是自己写过一遍的价值。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战</span>
+        <h3>改改看</h3>
+        <p>①把学习率 <code>lr</code> 调到 0.1 和 0.001,看损失下降变快还是发散(太大就会「冲过头」震荡)。②把训练轮数改成 50,看它还没到碗底就停会怎样(欠拟合)。③给数据加一个明显偏离的「离群点」,看平方误差怎么被它带偏——体会 MSE 对异常值敏感。④加一个特征(变成二元),把 <code>X</code> 换成两列,自己推广梯度公式。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;下列链接均于 2026-08-17 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=nk2CQITm_eo" target="_blank" rel="noopener">StatQuest · Linear Regression</a></span><span class="spine">默认主线</span><span class="tags">视频 · 英文(可开字幕) · 30min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">全网公认最会讲经典机器学习的频道,把线性回归拆到人人都懂。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章手算 + 手写把机制讲透;它用动画把直觉钉死,两头夹最牢。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全片;"最小二乘""R²"两段尤其值。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「模型-损失-训练三件套」看。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://developers.google.com/machine-learning/crash-course/linear-regression" target="_blank" rel="noopener">Google 机器学习速成课</a></span><span class="tags">官方课程 · 可切中文 · 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">Google 出的入门课,配可交互的图和小练习。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想动手拖参数、看损失怎么变时用它,交互比看图直观。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">线性回归章 + 它的交互练习。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「损失」「梯度下降」几节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://zh.d2l.ai/chapter_linear-networks/linear-regression.html" target="_blank" rel="noopener">动手学深度学习(中文)</a></span><span class="tags">中文 · 书+代码 · 40min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">中文教材的线性回归章,含梯度下降的逐行代码。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想把本章"手写梯度下降"用更规范的代码跑通时看它。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">线性回归节(从零实现那半)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配本章手写梯度下降的代码。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://scikit-learn.org/stable/modules/linear_model.html" target="_blank" rel="noopener">scikit-learn · Linear Models</a></span><span class="tags">官方 · 当字典查 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">线性模型的一手文档。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">用 <code>LinearRegression</code> 那行时想查参数/变体来这里。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Ordinary Least Squares 开头。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「scikit-learn 一行」对照。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 3 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>线性回归太简单,没必要深究</td><td>它是「模型-损失-训练」最干净的模板,吃透它=拿到理解一切模型的钥匙。</td></tr>
+          <tr><td>损失用差值直接相加就行</td><td>会正负抵消。要平方:消除符号 + 放大大误差,且损失光滑好优化。</td></tr>
+          <tr><td>有解析解,学梯度下降没用</td><td>解析解只对线性这类简单模型有;梯度下降通用到能训神经网络,必须掌握。</td></tr>
+          <tr><td>损失越接近 0 越好</td><td>训练集损失为 0 往往是过拟合(第 5 章)。要的是在新数据上也好,不是背下训练集。</td></tr>
+          <tr><td>"线性"指模型很弱、没用</td><td>它可解释(每个权重有明确含义)、快、稳,至今是很多场景的首选和基线。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>一句话本质。</b>线性回归在做什么?<details><summary>参考答案</summary><p>假设结果≈特征的加权和,调权重让预测与真实的平方误差最小,即找一条最贴数据的线,用于预测。</p></details></li>
+        <li><b>损失。</b>为什么用平方误差而不是直接加残差?<details><summary>参考答案</summary><p>差有正负会抵消;平方消符号、还放大大误差(逼模型照顾离谱点);且平方损失光滑、好优化。</p></details></li>
+        <li><b>两条路。</b>解析解和梯度下降各适合什么?<details><summary>参考答案</summary><p>解析解:一步精确,但只对线性这类有闭式解的简单模型;梯度下降:一步步逼近、要调步长,但通用,深度学习必用。</p></details></li>
+        <li><b>代码。</b>第 12 节里 <code>lr</code> 太大会怎样?<details><summary>参考答案</summary><p>每步迈太大会冲过碗底来回震荡,甚至发散、损失越来越大,不收敛。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上再进 D02(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能用「模型-损失-训练」三件套讲清线性回归</li>
+          <li><input type="checkbox"> 我知道 MSE 是什么、为什么要平方</li>
+          <li><input type="checkbox"> 我能说清解析解和梯度下降的区别与适用</li>
+          <li><input type="checkbox"> 我理解多元只是把直线换成高维平面、w 变成向量</li>
+          <li><input type="checkbox"> 我读懂了手写梯度下降那段代码的每一块</li>
+          <li><input type="checkbox"> 我知道 scikit-learn 一行背后在算什么</li>
+          <li><input type="checkbox"> 我明白训练损失为 0 不一定好(过拟合)</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>现在有了「模型-损失-训练」的完整模板。<a href="D02-逻辑回归与分类边界.html">D02 · 逻辑回归与分类边界</a>只改一个地方:把线性回归的输出用一个 S 形函数(sigmoid)挤到 0~1 之间,当作「属于某一类的概率」——直线就从「预测数值」变成了「划分类别的边界」。损失也从平方误差换成更适合分类的交叉熵。骨架完全一样,会发现分类不过是回归的一次小改造。这也是通向神经网络的第一步。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="../index.html"><span class="lb">返回</span><span class="tt">课程首页 · 深度课程</span></a>
+        <a href="D02-逻辑回归与分类边界.html" class="next"><span class="lb">下一章</span><span class="tt">D02 · 逻辑回归与分类边界</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D01 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="what" href="#what"><i>7</i>什么是线性回归</a>
+        <a data-toc-target="loss" href="#loss"><i>8</i>损失 MSE</a>
+        <a data-toc-target="solve" href="#solve"><i>9</i>两条路求最优</a>
+        <a data-toc-target="multi" href="#multi"><i>10</i>一元到多元</a>
+        <a data-toc-target="threeway" href="#threeway"><i>11</i>三个版本</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>手写梯度下降</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D01" data-kind="chapter" data-title="线性回归全拆解"></script>
+</body>
+</html>

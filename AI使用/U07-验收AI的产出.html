@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>U07 · 验收 AI 的产出</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="U06-多对话协作.html">U06 多对话协作</a><span class="sep">—</span>
+      <a href="U07-验收AI的产出.html" class="current">U07 验收产出</a><span class="sep">—</span>
+      <a href="../排障台/症状索引.html">排障台</a>
+      <span class="spacer"></span>
+      <a href="#skill" class="jump">技巧</a>
+      <a href="#checklist" class="jump">自查清单</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">AI 使用 · Stage 5 · Chapter U07 · 本板块收官</p>
+        <h1>验收 AI 的产出</h1>
+        <p class="recap">「做完了」是一句被生成出来的话(<a href="U01-它到底在干什么.html">U01</a> 第 3 节)。这一章讲怎么把它换成证据:哪些验收能交给脚本、哪些必须有人、以及为什么「形式全绿」和「内容正确」是两回事——最后这一点,是本板块所有教训里最贵的一条。</p>
+      </header>
+
+      <p>约 2 小时。这一章末尾的清单可以直接拿去用。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>验收的四级证据:自述 → 转述 → 回执 → 可复现</li>
+          <li>假绿灯的三个来源:旧构建、形式检查、抽样错觉</li>
+          <li>把验证还给它:让它自测自审,而不是把跑一遍丢回给人</li>
+          <li>待验单——只有人能判的那部分,单独排队,别混在完工里</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>完成幻觉的机制在 <a href="U01-它到底在干什么.html">U01</a>;把规则升成脚本在 <a href="U03-指令为什么不生效.html">U03</a>;高保真的回归对照在 <a href="U05-让它照着参考做.html">U05</a>。<b>侧面:</b>给自己的应用建评测集是 <a href="../应用工程/A06-评估幻觉安全成本.html">A06</a>——那是产品视角,这一章是指挥视角。</p>
+      </div>
+
+      <h2 id="essence"><span class="no">1</span><span>一句话本质</span></h2>
+      <div class="one-liner">
+        <p>验收不是「问它做完没有」,是<b>找一个不经过它的渠道去看结果</b>。</p>
+      </div>
+
+      <h2 id="levels"><span class="no">2</span><span>四级证据</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>级别</th><th>形式</th><th>能证明什么</th><th>典型失效</th></tr></thead>
+          <tbody>
+            <tr><td>1 自述</td><td>「三个文件都改好了」</td><td>什么也证明不了</td><td>回执被裁掉、重试盖过、压根没调工具</td></tr>
+            <tr><td>2 转述</td><td>「文件里现在写的是 X」</td><td>弱证据</td><td>转述是生成,细节会失真</td></tr>
+            <tr><td>3 回执</td><td>命令输出、文件时间戳、日志</td><td>较强</td><td><b>可能是上一轮的</b>——旧构建问题</td></tr>
+            <tr class="sel"><td>4 可复现</td><td>换个环境、重跑一次,结果一样</td><td>强</td><td>成本高,不是每件事都值得</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fig-note">日常验收的目标是<b>把关键结论顶到第 3 级,把不可逆的动作顶到第 4 级</b>。第 1 级永远不作为证据。</p>
+
+      <h2 id="fake"><span class="no">3</span><span>假绿灯的三个来源</span></h2>
+      <div class="steps">
+        <ol>
+          <li><b>旧构建。</b>测的是上一版的产物,新改动根本没进去。表现为「明明改了却没变化」或者更糟——「明明没改却过了」。<br><b>对策:实跑之前先核构建号。</b>把版本号或提交号打进产物,验收时第一件事是核对它。</li>
+          <li><b>形式检查通过,内容是错的。</b>脚本能验的是形式:格式对不对、有没有死链、分布均不均匀。<b>没有任何形式指标能证明内容是对的。</b>见下一节。</li>
+          <li><b>抽样错觉。</b>抽查三处都对,就当全过了。批量产出里的错误常常是<b>成片</b>的而不是随机的,三处全落在好的那一片是常事。<br><b>对策:能全量就全量(脚本),不能全量的就明确说「这是抽查,抽了几处」。</b></li>
+        </ol>
+      </div>
+
+      <h2 id="formvscontent"><span class="no">4</span><span>形式全绿 ≠ 内容正确</span></h2>
+      <p>这是本板块最贵的一条教训,值得单独一节。</p>
+      <div class="rationale">
+        <span class="label">案例</span>
+        <p>一批 284 道题,先后修过两轮偏差:答案位置从 86% 压在同一个选项,修到四个位置各 25%;正确项与错误项的长度比从 1.37× 修到 0.99×;蒙题策略的得分从 188 分修到 70 分(随机基准 70.5)。两个校验脚本全绿。<br>但这两个脚本验的<b>全是形式</b>。<b>一道题可以完美通过全部自检,同时把概念讲错。</b>「有多少道题考的知识点本身是错的」——这个问题,没有任何一个指标能回答。</p>
+      </div>
+      <div class="callout warn">
+        <span class="label">通用形态</span>
+        <p>凡是<b>批量产出</b> + <b>脚本验收</b>,都要问一句:这些指标验的是形式还是内容?<br>形式(能自动验):格式、结构、分布、链接、字段完整性。<br>内容(自动验不了):事实对不对、逻辑通不通、和上游材料矛不矛盾。<br><b>内容那一半必须有一个逐条对照的动作,而且要记清核了多少、改了多少。</b>只说「看过一遍」等于没验。</p>
+      </div>
+
+      <h2 id="selftest"><span class="no">5</span><span>把验证还给它</span></h2>
+      <p>常见的坏模式:交付时附一句「建议自行测试一遍」。这等于把最花时间的一半工作退回给人,而且这一半恰恰是它更擅长的(跑命令、比对输出、统计)。</p>
+      <div class="callout go">
+        <span class="label">该由它做的</span>
+        <p><b>①</b> 跑测试、跑校验脚本,并把<b>输出原文</b>贴出来(不是「测试通过」四个字)。<br>
+           <b>②</b> 做前后对比:改动前后各跑一次,给出两组数。<br>
+           <b>③</b> 全量统计代替抽样:能写脚本数清楚的,不要抽三个看看。<br>
+           <b>④</b> 自己找反例:「如果这个改动是错的,会在哪里先暴露出来」——让它先去那里看一眼。</p>
+      </div>
+      <div class="callout">
+        <span class="label">必须有人的</span>
+        <p><b>①</b> 气质、审美、语感——目前没有脚本能判(见 <a href="U05-让它照着参考做.html">U05</a> 第 4 节)。<br>
+           <b>②</b> 花钱、动真实数据、对外发布——不可逆,必须人点头。<br>
+           <b>③</b> 需求理解对不对——「做的是不是我要的那件事」,只有提出者知道。</p>
+      </div>
+
+      <h2 id="ledger"><span class="no">6</span><span>待验单:别把没验的算进完工</span></h2>
+      <p>把上一节「必须有人」的那几条,单独列一张待验单,和已完工的分开。</p>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>状态</th><th>含义</th><th>能不能进下一批</th></tr></thead>
+          <tbody>
+            <tr><td>脚本已过</td><td>形式层面没问题</td><td>能</td></tr>
+            <tr><td>待人验</td><td>脚本过了,但有必须人看的部分</td><td>能(但要挂在待验单上,不能销账)</td></tr>
+            <tr class="sel"><td>已完工</td><td>脚本过 + 人看过</td><td>能,可销账</td></tr>
+            <tr><td>返工中</td><td>验收没过</td><td>不能</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>这套四状态的价值在于:<b>它让「还没验」这件事有地方待着</b>,而不是被压进「完工」里悄悄消失。一套跑得通的流程大致是这样——终审通过之后仍然留一条「细看效果待实跑,先记账」,这条记账不影响开下一批,但也没被当成完工。</p>
+
+      <h2 id="skill"><span class="no">7</span><span>技巧:一次验收怎么走</span></h2>
+      <div class="steps">
+        <ol>
+          <li><b>核构建号。</b>验的是不是这一版。</li>
+          <li><b>跑全部校验脚本,贴输出原文。</b>不绿不往下走。</li>
+          <li><b>给前后对比数。</b>改之前多少、改之后多少。</li>
+          <li><b>点明形式与内容的边界。</b>脚本验了什么、没验什么,明说。</li>
+          <li><b>列没做完的。</b>哪些跳过了、为什么。</li>
+          <li><b>列待人验的。</b>只留真的需要人的那几条,别把能自动的也推过去。</li>
+        </ol>
+      </div>
+      <div class="callout warn">
+        <span class="label">一句话判据</span>
+        <p>一份交付里如果<b>没有一个数字</b>,那它还没被验收过。「跑通了」「都对了」「效果不错」都不是验收结论——<b>验收结论长得像「78 个页面,死链 0,锚点失效 0;改前 746 处,改后 0 处」。</b></p>
+      </div>
+
+      <h2 id="reflist"><span class="no">8</span><span>外部资源</span></h2>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://hamel.dev/blog/posts/evals/" target="_blank" rel="noopener">Hamel Husain · Your AI Product Needs Evals</a></span><span class="spine">主线</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">为什么「感觉变好了」不可靠,以及怎么建一套真能挡住回退的评测。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">它把「可自动判定」和「必须人看」这条线划得很清楚,正是本章第 4–5 节。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">开头的动机部分 + 三层评测那一节;工具选型可略。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">第 4、5 节;产品侧配 <a href="../应用工程/A06-评估幻觉安全成本.html">A06</a>。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://docs.claude.com/en/docs/claude-code/hooks" target="_blank" rel="noopener">Claude Code · Hooks</a></span><span class="spine">工具</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">把校验脚本挂成自动执行,而不是靠记得去跑。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">第 7 节第 2 步「跑全部校验脚本」要变成机制,靠的就是这个。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Stop / PostToolUse 两类钩子,以及退出码语义。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">第 7 节;机制层见 <a href="U03-指令为什么不生效.html">U03</a> 第 3 节。</span></div>
+        </div>
+      </div>
+
+      <h2 id="practice"><span class="no">9</span><span>自测</span></h2>
+      <div class="challenge">
+        <span class="label">三道题</span>
+        <p><b>①</b> 一份交付说「全部测试通过」。要把它顶到第 3 级证据,该要什么?顶到第 4 级呢?<br>
+           <b>②</b> 一批批量生成的内容,校验脚本七项全绿。还剩哪一类风险没被覆盖?怎么补?<br>
+           <b>③</b> 「实跑测到的是旧构建」这个问题,属于三个来源里的哪一个?最省事的机制性对策是什么?</p>
+      </div>
+      <details class="hint"><summary>参考答案</summary>
+        <p><b>①</b> 第 3 级:要测试命令的完整输出原文,外加构建号,确认测的是这一版。第 4 级:换一个干净环境重跑一次,或者由另一方独立跑一次,两次结果一致。<br>
+           <b>②</b> 内容正确性——事实错、和上游材料矛盾、超出范围。补法是逐条对照上游材料核一遍,并记清核了多少、改了多少、每类各几条;只说「看过一遍」不算。<br>
+           <b>③</b> 第一个来源。对策:把构建号或提交号打进产物本身,验收第一步核它——比每次都记得重新构建可靠得多。</p>
+      </details>
+
+      <h2 id="checklist"><span class="no">10</span><span>自查清单</span></h2>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 收到「已完成」时,要的是文件时间戳 / 命令输出,而不是回一句「好的」</li>
+          <li><input type="checkbox"> 实跑之前核过构建号</li>
+          <li><input type="checkbox"> 校验脚本的输出<b>原文</b>贴出来了,不是「通过」两个字</li>
+          <li><input type="checkbox"> 给了改动前后两组数,不是只给改后的</li>
+          <li><input type="checkbox"> 明说了脚本验的是形式,内容那一半怎么核的、核了多少</li>
+          <li><input type="checkbox"> 抽查的地方标明了是抽查、抽了几处</li>
+          <li><input type="checkbox"> 没做完的部分单独列了,没有混进完工里</li>
+          <li><input type="checkbox"> 待人验的只留了真需要人的那几条</li>
+        </ul>
+      </div>
+
+      <h2 id="link"><span class="no">11</span><span>连接</span></h2>
+      <p class="handoff">七章讲完了机制和技巧。出了事要现查,不要从头翻讲义——去 <a href="../排障台/症状索引.html">排障台</a>,按症状找,每条四段:症状 / 底下发生了什么 / 当场怎么办 / 怎么让它别再犯。</p>
+
+      <nav class="chapter-nav">
+        <a href="U06-多对话协作.html"><span class="lb">上一章</span><span class="tt">U06 多对话协作</span></a>
+        <a href="../排障台/症状索引.html" class="next"><span class="lb">配套</span><span class="tt">排障台 · 症状索引</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">U07 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 证据</span>
+        <a data-toc-target="essence" href="#essence"><i>1</i>一句话本质</a>
+        <a data-toc-target="levels" href="#levels"><i>2</i>四级证据</a>
+        <a data-toc-target="fake" href="#fake"><i>3</i>假绿灯三来源</a>
+        <a data-toc-target="formvscontent" href="#formvscontent"><i>4</i>形式全绿≠内容对</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么分工</span>
+        <a data-toc-target="selftest" href="#selftest"><i>5</i>把验证还给它</a>
+        <a data-toc-target="ledger" href="#ledger"><i>6</i>待验单</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 怎么办</span>
+        <a data-toc-target="skill" href="#skill"><i>7</i>一次验收怎么走</a>
+        <a data-toc-target="reflist" href="#reflist"><i>8</i>外部资源</a>
+        <a data-toc-target="practice" href="#practice"><i>9</i>自测</a>
+        <a data-toc-target="checklist" href="#checklist"><i>10</i>自查清单</a>
+        <a data-toc-target="link" href="#link"><i>11</i>连接</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="U07" data-kind="usage" data-title="验收 AI 的产出"></script>
+</body>
+</html>

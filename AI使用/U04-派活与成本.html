@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>U04 · 派活与成本</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="U03-指令为什么不生效.html">U03 指令不生效</a><span class="sep">—</span>
+      <a href="U04-派活与成本.html" class="current">U04 派活与成本</a><span class="sep">—</span>
+      <a href="U05-让它照着参考做.html">U05 照着参考做</a>
+      <span class="spacer"></span>
+      <a href="#skill" class="jump">技巧</a>
+      <a href="../排障台/症状索引.html" class="jump">排障台</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">AI 使用 · Stage 5 · Chapter U04</p>
+        <h1>派活与成本</h1>
+        <p class="recap">同一件事,交给哪个模型、哪个对话、要不要另开子 agent,代价能差一个数量级。这一章讲两件事:<b>怎么切活、派给谁</b>,以及一个反复出现的失控——说好的「小改」被做成了大工程。</p>
+      </header>
+
+      <p>约 1.5 小时。这一章大部分是判断题,没有代码。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>一份活的三个属性:范围明不明确、能不能验、失败代价多大</li>
+          <li>派给谁的判据——不是「哪个更聪明」,是「哪个失真最小」</li>
+          <li>子 agent 的真实代价:上下文隔离带来的信息损耗</li>
+          <li>范围失控的机制,以及唯一有效的对策:动手前对着原话裁一遍</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>上下文的成本结构在 <a href="U02-上下文经济学.html">U02</a>;固定工作流与 agent 怎么选在 <a href="../应用工程/A04-Agent基础.html">A04</a>;给自己的应用算账在 <a href="../应用工程/A06-评估幻觉安全成本.html">A06</a>。<b>通向后面:</b>多个对话之间怎么不打架是 <a href="U06-多对话协作.html">U06</a>;派出去的活怎么收是 <a href="U07-验收AI的产出.html">U07</a>。</p>
+      </div>
+
+      <h2 id="essence"><span class="no">1</span><span>一句话本质</span></h2>
+      <div class="one-liner">
+        <p>派活的成本大头不是算力,是<b>信息在传递中的损耗</b>——换一个对话、换一个模型、开一个子 agent,都要重新交代一遍背景,而每一次交代都会丢一点。</p>
+      </div>
+
+      <h2 id="three"><span class="no">2</span><span>一份活的三个属性</span></h2>
+      <p>拿到一件事,先量三个尺子,再决定给谁。</p>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>属性</th><th>怎么判断</th><th>影响什么</th></tr></thead>
+          <tbody>
+            <tr><td><b>范围明确度</b></td><td>能不能一句话说清「做完了长什么样」</td><td>不明确 → 先陪聊定范围,别急着派</td></tr>
+            <tr><td><b>可验证性</b></td><td>有没有一个程序能跑出来的判据</td><td>不可验 → 必须留人工终审(见 <a href="U07-验收AI的产出.html">U07</a>)</td></tr>
+            <tr class="sel"><td><b>失败代价</b></td><td>做错了要花多久才能发现、多久才能修</td><td>代价高 → 不许自主连跑,必须分段交</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout warn">
+        <span class="label">最容易搞错的一条</span>
+        <p><b>「不可验」和「失败代价高」是两回事,常被混为一谈。</b>写一篇文案不可验但代价低(不喜欢重写就行);改一个数据迁移脚本可验但代价极高(跑错了数据就没了)。前者可以放手连跑,后者必须一段一段来。</p>
+      </div>
+
+      <h2 id="who"><span class="no">3</span><span>派给谁</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>选项</th><th>什么时候用</th><th>代价</th></tr></thead>
+          <tbody>
+            <tr><td><b>当前对话直接做</b></td><td>活小、且强依赖已有上下文</td><td>把上下文养肥,后面每轮都在为它付钱</td></tr>
+            <tr><td><b>开一个新对话</b></td><td>换主题、或当前上下文已经很长</td><td>要重新交代背景;交接会失真</td></tr>
+            <tr><td><b>常驻的专职对话</b></td><td>这类活会反复出现(设计、规划、笔记)</td><td>需要划清地盘,否则会和别人抢同一份文件</td></tr>
+            <tr class="sel"><td><b>子 agent</b></td><td>要读一大堆东西、但只需要一个结论</td><td><b>它看不到主对话的上下文</b>,交代不全就会跑偏;而且它的过程无法中途干预</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="rationale">
+        <span class="label">子 agent 真正的用途</span>
+        <p>不是「更聪明」,是<b>省上下文</b>:让它去翻二十个文件,只把结论带回来,那二十个文件的内容不进主对话。所以判据很清楚——<b>输入很多、输出很少的活,适合派子 agent;反过来就不适合。</b>要来回讨论的活派出去,只会让讨论发生在一个看不见的地方。</p>
+      </div>
+
+      <h2 id="scope"><span class="no">4</span><span>「小改」怎么变成大工程</span></h2>
+      <p>说的是「就像那个 X,很小的一个东西」,拿回来的是一个把整类问题都做全了的方案。这不是理解力问题,是机制。</p>
+      <div class="steps">
+        <ol>
+          <li><b>模型对范围没有先验。</b>「小」是一个相对判断,需要参照系,而参照系在提出者脑子里没说出来。</li>
+          <li><b>补全是高概率续写。</b>语料里「一个完整的方案」远比「一个刻意做小的方案」常见,不给上界就会往完整那边收敛。</li>
+          <li><b>没有反向压力。</b>做多了不会报错、不会被判失败,只会显得更周到——在它的优化方向上,做大是安全的。</li>
+        </ol>
+      </div>
+      <p>两个典型情形:一是要求「把这个需求拆小、分成几个点」,结果所有内容仍然堆在一份里、越滚越大;二是一句「就像那个东西,很小」,交回来的方案覆盖了整整一类功能。</p>
+      <div class="callout go">
+        <span class="label">唯一有效的对策:动手前对着原话裁一遍</span>
+        <p>在开工之前,单独一步,把要做的事按<b>提出者的原话</b>逐条对齐:<br>
+           <b>①</b> 把原话里出现的具体名词列出来——只做这些。<br>
+           <b>②</b> 把方案里出现、但原话里没有的条目单独列一张表,标成「超出原话」。<br>
+           <b>③</b> 这张表<b>不许自己批准</b>,拿去问。<br>
+        这一步的成本是几分钟,省下的是几天的返工。</p>
+      </div>
+
+      <h2 id="skill"><span class="no">5</span><span>技巧:活该切多大</span></h2>
+      <p>一条经验判据:<b>一批活的大小,应该让「做完到验完」在一次注意力里装得下。</b>太大,验的时候只能抽查;太小,交接成本淹没干活成本。</p>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>症状</th><th>说明活切得</th><th>调整</th></tr></thead>
+          <tbody>
+            <tr><td>每次改一个小功能都要几天</td><td>太大</td><td>拆成能独立验收的小批,一批一交</td></tr>
+            <tr><td>验收时只能抽查、不敢说全过</td><td>太大</td><td>同上</td></tr>
+            <tr><td>大半时间花在交代背景上</td><td>太小</td><td>合并同类项,或改成常驻对话</td></tr>
+            <tr><td>几件活互相等着对方先做完</td><td>切错了维度</td><td>按「可写面」重切,见 <a href="U06-多对话协作.html">U06</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <span class="label">成本这一侧的三条</span>
+        <p><b>①</b> 便宜的不是「用小模型」,是<b>不重复读大文件</b>——见 <a href="U02-上下文经济学.html">U02</a> 第 2 节那张表。<br>
+           <b>②</b> 简单机械的活(改名、批量替换、统计)交给脚本,不要交给模型:确定、免费、可复现。<br>
+           <b>③</b> 值不值得连跑,看第 2 节的第三个属性:失败代价。代价低就放手,代价高就分段。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">6</span><span>外部资源</span></h2>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">Anthropic · Building Effective Agents</a></span><span class="spine">主线</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">什么活该用固定工作流、什么活才值得上 agent,以及常见的过度设计。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">「能用固定流程解决的别上 agent」这条,和本章第 2 节的三个属性是同一套判断。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Workflows vs Agents 与 When not to use agents 两节。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">第 2、3 节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://docs.claude.com/en/docs/claude-code/sub-agents" target="_blank" rel="noopener">Claude Code · Subagents</a></span><span class="spine">桥</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">子 agent 的上下文隔离规则:能看到什么、看不到什么、结果怎么回传。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">「派出去为什么会跑偏」的答案就在隔离规则里,读一遍比试十次快。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">上下文隔离与返回值那两段。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">第 3 节的子 agent 行。</span></div>
+        </div>
+      </div>
+
+      <h2 id="practice"><span class="no">7</span><span>自测</span></h2>
+      <div class="challenge">
+        <span class="label">三道题</span>
+        <p><b>①</b> 「把这二十个文件里所有过时的链接找出来并修好」。这活该派子 agent 吗?为什么?<br>
+           <b>②</b> 一件活「范围明确、可验证、但失败代价极高」(例:批量重命名两百个文件)。该怎么派?<br>
+           <b>③</b> 提出的是「加一个小按钮,就像设置页那个」。方案回来是一套完整的按钮组件体系。开工前哪一步没做?</p>
+      </div>
+      <details class="hint"><summary>参考答案</summary>
+        <p><b>①</b> 「找出来」适合(输入多、输出少);「并修好」不适合——修改要在主对话可见的地方发生,否则改错了看不见、也没法中途干预。正确切法:子 agent 只负责找并列清单,修由主对话按清单做。<br>
+           <b>②</b> 可验证 → 先写校验脚本(改完能自动对账);失败代价高 → 先在副本上跑一遍、比对结果,确认无误再对正本执行,且执行前留一份快照。范围明确不代表可以直接连跑。<br>
+           <b>③</b> 没做「对着原话裁范围」:原话里的具体名词只有「一个小按钮」和「设置页那个」,方案里的「组件体系」全部属于超出原话的部分,应该单列成表拿去问,而不是自己批准。</p>
+      </details>
+
+      <h2 id="link"><span class="no">8</span><span>连接</span></h2>
+      <p class="handoff">活切对了、人派对了,还有一类失败与这些都无关:参考给得清清楚楚,回来的东西就是不像。下一章专门处理这件事。</p>
+
+      <nav class="chapter-nav">
+        <a href="U03-指令为什么不生效.html"><span class="lb">上一章</span><span class="tt">U03 指令为什么不生效</span></a>
+        <a href="U05-让它照着参考做.html" class="next"><span class="lb">下一章</span><span class="tt">U05 让它照着参考做</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">U04 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 怎么判</span>
+        <a data-toc-target="essence" href="#essence"><i>1</i>一句话本质</a>
+        <a data-toc-target="three" href="#three"><i>2</i>一份活的三个属性</a>
+        <a data-toc-target="who" href="#who"><i>3</i>派给谁</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 范围失控</span>
+        <a data-toc-target="scope" href="#scope"><i>4</i>小改变大工程</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 怎么办</span>
+        <a data-toc-target="skill" href="#skill"><i>5</i>活该切多大</a>
+        <a data-toc-target="reflist" href="#reflist"><i>6</i>外部资源</a>
+        <a data-toc-target="practice" href="#practice"><i>7</i>自测</a>
+        <a data-toc-target="link" href="#link"><i>8</i>连接</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="U04" data-kind="usage" data-title="派活与成本"></script>
+</body>
+</html>

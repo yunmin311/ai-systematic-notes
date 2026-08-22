@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D14 · 注意力机制逐步手算</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="D13-Embedding与向量空间.html">D13 Embedding</a><span class="sep">—</span>
+      <a href="D14-注意力机制逐步手算.html" class="current">D14 注意力手算</a><span class="sep">—</span>
+      <a href="D15-Transformer完整结构.html">D15 Transformer</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D14.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track C · Chapter D14 · 全课程最核心的一章</p>
+        <h1>注意力机制逐步手算</h1>
+        <p class="recap"><a href="D09-序列模型RNN到注意力.html">D09</a> 用直觉讲过注意力:"处理某个词时,一步看全句、按相关度加权"。<a href="D13-Embedding与向量空间.html">D13</a> 把每个词变成了带含义的向量。<b>这一章要做的,是把那句直觉拆成四步算术,用一个 3 个词的小例子从头算到尾</b>——Q/K/V 从哪来、分数怎么打、softmax 之后怎么加权求和。这四步算完,今天所有大模型(GPT、Claude)最核心的那块机制,就不再是黑箱了。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,跟着手算 + 精读约 4~6 小时。<b>这一章务必拿纸笔跟着算一遍</b>——例子里的数字是特意挑的,口算就能对上。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>Q / K / V 三个角色——查询、标签、内容,都由同一个词向量乘不同矩阵得来</li>
+          <li>四步算术——打分 → 缩放 → softmax → 加权求和</li>
+          <li>自注意力——每个词都当一次查询,对全句算一遍</li>
+          <li>多头——同时开好几套 Q/K/V,各看一种关系</li>
+          <li>掩码与代价——生成时不许偷看后文;计算量随长度平方增长</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>输入向量来自 <a href="D13-Embedding与向量空间.html">D13</a>;"为什么需要注意力"的动机在 <a href="D09-序列模型RNN到注意力.html">D09</a>;点积算相似度延续 D13 第 9 节。<b>通向后面:</b>把这块机制外面套上前馈层、残差、归一化,再堆几十层,就是 <a href="D15-Transformer完整结构.html">D15 的 Transformer</a>;第 11 节的平方复杂度直接解释 <a href="D17-推理量化与部署成本.html">D17</a> 的成本与上下文窗口上限。</p>
+      </div>
+
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>看过无数遍"Attention is all you need"、却从没真算过一次的人。</li>
+        <li>能背出 Q/K/V 三个字母,但说不清它们各自是干嘛的人。</li>
+        <li>想真正读懂大模型论文和结构图的人。</li>
+      </ul>
+      <p><b>不适合</b>:只想会用 API 的人——那 <a href="../应用工程/A01-提示词工程与上下文.html">应用工程 A 系列</a>就够了。这一章是"拆开看"的,不拆也能用。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>需要:<a href="D13-Embedding与向量空间.html">D13</a>(词向量、点积)、<a href="D02-逻辑回归与分类边界.html">D02</a>(softmax)、<a href="../基础课程/03-NumPy数组与形状.html">第 3 章</a>(形状)。数学只用两样,且都在本章现补:<b>点积</b>(两串数字逐位相乘再求和)和 <b>softmax</b>(把一组分数变成加起来等于 1 的概率)。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清 Q、K、V 分别扮演什么角色、从哪来。</li>
+        <li>不看资料复述注意力的四步算术。</li>
+        <li>拿纸笔算出一个 3 词例子的注意力输出。</li>
+        <li>解释多头注意力多在哪、为什么有用。</li>
+        <li>说清因果掩码的作用,以及为什么长文本贵得快。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">注意力:<b>每个词都拿自己的"查询"去和全句每个词的"标签"比一次相似度,得到一组权重;再按这组权重,把全句每个词的"内容"加权平均起来,作为这个词的新表示。</b>一句话——<b>按相关度做一次加权平均</b>。</p>
+      <p>用图书馆打比方一次就够:带着一个<b>需求</b>(Query,"我想找和'它'有关的信息")去查书;每本书封面上贴着<b>标签</b>(Key,"我是猫""我是动作");把需求和每个标签比一比,得出每本书的相关度;然后按相关度,把每本书的<b>内容</b>(Value)按比例抄一部分下来汇总。<b>这就是全部。</b>之所以显得神秘,是因为论文里写成了矩阵公式;可一旦拆成"比相似 → 归一化 → 加权平均"三个动作,会发现每一步都是小学算术。而它之所以强大,是因为这个操作让<b>任意两个词直接建立联系</b>(不像 RNN 要一路接力),而且<b>所有词可以同时算</b>(GPU 满载)——<a href="D09-序列模型RNN到注意力.html">D09</a> 说的那两堵墙,就是这么被推倒的。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="注意力五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="640" y1="168" x2="480" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="540" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="220" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="120" y1="168" x2="280" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">按相关度</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">做一次加权平均</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① Q / K / V 三角色</text>
+          <rect x="596" y="122" width="156" height="46" rx="8" class="box-acc"/>
+          <text x="674" y="150" text-anchor="middle" class="nl-acc">② 四步算术</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ 自注意力</text>
+          <rect x="146" y="330" width="174" height="46" rx="8" class="d-ink nf"/>
+          <text x="233" y="358" text-anchor="middle" class="nl">④ 多头</text>
+          <rect x="8" y="122" width="156" height="46" rx="8" class="d-ink nf"/>
+          <text x="86" y="150" text-anchor="middle" class="nl">⑤ 掩码与代价</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。②(蓝)是全章的心脏——四步算术;③④是把这四步"每个词都做一遍""同时做好几套";⑤是它的规矩和代价。</figcaption>
+      </figure>
+
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>这一章的正确学法是<b>动笔</b>:先跟着第 9 节把例子算完,再去看图解文,最后读一遍论文里那半页公式,会发现它说的就是刚算过的东西。</p>
+      <div class="callout go">
+        <span class="label">默认主线 · 先手算再看图 · 约 3–4 小时</span>
+        <p><b>Jay Alammar《The Illustrated Transformer》的自注意力部分 + 3Blue1Brown 注意力那一集。</b>顺序建议:本章第 9 节手算 → 图解文的 Self-Attention 段(把矩阵形式对上)→ 3B1B 视频(把动态过程看一遍)。链接:<a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">Illustrated Transformer</a>、<a href="https://www.3blue1brown.com/lessons/attention" target="_blank" rel="noopener">3B1B · Attention</a>。</p>
+      </div>
+      <table class="tbl">
+        <caption>表 1 · 本章骨架 ↔ 主线对应</caption>
+        <thead><tr><th>本章骨架</th><th>主线精读</th></tr></thead>
+        <tbody>
+          <tr><td>第 7 节 · Q/K/V 三角色</td><td>Illustrated Transformer:Self-Attention in Detail 前半</td></tr>
+          <tr><td>第 8–9 节 · 四步算术 + 手算</td><td>同上后半(含矩阵形式);3B1B 注意力那一集</td></tr>
+          <tr><td>第 10 节 · 多头</td><td>Illustrated Transformer:Multi-Head 段</td></tr>
+          <tr><td>第 11 节 · 掩码与代价</td><td>3B1B 里讲掩码的部分;论文第 3.2 节</td></tr>
+        </tbody>
+      </table>
+
+      <p class="handoff">先认清三个角色。它们看着玄,其实都是同一个向量乘出来的。</p>
+      <h2 id="qkv"><span class="no">7</span><span>Q / K / V:三个角色,一个来源</span></h2>
+      <p class="one-liner">每个词的向量(来自 <a href="D13-Embedding与向量空间.html">D13</a>)分别乘上<b>三个不同的权重矩阵</b> <code>W_Q</code>、<code>W_K</code>、<code>W_V</code>,得到三个新向量:<b>Q(Query,查询:我在找什么)</b>、<b>K(Key,标签:我是什么)</b>、<b>V(Value,内容:我能提供什么信息)</b>。三个矩阵都是<b>训练学出来的参数</b>。</p>
+      <p>为什么要拆成三个而不直接用原向量:因为"我作为提问方想找什么"和"我作为被查方怎么介绍自己"是两回事。同一个词"猫",当它是查询时可能在找"动作是什么",当它是被查对象时要宣告"我是一个动物名词"。用三个不同矩阵投影,就让模型能<b>分别学这三种角色</b>。理解上抓住一点即可:<b>Q 和 K 用来算"该不该看",V 才是真正被搬运的信息</b>。所以 Q 和 K 的维度必须一样(要做点积),V 的维度可以不同(它只负责被加权求和)。</p>
+      <figure>
+        <svg viewBox="0 0 640 220" role="img" aria-label="Q K V 由同一个词向量乘三个矩阵得到">
+          <defs><marker id="m-qkv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="24" y="86" width="130" height="48" rx="8" class="box"/>
+          <text x="89" y="107" text-anchor="middle" class="nl">词向量 x</text>
+          <text x="89" y="124" text-anchor="middle" class="el">(D13 来的)</text>
+          <line x1="158" y1="100" x2="252" y2="58" class="d-acc" marker-end="url(#m-qkv)"/>
+          <line x1="158" y1="110" x2="252" y2="110" class="d-acc" marker-end="url(#m-qkv)"/>
+          <line x1="158" y1="120" x2="252" y2="162" class="d-acc" marker-end="url(#m-qkv)"/>
+          <text x="205" y="66" text-anchor="middle" class="el-acc">×W_Q</text>
+          <text x="205" y="102" text-anchor="middle" class="el-acc">×W_K</text>
+          <text x="205" y="180" text-anchor="middle" class="el-acc">×W_V</text>
+          <rect x="258" y="34" width="150" height="46" rx="8" class="box-acc"/>
+          <text x="333" y="54" text-anchor="middle" class="nl-acc">Q 查询</text>
+          <text x="333" y="71" text-anchor="middle" class="el-acc">我在找什么</text>
+          <rect x="258" y="88" width="150" height="46" rx="8" class="box-acc"/>
+          <text x="333" y="108" text-anchor="middle" class="nl-acc">K 标签</text>
+          <text x="333" y="125" text-anchor="middle" class="el-acc">我是什么</text>
+          <rect x="258" y="142" width="150" height="46" rx="8" class="box-acc"/>
+          <text x="333" y="162" text-anchor="middle" class="nl-acc">V 内容</text>
+          <text x="333" y="179" text-anchor="middle" class="el-acc">我能给什么信息</text>
+          <text x="530" y="80" text-anchor="middle" class="el">Q·K 决定「该不该看」</text>
+          <text x="530" y="150" text-anchor="middle" class="el">V 是真正被搬走的信息</text>
+          <path d="M 412 57 C 450 57, 460 70, 470 74" class="d-soft"/>
+          <path d="M 412 111 C 450 111, 460 90, 470 84" class="d-soft"/>
+          <path d="M 412 165 C 450 165, 460 155, 470 150" class="d-soft"/>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>Q/K/V 都由同一个词向量乘上三个不同的、可训练的矩阵得到。Q 与 K 负责算相关度,V 负责提供被加权搬运的内容。</figcaption>
+      </figure>
+
+      <p class="handoff">有了三个角色,注意力就只剩四步算术。</p>
+      <h2 id="steps"><span class="no">8</span><span>四步算术</span></h2>
+      <p class="one-liner"><b>①打分</b>:拿这个词的 Q,和每个词的 K 做点积,得到一组原始分数。<b>②缩放</b>:全部除以 √<code>d_k</code>(<code>d_k</code> 是 Q/K 的维度),防止分数太大。<b>③softmax</b>:把分数变成加起来等于 1 的权重。<b>④加权求和</b>:按权重把所有 V 相加,得到输出。</p>
+      <p>逐步说清每步为什么:<b>①打分</b>——点积就是 <a href="D13-Embedding与向量空间.html">D13</a> 说的"方向有多一致",两个向量越同向、分数越大,即"越相关"。<b>②缩放</b>——维度一高,点积的数值会变得很大,直接送进 softmax 会让结果极端(几乎全部权重压到一个词上),梯度也难传;除以 √<code>d_k</code> 把量级拉回来,这是论文里那个 √d 的全部理由。<b>③softmax</b>(<a href="D02-逻辑回归与分类边界.html">D02</a> 学过)——把任意实数变成 0~1 且总和为 1 的权重,于是"相关度"变成了"注意力分配比例"。<b>④加权求和</b>——按比例把各词的 V 混合起来。输出就是这个词"参考了全句之后的新表示"。写成一行公式就是论文里的 <code>softmax(QKᵀ/√d)V</code>——<b>这一行,就是刚说的四步。</b></p>
+
+      <p class="handoff">下面用一个 3 个词的例子,把这四步真算一遍。</p>
+      <h2 id="hand"><span class="no">9</span><span>手算:三个词的完整一遍</span></h2>
+      <p>句子:<b>「猫 追 老鼠」</b>,现在要算<b>第 3 个词"老鼠"</b>的注意力输出(即:它该从全句吸收多少信息)。为了能口算,取 <code>d_k</code> = 4,数字都特意挑成整数。</p>
+      <p><b>第 0 步:准备好 Q/K/V。</b>(实际由词向量乘三个矩阵得到,这里直接给结果)</p>
+      <div class="tbl-scroll">
+      <table class="tbl">
+        <caption>表 2 · 例子的 Q / K / V(<code>d_k</code>=4,V 取 2 维便于口算)</caption>
+        <thead><tr><th>词</th><th>K(标签)</th><th>V(内容)</th></tr></thead>
+        <tbody>
+          <tr><td>猫</td><td>[1, 0, 1, 0]</td><td>[10, 0]</td></tr>
+          <tr><td>追</td><td>[0, 1, 0, 1]</td><td>[0, 10]</td></tr>
+          <tr class="sel"><td>老鼠(也是本次的查询方)</td><td>[1, 0, 0, 1]</td><td>[5, 5]</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>本次查询 <b>Q(老鼠) = [1, 0, 1, 0]</b>(它在找"和自己相关的名词/动作")。</p>
+      <p><b>第 1 步 · 打分(Q 与每个 K 做点积)</b>:逐位相乘再求和。</p>
+      <ul>
+        <li>对「猫」:1×1 + 0×0 + 1×1 + 0×0 = <b>2</b></li>
+        <li>对「追」:1×0 + 0×1 + 1×0 + 0×1 = <b>0</b></li>
+        <li>对「老鼠」自己:1×1 + 0×0 + 1×0 + 0×1 = <b>1</b></li>
+      </ul>
+      <p><b>第 2 步 · 缩放</b>:除以 √<code>d_k</code> = √4 = 2 → 分数变成 <b>[1, 0, 0.5]</b>。</p>
+      <p><b>第 3 步 · softmax</b>:先各取 e 的幂:e¹≈2.72、e⁰=1、e⁰·⁵≈1.65,总和 ≈ 5.37;各自除以总和:</p>
+      <div class="tbl-scroll">
+      <table class="tbl">
+        <caption>表 3 · 注意力权重(加起来 = 1)</caption>
+        <thead><tr><th>看向</th><th>缩放后分数</th><th>e 的幂</th><th>权重</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td>猫</td><td>1</td><td>2.72</td><td><b>0.51</b>(最相关)</td></tr>
+          <tr><td>追</td><td>0</td><td>1.00</td><td>0.19</td></tr>
+          <tr><td>老鼠(自己)</td><td>0.5</td><td>1.65</td><td>0.31</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p><b>第 4 步 · 加权求和</b>:按权重把各词的 V 混起来。</p>
+      <p style="margin-left:2px">输出 = 0.51×[10, 0] + 0.19×[0, 10] + 0.31×[5, 5] = [5.1, 0] + [0, 1.9] + [1.55, 1.55] = <b>[6.65, 3.45]</b></p>
+      <p><b>读一下这个结果</b>:输出向量里"猫"那一路的成分(6.65)明显压过"追"(3.45),说明这一步注意力判断——<b>理解"老鼠"时,最该参考的是"猫"</b>。这正是注意力干的事:<b>它没有改变任何词的原意,只是让每个词按相关度,把全句的信息吸收进自己的新表示里。</b>真实模型里唯一的不同是:维度是几百而不是 4、句子是几千词而不是 3、这套运算并行地对每个词各做一遍——<b>算术本身,和刚算的一模一样。</b></p>
+      <figure>
+        <svg viewBox="0 0 700 210" role="img" aria-label="注意力四步流程">
+          <defs><marker id="m-st" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#14181f"/></marker></defs>
+          <rect x="14" y="74" width="132" height="56" rx="8" class="d-ink nf"/>
+          <text x="80" y="96" text-anchor="middle" class="nl">① 打分</text>
+          <text x="80" y="115" text-anchor="middle" class="el">Q·K 点积</text>
+          <rect x="172" y="74" width="132" height="56" rx="8" class="d-ink nf"/>
+          <text x="238" y="96" text-anchor="middle" class="nl">② 缩放</text>
+          <text x="238" y="115" text-anchor="middle" class="el">÷ √d</text>
+          <rect x="330" y="74" width="132" height="56" rx="8" class="box-acc"/>
+          <text x="396" y="96" text-anchor="middle" class="nl-acc">③ softmax</text>
+          <text x="396" y="115" text-anchor="middle" class="el-acc">变成权重,和=1</text>
+          <rect x="488" y="74" width="150" height="56" rx="8" class="d-ink nf"/>
+          <text x="563" y="96" text-anchor="middle" class="nl">④ 加权求和</text>
+          <text x="563" y="115" text-anchor="middle" class="el">按权重混合 V</text>
+          <line x1="146" y1="102" x2="168" y2="102" class="d-ink" marker-end="url(#m-st)"/>
+          <line x1="304" y1="102" x2="326" y2="102" class="d-ink" marker-end="url(#m-st)"/>
+          <line x1="462" y1="102" x2="484" y2="102" class="d-ink" marker-end="url(#m-st)"/>
+          <text x="350" y="42" text-anchor="middle" class="el">例:Q(老鼠) 对 [猫, 追, 老鼠] → [2, 0, 1] → [1, 0, .5] → [.51, .19, .31] → [6.65, 3.45]</text>
+          <text x="350" y="176" text-anchor="middle" class="el">写成一行公式就是论文里的 softmax(QKᵀ/√d)·V</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>注意力四步。论文里那行 softmax(QKᵀ/√d)V,就是这四步的紧凑写法。</figcaption>
+      </figure>
+
+      <p class="handoff">把这四步"每个词都做一遍""同时做好几套",就是自注意力和多头。</p>
+      <h2 id="multi"><span class="no">10</span><span>自注意力与多头</span></h2>
+      <p class="one-liner"><b>自注意力(self-attention)</b>:句子里<b>每个</b>词都当一次查询方,对全句算一遍上面的四步——所以 n 个词就得到 n 个新向量。<b>多头(multi-head)</b>:同时准备好几套独立的 <code>W_Q</code>/<code>W_K</code>/<code>W_V</code>(比如 8 套、32 套),各算各的,最后把结果拼起来——<b>每一"头"可以专注一种关系</b>。</p>
+      <p>为什么叫"自"注意力:因为 Q、K、V 全都来自<b>同一个句子</b>(自己看自己),区别于早期机器翻译里"用译文查原文"的交叉注意力。为什么要多头:一个句子里同时存在很多种关系——谁是谁的主语、代词指代谁、哪个形容词修饰哪个名词……只用一套 Q/K/V,模型被迫把这些关系挤在一个加权平均里;<b>开 8 个头,就等于同时用 8 种不同的"看法"扫一遍全句</b>,一个头盯语法主谓、一个头盯指代、一个头盯位置邻近……最后拼接融合。实践中这带来明显提升,代价只是把维度切成几份分给各头(总计算量差不多)。<b>记住:多头不是算得更细,而是同时看几种不同的关系。</b></p>
+
+      <p class="handoff">最后两件必须知道的:一条规矩,一个代价。</p>
+      <h2 id="mask"><span class="no">11</span><span>因果掩码,与平方级代价</span></h2>
+      <p class="one-liner"><b>因果掩码(causal mask)</b>:生成式模型在预测第 t 个词时,<b>不许看第 t 个之后的词</b>——否则就是抄答案。做法是在 softmax 之前,把"未来位置"的分数设成负无穷,权重自然变 0。<b>平方级代价</b>:每个词都要和每个词算一次分,n 个词就是 n×n 次——<b>长度翻倍,计算量变四倍</b>。</p>
+      <p><b>掩码</b>解释了一个天天见的现象:大模型是<b>一个词一个词往外蹦</b>的(<a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>那个循环)。因为训练时它就被要求"只根据前文预测下一个",掩码保证了这条规矩;推理时自然也只能逐个生成。<b>平方级代价</b>则解释了另外两件事:①<b>上下文窗口为什么有上限</b>——不是不想更长,是 n² 的计算和显存吃不消;②<b>长提示词为什么贵得快</b>——不是线性贵,是接近平方地贵。<a href="D17-推理量化与部署成本.html">D17</a> 会讲业界怎么用 KV cache 和各种高效注意力来缓解。<b>这两条是注意力的"规矩"和"账单",工程上比公式本身更常被用到。</b></p>
+
+      <p class="handoff">用十几行代码把四步写出来,和手算结果对上。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:十几行实现注意力</span></h2>
+      <p>下面的代码就是第 8 节那四步的逐行翻译,并用第 9 节的例子验算——跑出来应该正好是 <code>[6.65, 3.45]</code>:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">attention_by_hand.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch.nn.functional </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> F</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 例子:「猫 追 老鼠」,给出每个词的 K 和 V(实际由词向量乘 W_K / W_V 得到)</span></span>
+<span class="line"><span style="color:#14181F">K </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> torch.tensor([[1., 0., 1., 0.],     </span><span style="color:#8B95A8;font-style:italic"># 猫</span></span>
+<span class="line"><span style="color:#14181F">                  [0., 1., 0., 1.],     </span><span style="color:#8B95A8;font-style:italic"># 追</span></span>
+<span class="line"><span style="color:#14181F">                  [1., 0., 0., 1.]])    </span><span style="color:#8B95A8;font-style:italic"># 老鼠</span></span>
+<span class="line"><span style="color:#14181F">V </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> torch.tensor([[10., 0.],            </span><span style="color:#8B95A8;font-style:italic"># 猫的内容</span></span>
+<span class="line"><span style="color:#14181F">                  [0., 10.],            </span><span style="color:#8B95A8;font-style:italic"># 追的内容</span></span>
+<span class="line"><span style="color:#14181F">                  [5., 5.]])            </span><span style="color:#8B95A8;font-style:italic"># 老鼠的内容</span></span>
+<span class="line"><span style="color:#14181F">q </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> torch.tensor([1., 0., 1., 0.])      </span><span style="color:#8B95A8;font-style:italic"># 本次查询:老鼠的 Q</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">d_k </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> K.shape[1]                        </span><span style="color:#8B95A8;font-style:italic"># = 4</span></span>
+<span class="line"><span style="color:#14181F">scores </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> K </span><span style="color:#14181F;font-weight:bold">@</span><span style="color:#14181F"> q                          </span><span style="color:#8B95A8;font-style:italic"># ① 打分:点积 → tensor([2., 0., 1.])</span></span>
+<span class="line"><span style="color:#14181F">scores </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> scores </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> d_k </span><span style="color:#14181F;font-weight:bold">**</span><span style="color:#14181F"> 0.5            </span><span style="color:#8B95A8;font-style:italic"># ② 缩放:÷√4 → tensor([1.0, 0.0, 0.5])</span></span>
+<span class="line"><span style="color:#14181F">weights </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> F.softmax(scores, dim</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0)      </span><span style="color:#8B95A8;font-style:italic"># ③ softmax → tensor([0.506, 0.186, 0.307])</span></span>
+<span class="line"><span style="color:#14181F">out </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> weights </span><span style="color:#14181F;font-weight:bold">@</span><span style="color:#14181F"> V                       </span><span style="color:#8B95A8;font-style:italic"># ④ 加权求和 → tensor([6.65, 3.45])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"权重:"</span><span style="color:#14181F">, weights)                  </span><span style="color:#8B95A8;font-style:italic"># 「猫」占一半以上 = 最该参考它</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"输出:"</span><span style="color:#14181F">, out)                      </span><span style="color:#8B95A8;font-style:italic"># 和手算一致</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 真实模型的写法:一次算全句所有词(Q 是矩阵不是单个向量),再加因果掩码</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> attention(Q, K, V, causal</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">False):</span></span>
+<span class="line"><span style="color:#14181F">    s </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> Q </span><span style="color:#14181F;font-weight:bold">@</span><span style="color:#14181F"> K.T </span><span style="color:#14181F;font-weight:bold">/</span><span style="color:#14181F"> K.shape[</span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F">1] </span><span style="color:#14181F;font-weight:bold">**</span><span style="color:#14181F"> 0.5              </span><span style="color:#8B95A8;font-style:italic"># 所有词两两打分:n×n</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F"> causal:                                     </span><span style="color:#8B95A8;font-style:italic"># 生成时:不许看未来</span></span>
+<span class="line"><span style="color:#14181F">        s </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> s.masked_fill(torch.triu(torch.ones_like(s), 1).bool(), float(</span><span style="color:#557089">'-inf'</span><span style="color:#14181F">))</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> F.softmax(s, dim</span><span style="color:#14181F;font-weight:bold">=-</span><span style="color:#14181F">1) </span><span style="color:#14181F;font-weight:bold">@</span><span style="color:#14181F"> V                </span><span style="color:#8B95A8;font-style:italic"># softmax 后加权求和</span></span></code></pre>
+      </div>
+      <p>对照着看:<code>K @ q</code> 是第 1 步,<code>/ d_k**0.5</code> 是第 2 步,<code>F.softmax</code> 是第 3 步,<code>weights @ V</code> 是第 4 步——<b>四行代码,四步算术,和纸上算的一模一样</b>。下面那个 <code>attention()</code> 函数是真实写法:Q 换成矩阵一次算全句(<code>Q @ K.T</code> 出来就是 n×n 的分数表,平方级代价在这里看得见),<code>masked_fill</code> 那一行就是因果掩码——把上三角(未来位置)设成负无穷。<b>整个大模型最核心的机制,到此已经完整地摆出来了。</b></p>
+      <div class="challenge">
+        <span class="label">进阶挑战 · 把它算穿</span>
+        <h3>四个验证</h3>
+        <p>①把 Q(老鼠) 改成 <code>[0,1,0,1]</code>(改成在找"动作"),重算四步——看权重是不是转向了「追」,再用代码验证。②把 <code>d_k**0.5</code> 那步去掉,看权重分布变得多极端(体会缩放的作用)。③把 <code>causal=True</code> 打开,打印 <code>softmax</code> 后的 n×n 权重表,看上三角是不是全 0。④算一笔账:句子从 1000 词变成 4000 词,<code>Q @ K.T</code> 的元素个数变成原来几倍?(这就是长上下文贵的原因。)</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;下列链接均于 2026-08-20 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">The Illustrated Transformer</a></span><span class="spine">默认主线</span><span class="tags">图解博客 · 英文 · 1–2h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">逐图拆解自注意力与多头的经典长文,含矩阵形式的完整推演。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章用小例子算了一遍;它把同一件事升级成矩阵写法,正好补上"真实模型怎么批量算"。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Self-Attention in Detail → Matrix Calculation → Multi-Head 三段。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§7–9 对应前两段,§10 对应 Multi-Head。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.3blue1brown.com/lessons/attention" target="_blank" rel="noopener">3Blue1Brown · Attention in Transformers</a></span><span class="tags">视频 · 有中文字幕 · 30min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">用动画演示注意力如何在句子里"移动信息"的一集。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">手算给的是静态一步,它给的是动态全貌——两者互补,看完印象最深。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">整集;掩码那段留意一下。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§8–9 看完后再看,效果最好;§11 掩码。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://nlp.seas.harvard.edu/annotated-transformer/" target="_blank" rel="noopener">The Annotated Transformer(哈佛)</a></span><span class="tags">代码精读 · 英文 · 深读 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">把原论文逐段配上可运行 PyTorch 代码的经典注解版。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想从"会算一步"到"能读懂整份实现"时,这是最好的桥。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Attention 与 Multi-Head 两节的代码。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 12 节代码升级读;也是 <a href="D15-Transformer完整结构.html">D15</a> 的预习。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need(2017)</a></span><span class="tags">奠基论文 · 英文 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">提出 Transformer 的原论文。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">手算完再读第 3.2 节,会发现那半页公式说的就是刚算过的四步——这种"读懂原文"的体验值得专门要一次。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">3.2 Attention(含 √d 的解释)+ 图 2。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">§8 四步公式的原文出处。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 4 · 五个常见误区</caption>
+        <thead><tr><th>常见理解</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>Q/K/V 是三种不同的数据</td><td>是同一个词向量乘三个不同矩阵得到的三种"角色",来源相同。</td></tr>
+          <tr><td>注意力在"理解"语义</td><td>它只做一件机械的事:按点积相似度加权平均。语义能力来自海量训练,不是这步运算本身。</td></tr>
+          <tr><td>除以 √d 是可有可无的细节</td><td>不是。不缩放会让 softmax 过于极端、梯度难传,训练容易崩。</td></tr>
+          <tr><td>多头 = 算得更精细</td><td>不是精度问题,是让不同的头同时关注不同类型的关系(主谓、指代、邻近…)。</td></tr>
+          <tr><td>上下文窗口只受显存限制</td><td>主要是注意力的 n² 计算与存储:长度翻倍、开销四倍,所以窗口越长越贵(D17)。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>三角色。</b>Q、K、V 各是什么、从哪来?<details><summary>参考答案</summary><p>同一个词向量分别乘 W_Q/W_K/W_V(可训练矩阵)得到:Q=我在找什么,K=我是什么(用于被匹配),V=我能提供的信息(被加权搬运)。Q 与 K 决定该不该看,V 是真正被搬的内容。</p></details></li>
+        <li><b>四步。</b>不看资料复述注意力四步。<details><summary>参考答案</summary><p>①Q 与各 K 点积打分 → ②除以 √d 缩放 → ③softmax 变成和为 1 的权重 → ④按权重对各 V 加权求和。即 softmax(QKᵀ/√d)V。</p></details></li>
+        <li><b>缩放。</b>为什么要除以 √d?<details><summary>参考答案</summary><p>维度高时点积数值会很大,直接 softmax 会导致权重极端(几乎全压一个词)、梯度难传;缩放把量级拉回合适范围。</p></details></li>
+        <li><b>掩码与代价。</b>因果掩码干什么?为什么长文本贵得快?<details><summary>参考答案</summary><p>掩码在 softmax 前把未来位置的分数设为 −∞,保证预测第 t 词时不偷看后文;代价方面每个词要和每个词打分,是 n² 级,长度翻倍开销约四倍。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上,大模型最核心的机制就通了(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清 Q/K/V 三个角色和它们的来源</li>
+          <li><input type="checkbox"> 我能不看资料复述四步算术</li>
+          <li><input type="checkbox"> 我拿纸笔把第 9 节的例子算了一遍,结果对上了</li>
+          <li><input type="checkbox"> 我知道为什么要除以 √d</li>
+          <li><input type="checkbox"> 我能解释自注意力和多头各多在哪</li>
+          <li><input type="checkbox"> 我理解因果掩码的作用</li>
+          <li><input type="checkbox"> 我知道 n² 代价如何决定上下文窗口和费用</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>注意力这块"发动机"已经拆开看过了。但它单独还不是一个模型——真实的 Transformer 在它外面还套了几样东西:<b>前馈层</b>(每个位置各自再做一次非线性变换)、<b>残差连接</b>和<b>层归一化</b>(让几十层能训得动)。<a href="D15-Transformer完整结构.html">D15 · Transformer 完整结构</a>就把这些零件装成一个"块",再堆成几十层,最后<b>逐块读懂论文里那张著名的结构图</b>——读完那张图,就真正看懂了 GPT 的骨架。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="D13-Embedding与向量空间.html"><span class="lb">上一章</span><span class="tt">D13 · Embedding 与向量空间</span></a>
+        <a href="D15-Transformer完整结构.html" class="next"><span class="lb">下一章</span><span class="tt">D15 · Transformer 完整结构</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D14 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="qkv" href="#qkv"><i>7</i>Q/K/V 三角色</a>
+        <a data-toc-target="steps" href="#steps"><i>8</i>四步算术</a>
+        <a data-toc-target="hand" href="#hand"><i>9</i>手算一遍</a>
+        <a data-toc-target="multi" href="#multi"><i>10</i>自注意力与多头</a>
+        <a data-toc-target="mask" href="#mask"><i>11</i>掩码与代价</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>十几行实现</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D14" data-kind="chapter" data-title="注意力机制逐步手算"></script>
+</body>
+</html>

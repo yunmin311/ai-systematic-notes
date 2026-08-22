@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07 · 神经网络入门</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.wire{stroke:var(--rule);stroke-width:1;fill:none;}
+.wire-acc{stroke:var(--acc);stroke-width:1.4;fill:none;}
+.node{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.node-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.crv{fill:none;stroke:var(--acc);stroke-width:2;} .crv-ink{fill:none;stroke:var(--ink);stroke-width:1.6;}
+.ax{stroke:var(--ink-faint);stroke-width:1;}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="06-训练的本质.html">06 训练的本质</a><span class="sep">—</span>
+      <a href="07-神经网络入门.html" class="current">07 神经网络</a><span class="sep">—</span>
+      <a href="08-大语言模型鸟瞰.html">08 大语言模型鸟瞰</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-07.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">基础课程 · Chapter 07</p>
+        <h1>神经网络入门</h1>
+        <p class="recap">上一章讲了模型怎么用梯度下降「学」。这一章看清一种最重要的模型:<b>神经网络</b>。它把一个极简单的单元(<b>神经元</b>:加权求和再压一下)堆成一层层、连成一张网,靠上一章那套下山循环来调。理解它,后面的大语言模型就有了骨架。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,外部精读 + 动手约 4~6 小时。全程用「一层层传递」的直觉,不推导公式。这一章的最佳主线是 3Blue1Brown 的动画——神经网络这东西,动着看比读着看清楚十倍。每出现一个新词,当场用白话解释。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>神经元——加权求和 + 激活,一个最小的计算单元</li>
+          <li>层与网络——神经元排成层,一层喂给下一层,连成一张网</li>
+          <li>前向传播——数据从左往右流过所有层,得到预测</li>
+          <li>激活函数——那个「压一下」的动作;没它,整张网只能画直线</li>
+          <li>反向传播——错从右往左传回去,算出每个参数该怎么调</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接上一章:</b>第 6 章的梯度下降循环,就是训练神经网络的发动机。<b>通向下一章:</b><a href="08-大语言模型鸟瞰.html">第 8 章 大语言模型</a>里的 Transformer,本质就是一种特别的、超大的神经网络。本章是看懂它的地基。</p>
+      </div>
+
+      <!-- ========== 模块 A ========== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>懂了梯度下降,想知道「神经网络」到底长什么样、怎么算的人。</li>
+        <li>老看到神经元、隐藏层、前向/反向传播这些词,想一次串起来的人。</li>
+        <li>准备学大模型,想先把神经网络这块地基打牢的人。</li>
+      </ul>
+      <p><b>不适合</b>:已经能手推前向、理解反向传播的人——直接跳到第 8 章。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>两样:一是<a href="03-NumPy数组与形状.html">第 3 章</a>——数组和「加权求和」就是一次向量点乘;二是<a href="06-训练的本质.html">第 6 章</a>——损失、梯度下降、训练循环。数学不需要:全章用「一层层传、错往回传」的直觉。想跑结尾代码,有 <code>numpy</code> 即可。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>画出一个神经元:输入、权重、求和、激活、输出。</li>
+        <li>说清一张网络是怎么由输入层、隐藏层、输出层拼起来的。</li>
+        <li>用「一层层往右传」解释前向传播。</li>
+        <li>说清激活函数为什么不可或缺(没它网络就塌成直线)。</li>
+        <li>用一句话讲清反向传播在做什么(高效地算出每个参数的梯度)。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">神经网络:把一个极简单的单元(<b>加权求和 + 压一下</b>)重复成千上万次、连成多层,就能拟合几乎任意复杂的规律——复杂,是「简单单元 + 很多层」堆出来的。</p>
+      <p>单看一个神经元,平平无奇:把几个输入各乘一个权重加起来,再用一个函数压一下,输出一个数。神奇之处在<b>规模</b>:成千上万个这样的单元分层连接,前一层的输出当后一层的输入,整张网就能表达极复杂的输入—输出关系。而这上万个权重,全靠第 6 章的梯度下降一点点调出来。这就是深度学习——「深」指的就是层多。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <p>先记住「就这五块」。中间是本章目标,四周是达成它要用的五块地基,下面模块 C 逐块拆。</p>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="神经网络五块地基环绕核心目标">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">简单单元堆成</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">能学复杂规律的网</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 神经元</text>
+          <rect x="588" y="122" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="670" y="150" text-anchor="middle" class="nl">② 层与网络</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ 前向传播</text>
+          <rect x="144" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="226" y="358" text-anchor="middle" class="nl">④ 激活函数</text>
+          <rect x="8" y="122" width="150" height="46" rx="8" class="d-ink nf"/>
+          <text x="83" y="150" text-anchor="middle" class="nl">⑤ 反向传播</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。把它们组装起来,就能看懂第 12 节那段手写的「一个神经元前向计算」代码。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 B ========== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>本章每一小节只负责把概念用图讲清。真正把神经网络看透,靠<b>一条外部主线</b>,而这一章的主线毫无悬念是视频——3Blue1Brown 的动画。下面选好主线,顺着走完即可。</p>
+
+      <div class="callout go">
+        <span class="label">默认主线 · 视频(几乎必看)</span>
+        <p><b>3Blue1Brown「深度学习」系列第 1 章:But what is a neural network?(免费)。</b>为什么是它:用手写数字识别做例子,把神经元、层、权重讲成会动的图,是全网神经网络入门的天花板。<b>先看第 1 章(约 19 分钟)</b>;想深入训练细节,接着看第 3 章「反向传播」。链接:<a href="https://www.youtube.com/watch?v=aircAruvnKk" target="_blank" rel="noopener">youtube.com/watch?v=aircAruvnKk</a>;中文字幕版在 <a href="https://www.bilibili.com/video/av19828819/" target="_blank" rel="noopener">B 站(av19828819)</a>。</p>
+      </div>
+
+      <table class="tbl">
+        <caption>表 1 · 本章骨架 ↔ 主线对应</caption>
+        <thead><tr><th>本章骨架(先看图)</th><th>主线精读(3B1B 深度学习系列)</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td>第 7–10 节 · 神经元 / 层 / 前向 / 激活</td><td>第 1 章 But what is a neural network?</td></tr>
+          <tr><td>第 11 节 · 反向传播</td><td>第 3 章 What is backpropagation really doing? + 第 2 章(梯度下降,已在上一章看过)</td></tr>
+        </tbody>
+      </table>
+
+      <p><b>想要手绘一步步算、或换个讲法:</b></p>
+      <ul>
+        <li><b>StatQuest · Neural Networks Pt.1: Inside the Black Box</b> — <a href="https://www.youtube.com/watch?v=CqOfi41LfDw" target="_blank" rel="noopener">Josh Starmer 把「黑箱」一块块拆开、用最小的数学走一遍</a>,和 3B1B 的直觉互补。</li>
+        <li><b>TensorFlow Playground</b> — <a href="https://playground.tensorflow.org/" target="_blank" rel="noopener">在浏览器里拖一个神经网络实时训练</a>,亲手加层、改激活函数,看决策边界怎么变。玩十分钟胜过读半天。</li>
+      </ul>
+
+      <!-- ========== 模块 C ========== -->
+      <p class="handoff">先把最小的零件立起来:一个神经元到底在算什么。</p>
+      <h2 id="neuron"><span class="no">7</span><span>神经元:一个最小单元</span></h2>
+      <p class="one-liner">一个神经元做三步:把各输入<b>乘上各自的权重再加起来</b>(加权求和)、加一个偏置、然后用一个<b>激活函数压一下</b>,输出一个数。</p>
+      <p>权重表示「这个输入有多重要」,偏置是个可调的起点。加权求和其实就是第 3 章的向量点乘。压一下(激活)让输出落进某个范围、并引入「非直线」的能力。整个神经网络的成千上万个参数,就是这些权重和偏置——全靠训练调出来。</p>
+      <figure>
+        <svg viewBox="0 0 640 200" role="img" aria-label="一个神经元:加权求和加偏置再激活">
+          <defs><marker id="m-n" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker><marker id="m-na" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <circle cx="50" cy="50" r="16" class="node"/><text x="50" y="55" text-anchor="middle" class="nl">x₁</text>
+          <circle cx="50" cy="100" r="16" class="node"/><text x="50" y="105" text-anchor="middle" class="nl">x₂</text>
+          <circle cx="50" cy="150" r="16" class="node"/><text x="50" y="155" text-anchor="middle" class="nl">x₃</text>
+          <line x1="66" y1="50" x2="256" y2="95" class="wire" marker-end="url(#m-n)"/><text x="150" y="60" class="el">×w₁</text>
+          <line x1="66" y1="100" x2="256" y2="100" class="wire" marker-end="url(#m-n)"/><text x="150" y="92" class="el">×w₂</text>
+          <line x1="66" y1="150" x2="256" y2="105" class="wire" marker-end="url(#m-n)"/><text x="150" y="145" class="el">×w₃</text>
+          <circle cx="290" cy="100" r="34" class="node-acc"/><text x="290" y="96" text-anchor="middle" class="nl-acc">Σ + b</text><text x="290" y="114" text-anchor="middle" class="el-acc">加起来</text>
+          <line x1="324" y1="100" x2="382" y2="100" class="wire-acc" marker-end="url(#m-na)"/>
+          <rect x="386" y="74" width="96" height="52" rx="8" class="node"/><text x="434" y="98" text-anchor="middle" class="nl">激活</text><text x="434" y="115" text-anchor="middle" class="el">压一下</text>
+          <line x1="482" y1="100" x2="540" y2="100" class="wire-acc" marker-end="url(#m-na)"/>
+          <circle cx="566" cy="100" r="16" class="node-acc"/><text x="566" y="105" text-anchor="middle" class="nl-acc">y</text>
+          <text x="320" y="180" text-anchor="middle" class="el">输入×权重求和 + 偏置 → 激活 → 输出一个数</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>一个神经元:输入各乘权重求和、加偏置、过激活函数,吐出一个数。权重和偏置就是要训练的参数。</figcaption>
+      </figure>
+
+      <p class="handoff">一个神经元太弱。把它们排成层、连成网,能力才出来。</p>
+      <h2 id="layers"><span class="no">8</span><span>层与网络</span></h2>
+      <p class="one-liner">把神经元排成一<b>层</b>,一层的输出全部喂给下一层。最左是<b>输入层</b>(数据),中间是<b>隐藏层</b>(层数越多越「深」),最右是<b>输出层</b>(预测)。</p>
+      <p>每一层的每个神经元,都接收上一层<b>所有</b>神经元的输出作为自己的输入(这叫全连接)。数据像水一样从左流到右,每过一层就被「加工」一次。隐藏层越多、每层越宽,网络能表达的规律越复杂——这就是「深度」学习的深。手写数字识别里,输入层是像素、输出层是「0~9 哪个数字」,中间的隐藏层自己学会了识别笔画、圆圈等中间特征。</p>
+      <figure>
+        <svg viewBox="0 0 620 250" role="img" aria-label="输入层 隐藏层 输出层组成的神经网络">
+          <g class="wire">
+            <line x1="80" y1="70" x2="230" y2="45"/><line x1="80" y1="70" x2="230" y2="105"/><line x1="80" y1="70" x2="230" y2="165"/><line x1="80" y1="70" x2="230" y2="225"/>
+            <line x1="80" y1="130" x2="230" y2="45"/><line x1="80" y1="130" x2="230" y2="105"/><line x1="80" y1="130" x2="230" y2="165"/><line x1="80" y1="130" x2="230" y2="225"/>
+            <line x1="80" y1="190" x2="230" y2="45"/><line x1="80" y1="190" x2="230" y2="105"/><line x1="80" y1="190" x2="230" y2="165"/><line x1="80" y1="190" x2="230" y2="225"/>
+            <line x1="230" y1="45" x2="400" y2="45"/><line x1="230" y1="45" x2="400" y2="105"/><line x1="230" y1="45" x2="400" y2="165"/><line x1="230" y1="45" x2="400" y2="225"/>
+            <line x1="230" y1="105" x2="400" y2="45"/><line x1="230" y1="105" x2="400" y2="105"/><line x1="230" y1="105" x2="400" y2="165"/><line x1="230" y1="105" x2="400" y2="225"/>
+            <line x1="230" y1="165" x2="400" y2="45"/><line x1="230" y1="165" x2="400" y2="105"/><line x1="230" y1="165" x2="400" y2="165"/><line x1="230" y1="165" x2="400" y2="225"/>
+            <line x1="230" y1="225" x2="400" y2="45"/><line x1="230" y1="225" x2="400" y2="105"/><line x1="230" y1="225" x2="400" y2="165"/><line x1="230" y1="225" x2="400" y2="225"/>
+            <line x1="400" y1="45" x2="550" y2="105"/><line x1="400" y1="45" x2="550" y2="165"/><line x1="400" y1="105" x2="550" y2="105"/><line x1="400" y1="105" x2="550" y2="165"/>
+            <line x1="400" y1="165" x2="550" y2="105"/><line x1="400" y1="165" x2="550" y2="165"/><line x1="400" y1="225" x2="550" y2="105"/><line x1="400" y1="225" x2="550" y2="165"/>
+          </g>
+          <g><circle cx="80" cy="70" r="14" class="node-acc"/><circle cx="80" cy="130" r="14" class="node-acc"/><circle cx="80" cy="190" r="14" class="node-acc"/></g>
+          <g><circle cx="230" cy="45" r="14" class="node"/><circle cx="230" cy="105" r="14" class="node"/><circle cx="230" cy="165" r="14" class="node"/><circle cx="230" cy="225" r="14" class="node"/></g>
+          <g><circle cx="400" cy="45" r="14" class="node"/><circle cx="400" cy="105" r="14" class="node"/><circle cx="400" cy="165" r="14" class="node"/><circle cx="400" cy="225" r="14" class="node"/></g>
+          <g><circle cx="550" cy="105" r="14" class="node-acc"/><circle cx="550" cy="165" r="14" class="node-acc"/></g>
+          <text x="80" y="228" text-anchor="middle" class="el-acc">输入层</text>
+          <text x="315" y="18" text-anchor="middle" class="el">隐藏层(可以很多层)</text>
+          <text x="550" y="200" text-anchor="middle" class="el-acc">输出层</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>一张神经网络:输入层(数据)→ 隐藏层(逐层加工)→ 输出层(预测)。每根线是一个要训练的权重。</figcaption>
+      </figure>
+
+      <p class="handoff">数据从左流到右得到预测,这个过程有个名字:前向传播。</p>
+      <h2 id="forward"><span class="no">9</span><span>前向传播</span></h2>
+      <p class="one-liner">前向传播<span class="en">forward pass</span>:把输入数据从输入层<b>一层层往右算</b>,每层做一次「加权求和 + 激活」,最后从输出层得到预测。</p>
+      <p>这就是网络「用」的过程:给一张图,像素从左边进,逐层被加工,右边吐出「这是数字 7」。没有魔法,只是一连串的乘加和激活。训练时,前向传播先算出预测,再和答案比出损失——然后才轮到反向传播去调参数。</p>
+
+      <p class="handoff">中间那个「压一下」的激活函数,看着不起眼,却是整张网的命门。</p>
+      <h2 id="act"><span class="no">10</span><span>激活函数:为什么缺它不可</span></h2>
+      <p class="one-liner">激活函数:神经元里那个「压一下」的非直线动作(如 ReLU:负数变 0、正数不变)。<b>没有它,再多层也会塌成一条直线</b>,学不了弯的规律。</p>
+      <p>关键在「非直线」。如果每个神经元只是加权求和(直线),那么一层套一层,合起来还是一条直线——一百层等于一层,白搭。激活函数在每层之间插入一个弯,层与层才不会互相抵消,网络才能拟合曲折复杂的关系。最常用的 ReLU 简单粗暴:小于 0 的都拍成 0,大于 0 的原样通过,却出奇地好用。</p>
+      <div class="callout warn"><span class="label">一句话记牢</span><p>权重和层数给网络「容量」,<b>激活函数给网络「拐弯的能力」</b>。抽掉激活,深网络退化成一条直线;这就是为什么它必不可少。</p></div>
+
+      <p class="handoff">最后一块:预测错了,怎么把这上万个权重各自该调多少算出来——反向传播。</p>
+      <h2 id="backprop"><span class="no">11</span><span>反向传播</span></h2>
+      <p class="one-liner">反向传播<span class="en">backpropagation</span>:把输出端的误差<b>从右往左一层层传回去</b>,高效地算出每个权重「该往哪调、调多少」(也就是第 6 章说的梯度)。</p>
+      <p>它不是新的学习方法,而是第 6 章梯度下降里「算梯度」那一步的<b>高效实现</b>。前向传播得到预测和损失后,反向传播利用链式法则,从输出层往输入层倒推:每个权重对最终误差「贡献」了多少,就该按比例调整多少。算出所有权重的梯度后,再用梯度下降各挪一小步。前向算预测、反向算梯度、更新参数——就是第 6 章那个训练循环,只是套在多层网络上。</p>
+      <figure>
+        <svg viewBox="0 0 620 150" role="img" aria-label="前向算预测 反向传误差">
+          <defs><marker id="m-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker><marker id="m-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <rect x="40" y="50" width="90" height="46" rx="8" class="node"/><text x="85" y="78" text-anchor="middle" class="nl">输入</text>
+          <rect x="180" y="50" width="90" height="46" rx="8" class="node"/><text x="225" y="78" text-anchor="middle" class="nl">隐藏层</text>
+          <rect x="320" y="50" width="90" height="46" rx="8" class="node"/><text x="365" y="78" text-anchor="middle" class="nl">隐藏层</text>
+          <rect x="460" y="50" width="110" height="46" rx="8" class="node-acc"/><text x="515" y="72" text-anchor="middle" class="nl-acc">输出/损失</text>
+          <line x1="130" y1="63" x2="176" y2="63" class="wire-acc" marker-end="url(#m-f)"/><line x1="270" y1="63" x2="316" y2="63" class="wire-acc" marker-end="url(#m-f)"/><line x1="410" y1="63" x2="456" y2="63" class="wire-acc" marker-end="url(#m-f)"/>
+          <text x="300" y="40" text-anchor="middle" class="el-acc">前向:算出预测和损失 →</text>
+          <line x1="456" y1="86" x2="410" y2="86" class="wire" marker-end="url(#m-r)"/><line x1="316" y1="86" x2="270" y2="86" class="wire" marker-end="url(#m-r)"/><line x1="176" y1="86" x2="130" y2="86" class="wire" marker-end="url(#m-r)"/>
+          <text x="300" y="128" text-anchor="middle" class="el">← 反向:把误差传回去,算每个权重的梯度</text>
+        </svg>
+        <figcaption><span class="fig-num">图 4</span>前向(蓝,往右)算出预测与损失;反向(灰,往左)把误差传回、算出每个权重的梯度。再用梯度下降更新——就是上一章的循环。</figcaption>
+      </figure>
+      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:3B1B 第 1 章看结构、第 3 章看反向传播。<b>往后连:</b>第 8 章的 Transformer 就是一种特别的大型神经网络,前向/反向、梯度下降全都照旧——在这里省下的力,那里全能省。</p></div>
+
+      <!-- ========== 模块 D ========== -->
+      <p class="handoff">五块地基到齐了。下面用几行 NumPy,手算一个神经元的前向传播,把抽象落到数上。</p>
+      <h2 id="assemble"><span class="no">12</span><span>实战:手算一个神经元</span></h2>
+      <p>不用任何深度学习库,就用 NumPy,把「加权求和 + 偏置 + 激活」这一个神经元算出来。会发现它简单得出奇——神经网络的全部神奇,都在于把这件小事重复上百万次:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">one_neuron.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> numpy </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> np</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">x </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([0.5, </span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F">1.0, 2.0])   </span><span style="color:#8B95A8;font-style:italic"># 三个输入</span></span>
+<span class="line"><span style="color:#14181F">w </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.array([0.8,  0.2, </span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F">0.5])  </span><span style="color:#8B95A8;font-style:italic"># 三个权重(训练时会被调)</span></span>
+<span class="line"><span style="color:#14181F">b </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 0.1                          </span><span style="color:#8B95A8;font-style:italic"># 偏置</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">z </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> np.dot(w, x) </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> b             </span><span style="color:#8B95A8;font-style:italic"># ① 加权求和 + 偏置(就是向量点乘)</span></span>
+<span class="line"><span style="color:#14181F">y </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> max(0.0, z)                  </span><span style="color:#8B95A8;font-style:italic"># ② 激活:ReLU —— 负数拍成 0</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"加权和 z = </span><span style="color:#557089">{</span><span style="color:#14181F">z</span><span style="color:#14181F;font-weight:bold">:.2f</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)     </span><span style="color:#8B95A8;font-style:italic"># z = -0.70</span></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"激活后 y = </span><span style="color:#557089">{</span><span style="color:#14181F">y</span><span style="color:#14181F;font-weight:bold">:.2f</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)     </span><span style="color:#8B95A8;font-style:italic"># y = 0.00(被 ReLU 压成 0)</span></span></code></pre>
+      </div>
+      <p>读一遍:<code>np.dot(w, x)</code> 是<b>加权求和</b>(第 3 章的点乘);<code>+ b</code> 是<b>偏置</b>;<code>max(0, z)</code> 是<b>激活函数 ReLU</b>。这就是一个神经元的全部。一整层就是很多个这样的神经元并排(用矩阵一次算),一张网就是很多层串起来——原理一模一样,只是数量变大。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战</span>
+        <h3>改改看</h3>
+        <p>①把三个神经元并成一层:把 <code>w</code> 换成一个 <code>(3, 3)</code> 的权重矩阵 <code>W</code>,用 <code>W @ x + b</code> 一次算出三个输出(这就是「一层」)。②把两层串起来:第一层的输出当第二层的输入,各带自己的 <code>W</code> 和激活——就手写出了一个两层网络的前向传播。③去掉激活(直接用 <code>z</code>),想想为什么两层叠起来等于一层。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。均于 2026-08-14 核实在线;打不开就记住名字搜一下。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=aircAruvnKk" target="_blank" rel="noopener">3Blue1Brown · 神经网络(第 1 章)</a></span><span class="spine">默认主线</span><span class="tags">视频 · 有中文字幕 · 20min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">全网最好的神经网络可视化入门,把"层、权重、激活"讲得看得见。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章讲清神经网络的结构;它用动画让这些抽象概念活起来。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">第 1 章;想深入看第 3 章(反向传播)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「神经元、层与网络」「反向传播」节;中文版见 <a href="https://www.bilibili.com/video/av19828819/" target="_blank" rel="noopener">B 站字幕版</a>。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://playground.tensorflow.org/" target="_blank" rel="noopener">TensorFlow Playground</a></span><span class="tags">网页 · 交互 · 20min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">在浏览器里搭一个小神经网络、实时看它学的交互工具。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">强烈推荐:加一层、换个激活函数,立刻看决策边界怎么变——比看十遍还懂。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">改层数 / 激活函数,观察分类边界变化。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「层与网络」「激活」节动手玩。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=CqOfi41LfDw" target="_blank" rel="noopener">StatQuest · Neural Networks Pt.1</a></span><span class="tags">视频 · 英文(可开字幕) · 30min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">手绘一步步拆解神经网络怎么算的短片。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想把"前向一层层乘加"的每一步都算清楚时看它。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">整集。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「前向传播」节。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 3 · 五个新手误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>神经网络像人脑一样思考</td><td>只是「加权求和 + 激活」重复很多层的数学函数,借了「神经元」这个名字而已。</td></tr>
+          <tr><td>单个神经元很复杂</td><td>极简单:乘、加、压一下。复杂来自数量和层数,不是单个单元。</td></tr>
+          <tr><td>激活函数可有可无</td><td>缺了它,再多层也塌成一条直线,学不了弯的规律。它是拐弯能力的来源。</td></tr>
+          <tr><td>反向传播是另一种学习法</td><td>它只是「高效算梯度」的方法;学的动作还是第 6 章的梯度下降。</td></tr>
+          <tr><td>层越多总是越好</td><td>太深会难训练、易过拟合。合适的深度 + 足够数据,比一味加深重要。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>画一个神经元。</b>用自己的话+一张草图,说出神经元的三步是什么。<details><summary>参考答案</summary><p>①各输入乘权重求和 + 偏置;②过激活函数「压一下」;③输出一个数。</p></details></li>
+        <li><b>为什么要激活。</b>如果所有神经元都不加激活函数,一个 100 层的网络等价于几层?<details><summary>参考答案</summary><p>等价于 1 层(纯线性叠加还是线性)。所以没激活,再深也白搭。</p></details></li>
+        <li><b>前向 vs 反向。</b>一句话分别说清前向传播和反向传播在做什么。<details><summary>参考答案</summary><p>前向:数据从左往右算出预测;反向:误差从右往左传回、算出每个权重的梯度。</p></details></li>
+        <li><b>连回上一章。</b>反向传播算完梯度之后,靠什么把参数真正调一小步?<details><summary>参考答案</summary><p>梯度下降(第 6 章):参数 = 参数 − 学习率 × 梯度。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上再进第 8 章(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能画出一个神经元:输入×权重求和 + 偏置 → 激活 → 输出</li>
+          <li><input type="checkbox"> 我知道网络由输入层、隐藏层、输出层层层相连组成</li>
+          <li><input type="checkbox"> 我能用「一层层往右算」解释前向传播</li>
+          <li><input type="checkbox"> 我明白激活函数给网络「拐弯」的能力,缺它会塌成直线</li>
+          <li><input type="checkbox"> 我能一句话说清反向传播:把误差传回、算每个权重的梯度</li>
+          <li><input type="checkbox"> 我知道反向传播 + 梯度下降 = 第 6 章的训练循环套在多层上</li>
+          <li><input type="checkbox"> 我读懂了第 12 节的一个神经元前向代码</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>神经元、层、前向、激活、反向——这套「网络怎么算、怎么学」的骨架,是所有现代 AI 的地基。<a href="08-大语言模型鸟瞰.html">第 8 章 大语言模型鸟瞰</a>会看到:ChatGPT 背后的 Transformer,本质就是一种特别设计的、超大的神经网络。它多出来的核心零件叫<b>注意力(attention)</b>,但底下前向传播、反向传播、梯度下降,和这一章学的一模一样。地基打好了,下一章只是往上摞一块新积木。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="06-训练的本质.html"><span class="lb">上一章</span><span class="tt">06 · 训练的本质</span></a>
+        <a href="08-大语言模型鸟瞰.html" class="next"><span class="lb">下一章</span><span class="tt">08 · 大语言模型鸟瞰</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">第 7 章 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="neuron" href="#neuron"><i>7</i>神经元</a>
+        <a data-toc-target="layers" href="#layers"><i>8</i>层与网络</a>
+        <a data-toc-target="forward" href="#forward"><i>9</i>前向传播</a>
+        <a data-toc-target="act" href="#act"><i>10</i>激活函数</a>
+        <a data-toc-target="backprop" href="#backprop"><i>11</i>反向传播</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>实战:手算神经元</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="07" data-kind="chapter" data-title="神经网络入门"></script>
+</body>
+</html>

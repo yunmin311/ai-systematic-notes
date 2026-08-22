@@ -1,0 +1,175 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实验室入口 · 人工智能系统学习</title>
+<link rel="stylesheet" href="../assets/course.css">
+<style>
+.qgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin:12px 0 4px;}
+.qcard{display:flex;align-items:flex-start;gap:10px;background:var(--card);border:1px solid var(--line);
+  border-radius:6px;padding:11px 13px;text-decoration:none;color:var(--ink);transition:border-color .15s;}
+.qcard:hover{border-color:var(--acc);}
+.qcard .no{font-family:var(--mono);font-size:12px;color:var(--acc-dark);font-weight:700;flex:none;min-width:48px;padding-top:2px;}
+.qcard .body{flex:1;min-width:0;}
+.qcard .tt{font-size:15px;font-weight:600;line-height:1.4;display:block;}
+.qcard .ds{font-size:13px;color:var(--muted);line-height:1.55;display:block;margin-top:3px;}
+.qcard .meta{font-family:var(--mono);font-size:11px;color:var(--muted);display:block;margin-top:5px;letter-spacing:.03em;}
+.qcard .meta b{color:var(--acc-dark);font-weight:700;}
+.modhead{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--acc-dark);font-weight:700;margin:26px 0 2px;padding-top:14px;border-top:1px solid var(--line);}
+.modnote{color:var(--muted);font-size:13px;margin:4px 0 0;}
+.howrun{border:1px solid var(--line);border-radius:6px;background:var(--card);padding:13px 16px;margin:16px 0 0;}
+.howrun p{margin:0 0 6px;font-size:13px;line-height:1.7;}
+.howrun p:last-child{margin-bottom:0;}
+.howrun .lb{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--acc-dark);font-weight:700;display:block;margin-bottom:6px;}
+</style>
+<style data-paper-rollout>
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a href="../index.html">🏠 课程首页</a>
+    <span class="crumb-sep">/</span>
+    <span class="here">实验室入口</span>
+  </div>
+</div>
+
+<div class="wrap wrap-narrow">
+
+  <div class="hero">
+    <div class="chip-row">
+      <span class="chip">实验室</span>
+      <span class="chip teal">9 个 · 分步跑</span>
+      <span class="chip teal">八个可在页面里跑</span>
+    </div>
+    <h1>实验室入口</h1>
+    <p class="lede">讲义负责看懂,实验室负责跑通。每个实验都是<b>分步的</b>:一段代码、一句「应该看到什么」、一句「为什么」;跑完还有「自己改一改」和一张排错表。<b>跑出来的数和页面上写的对不上,就是最值钱的时刻</b>——排错表第一栏就是从那里开始。</p>
+  </div>
+
+  <div class="howrun">
+    <span class="lb">两种跑法</span>
+    <p><b>方式 A · 页面内运行器</b>:代码旁边有「▶ 运行」,用的是 Pyodide——跑在浏览器里的<b>真实 Python</b>,不是模拟输出。首次点击要下载运行时,约 10–20 秒,需要联网;用到 NumPy / Pandas / scikit-learn 时会自动装包。</p>
+    <p><b>方式 B · 本机终端</b>:同样的代码放在 <code>实验室/code/labNN/</code> 下,可以直接 <code>python step1_xxx.py</code>。本机更快,而且能改文件、能存结果。</p>
+    <p><b>lab-06 只能走方式 B</b>:PyTorch 不在浏览器版 Python 里。装依赖 <code>pip install torch numpy</code>。</p>
+  </div>
+
+  <div class="modhead">Stage 1 / 配套基础课程</div>
+  <p class="modnote">读完对应章节再来跑。前两个不需要任何第三方库以外的东西。</p>
+  <div class="qgrid">
+    <a class="qcard" href="lab-01-规则与学习.html">
+      <span class="no">lab-01</span>
+      <span class="body">
+        <span class="tt">规则 vs 学习</span>
+        <span class="ds">同一个任务写两遍:一遍把规则写死,一遍让程序从数据里学出参数。</span>
+        <span class="meta">配 第 1 章 · 浏览器 + 本机 · <b>4 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-02-数组与表.html">
+      <span class="no">lab-02</span>
+      <span class="body">
+        <span class="tt">数组与表:形状、广播、分组</span>
+        <span class="ds">先故意制造一次形状报错再修好;一行 groupby 回答三个问题;看清缺失值不是 0。</span>
+        <span class="meta">配 第 3 · 4 章 · 浏览器 + 本机 · <b>3 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-03-第一个分类器.html">
+      <span class="no">lab-03</span>
+      <span class="body">
+        <span class="tt">第一个分类器:训练、评估、挪阈值</span>
+        <span class="ds">准确率 90% 的模型,63 个正样本漏掉 57 个。然后亲手挪阈值,看两个指标反向动。</span>
+        <span class="meta">配 第 5 章 · D02 · D05 · 浏览器 + 本机 · <b>3 个脚本</b></span>
+      </span>
+    </a>
+  </div>
+
+  <div class="modhead">Stage 2 / 配套深度课程 · Track A 经典机器学习</div>
+  <p class="modnote">这两个实验各演示一种「分数骗人」的方式——一种是自己骗自己,一种是写法骗了自己。</p>
+  <div class="qgrid">
+    <a class="qcard" href="lab-04-过拟合现场.html">
+      <span class="no">lab-04</span>
+      <span class="body">
+        <span class="tt">过拟合现场:看着两条曲线分叉</span>
+        <span class="ds">树越长越深,训练分数涨到 1.000、测试分数掉到 0.767。再用两种刹车拉回来。</span>
+        <span class="meta">配 D05 · D10 · 浏览器 + 本机 · <b>2 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-05-数据泄露现场.html">
+      <span class="no">lab-05</span>
+      <span class="body">
+        <span class="tt">数据泄露现场:分数是怎么被喂高的</span>
+        <span class="ds">纯噪声数据、随机标签,诚实分数 0.400,顺序搞错一步就冲到 0.867。</span>
+        <span class="meta">配 D06 · 浏览器 + 本机 · <b>2 个脚本</b></span>
+      </span>
+    </a>
+  </div>
+
+  <div class="modhead">Stage 2 / 配套深度课程 · Track B 深度学习</div>
+  <p class="modnote">唯一一个只能在本机跑的实验。</p>
+  <div class="qgrid">
+    <a class="qcard" href="lab-06-五步循环.html">
+      <span class="no">lab-06</span>
+      <span class="body">
+        <span class="tt">五步循环:手写版和 PyTorch 版并排</span>
+        <span class="ds">同一个任务写两遍,看清框架替代的是哪一步;再亲手制造一次「漏清梯度」的经典 bug。</span>
+        <span class="meta">配 D07 · <b>只能本机</b> · 3 个脚本</span>
+      </span>
+    </a>
+  </div>
+
+  <div class="modhead">Stage 2 / 配套深度课程 · Track C 大模型内部</div>
+  <p class="modnote">这两个实验把大模型最核心的机制和最现实的账,都变成能自己算的数。</p>
+  <div class="qgrid">
+    <a class="qcard" href="lab-07-手算注意力.html">
+      <span class="no">lab-07</span>
+      <span class="body">
+        <span class="tt">手算注意力:和纸笔对答案</span>
+        <span class="ds">四步的中间量全部打印出来。顺便会撞见一处对不上的数字——那个差别本身就是一课。</span>
+        <span class="meta">配 D14 · 浏览器 + 本机 · <b>2 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-08-Token与账单.html">
+      <span class="no">lab-08</span>
+      <span class="body">
+        <span class="tt">Token 与账单:一次功能到底多少钱</span>
+        <span class="ds">中英 Token 比、输出为什么贵、十轮对话里 82% 的钱花在重读上。</span>
+        <span class="meta">配 D12 · D17 · 浏览器 + 本机 · <b>3 个脚本</b></span>
+      </span>
+    </a>
+  </div>
+
+  <div class="modhead">Stage 3 / 配套应用工程</div>
+  <p class="modnote">不调任何 API、不花一分钱——模型部分用一个写死的桩替代,要看的是外面那圈框架。</p>
+  <div class="qgrid">
+    <a class="qcard" href="lab-09-最小harness.html">
+      <span class="no">lab-09</span>
+      <span class="body">
+        <span class="tt">最小 harness:二十行里的每一个治理抓手</span>
+        <span class="ds">工具白名单、步数上限、危险动作在执行前被拦住、全程日志——五个抓手一个不少。</span>
+        <span class="meta">配 A05 · 浏览器 + 本机 · <b>2 个脚本</b></span>
+      </span>
+    </a>
+  </div>
+
+  <div class="modhead">还没有实验的章节</div>
+  <p class="modnote">第 2 章(Python 基础)、第 8 章(大模型鸟瞰)、D01–D04、D09、D11、D13、D15、D16、A01–A04、A06、A07 目前没有独立实验——它们的动手部分在讲义的「组装」一节和对应的<a href="../项目/P1-数据体检报告.html">项目</a>里。</p>
+
+  <div class="pagefoot">
+    <a href="../index.html">← 课程首页</a>
+    <a href="../题库/quiz.html">题库入口 →</a>
+  </div>
+
+</div>
+
+<script src="../assets/course.js"></script>
+</body>
+</html>

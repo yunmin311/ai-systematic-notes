@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P7 · 完整 AI 应用</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg,.term .thead{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0;}
+.badge{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.04em;color:var(--ink-soft);border:1px solid var(--rule);border-radius:20px;padding:4px 12px;background:var(--surface);}
+.badge b{color:var(--acc);font-weight:700;}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.milestone{border-left:3px solid var(--acc);padding:2px 0 2px 15px;margin:18px 0 18px -18px;}
+.milestone .label{display:block;font-family:var(--sans);font-size:var(--fs-small);font-weight:600;color:var(--acc);margin:0 0 4px;}
+.milestone p{margin:4px 0;}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.term{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:#12151b;}
+.term .thead{display:flex;align-items:center;gap:8px;padding:7px 14px;background:#1b1f27;border-bottom:1px solid #2a2f3a;color:#8b95a8;}
+.term .dots{display:flex;gap:5px;}
+.term .dots i{width:9px;height:9px;border-radius:50%;display:block;background:#3a4150;}
+.term pre{margin:0;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;color:#d7dce5;}
+.term .u{color:#8fa7ff;} .term .a{color:#e6e9f0;} .term .c{color:#6b7688;} .term .p{color:#5fd39a;} .term .t{color:#e0b072;}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="P6-一个小Agent.html">P6 小 Agent</a><span class="sep">—</span>
+      <a href="P7-完整AI应用.html" class="current">P7 完整应用</a><span class="sep">—</span>
+      <span class="plan">应用工程 · 全线收官</span>
+      <span class="spacer"></span>
+      <a href="#build" class="jump">开始搭建</a>
+      <a href="#run" class="jump">跑起来</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">项目 · Project P7 · 收官</p>
+        <h1>完整 AI 应用</h1>
+        <p class="recap">前三个项目做出了三块能跑的东西:会对话(P4)、会查资料(P5)、会用工具(P6)——但都只在终端里。这最后一个项目把它们<b>拼成一个能上线、别人打开网页就能用的产品</b>:<b>前端页面 + 后端服务(密钥/限流/缓存/日志)+ 答案引擎 + 部署 + 监控</b>。这就是 <a href="../应用工程/A07-工程化与部署.html">A07</a> 和 <a href="../应用工程/A06-评估幻觉安全成本.html">A06</a> 的全面落地,也是"从想法到能用的 AI 应用"这条路的<b>最后一跳</b>。</p>
+        <div class="badges">
+          <span class="badge">难度 <b>进阶</b></span>
+          <span class="badge">语言 <b>Python + HTML</b></span>
+          <span class="badge">用时 <b>6~10 小时</b></span>
+          <span class="badge">前置 <b>A06 · A07 · P4–P6</b></span>
+          <span class="badge">产出 <b>能上线的网页应用</b></span>
+        </div>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">做完这个项目,会有 / 会做</p>
+        <ul>
+          <li>一个部署在公网、别人打开网址就能用的 AI 网页应用</li>
+          <li>会用 FastAPI 写后端,把密钥、限流、缓存、日志都收在这一层</li>
+          <li>会写一个最简前端页面,POST 问题、显示回答</li>
+          <li>会把 P5/P6 的引擎作为"大脑"接进后端</li>
+          <li>会部署上线,并盯住延迟/错误/成本/质量四块表</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">这个项目用到哪些章 / 项目</span>
+        <p>后端与部署=<a href="../应用工程/A07-工程化与部署.html">A07</a>;监控与安全=<a href="../应用工程/A06-评估幻觉安全成本.html">A06</a>;答案引擎直接复用 <a href="P5-个人知识库问答.html">P5 的 RAG</a>(或 <a href="P6-一个小Agent.html">P6 的 agent</a>);对话与错误处理的经验来自 <a href="P4-命令行AI助手.html">P4</a>。这是把前面全部拼起来的一章。</p>
+      </div>
+
+      <!-- ===== 模块 A ===== -->
+      <h2 id="target"><span class="no">1</span><span>成品长什么样</span></h2>
+      <p>一个网页:访客在浏览器里输入问题,后端(拿着密钥、做着限流缓存)去调引擎和模型,把答案返回页面。部署后,它有一个公网网址,谁都能打开用。本地跑起来时,后端终端长这样:</p>
+      <div class="term">
+        <div class="thead"><span class="dots"><i></i><i></i><i></i></span><span>终端 · uvicorn backend:app</span></div>
+<pre><span class="p">INFO:     Uvicorn running on http://127.0.0.1:8000</span>
+<span class="c"># 浏览器打开 http://127.0.0.1:8000 就能用了</span>
+<span class="t">POST /ask</span>  <span class="a">"问答:怎么申请退款?"</span>  <span class="p">200 OK</span>  <span class="c">(1.2s, cached=False)</span>
+<span class="t">POST /ask</span>  <span class="a">"问答:怎么申请退款?"</span>  <span class="p">200 OK</span>  <span class="c">(0.01s, cached=True) ← 缓存命中</span>
+<span class="t">POST /ask</span>  <span class="a">"问答:(第 51 次)"</span>       <span class="a">429</span>  <span class="c">今日次数已用完 ← 限流生效</span></pre>
+      </div>
+      <p class="one-liner">全栈应用的骨架就一条线:<b>前端</b>(浏览器页面)→ <b>后端</b>(密钥、限流、缓存、日志都在这)→ <b>答案引擎</b>(P5/P6)→ <b>模型 API</b>。前端只跟后端说话,后端是唯一的关口——密钥永远锁在这里(A07 红线)。</p>
+      <figure>
+        <svg viewBox="0 0 620 220" role="img" aria-label="全栈应用架构:前端 后端 引擎 模型">
+          <defs><marker id="m-p7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="18" y="82" width="110" height="52" rx="8" class="box"/><text x="73" y="104" text-anchor="middle" class="nl">前端页面</text><text x="73" y="122" text-anchor="middle" class="el">浏览器</text>
+          <line x1="128" y1="108" x2="176" y2="108" class="d-acc" marker-end="url(#m-p7)"/>
+          <rect x="180" y="72" width="150" height="72" rx="8" class="box-acc"/><text x="255" y="96" text-anchor="middle" class="nl-acc">后端</text><text x="255" y="114" text-anchor="middle" class="el">🔑密钥 · 限流</text><text x="255" y="131" text-anchor="middle" class="el">缓存 · 日志</text>
+          <line x1="330" y1="108" x2="378" y2="108" class="d-acc" marker-end="url(#m-p7)"/>
+          <rect x="382" y="82" width="120" height="52" rx="8" class="box"/><text x="442" y="104" text-anchor="middle" class="nl">答案引擎</text><text x="442" y="122" text-anchor="middle" class="el">P5 RAG / P6 agent</text>
+          <line x1="502" y1="108" x2="550" y2="108" class="d-acc" marker-end="url(#m-p7)"/>
+          <rect x="554" y="82" width="56" height="52" rx="8" class="box"/><text x="582" y="104" text-anchor="middle" class="nl">模型</text><text x="582" y="122" text-anchor="middle" class="el">API</text>
+          <rect x="180" y="170" width="150" height="30" rx="6" class="box"/><text x="255" y="189" text-anchor="middle" class="el">部署到云平台 → 公网网址</text>
+          <line x1="255" y1="170" x2="255" y2="146" class="d-soft" marker-end="url(#m-p7)"/>
+          <text x="255" y="60" text-anchor="middle" class="el-acc">唯一关口</text>
+          <line x1="255" y1="64" x2="255" y2="70" class="d-acc"/>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>全栈架构:前端 → 后端(唯一关口:密钥/限流/缓存/日志)→ 答案引擎(P5/P6)→ 模型。整个后端部署到云平台后,就有了对外的公网网址。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 B ===== -->
+      <h2 id="prep"><span class="no">2</span><span>动手前的准备</span></h2>
+      <ol class="steps">
+        <li><b>已有 P5</b>:这个项目直接把 P5 的 <code>rag.py</code>(有 <code>answer()</code> 函数)当引擎。没做 P5 的话先回去做,或用一个最简 <code>answer()</code> 顶替。</li>
+        <li><b>装后端框架</b>:<code>fastapi</code>(写后端)+ <code>uvicorn</code>(跑后端),外加 P5 的库:<br>
+          <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span></span></div><pre>pip install fastapi uvicorn openai numpy</pre></div>
+        </li>
+        <li><b>密钥仍在环境变量</b>(<a href="P4-命令行AI助手.html">P4 第 2 节</a>)——上线后更要如此,绝不进代码。</li>
+      </ol>
+
+      <!-- ===== 模块 C ===== -->
+      <p class="handoff" id="build">四步:先搭后端关口,接上引擎,再写前端,最后上线加监控。对着图 1。</p>
+
+      <h2 id="s1"><span class="no">3</span><span>第 1 步 · 后端关口(密钥 / 限流 / 缓存 / 日志)</span></h2>
+      <p>先搭那个"唯一关口"。一个 <code>/ask</code> 接口:收前端的问题,做好限流和缓存,调引擎,记日志(A07 的后端代理落地):</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">backend.py · 关口</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> os, time</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> fastapi </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> FastAPI, Request, HTTPException</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> rag </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> answer                      </span><span style="color:#8B95A8;font-style:italic"># ← 复用 P5 的答案引擎(第 2 步细说)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">app </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> FastAPI()</span></span>
+<span class="line"><span style="color:#14181F">cache, hits </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> {}, {}                         </span><span style="color:#8B95A8;font-style:italic"># 缓存 + 每用户计数(A06 成本/防刷)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">@app.post(</span><span style="color:#557089">"/ask"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">async</span><span style="color:#14181F;font-weight:bold"> def</span><span style="color:#14181F"> ask(req: Request):</span></span>
+<span class="line"><span style="color:#14181F">    body </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F;font-weight:bold"> await</span><span style="color:#14181F"> req.json()</span></span>
+<span class="line"><span style="color:#14181F">    question </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> body.get(</span><span style="color:#557089">"question"</span><span style="color:#14181F">, </span><span style="color:#557089">""</span><span style="color:#14181F">).strip()</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F;font-weight:bold"> not</span><span style="color:#14181F"> question:</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        raise</span><span style="color:#14181F"> HTTPException(400, </span><span style="color:#557089">"问题不能为空"</span><span style="color:#14181F">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">    user </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> req.client.host                    </span><span style="color:#8B95A8;font-style:italic"># 用访客 IP 粗略区分(生产用登录账号)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F"> hits.get(user, 0) </span><span style="color:#14181F;font-weight:bold">>=</span><span style="color:#14181F"> 50:               </span><span style="color:#8B95A8;font-style:italic"># 限流:每人每天 50 次,防刷爆预算</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        raise</span><span style="color:#14181F"> HTTPException(429, </span><span style="color:#557089">"今日次数已用完"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">    hits[user] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> hits.get(user, 0) </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> 1</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F"> question </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> cache:                      </span><span style="color:#8B95A8;font-style:italic"># 缓存:相同问题秒回、不花钱</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        return</span><span style="color:#14181F"> {</span><span style="color:#557089">"answer"</span><span style="color:#14181F">: cache[question], </span><span style="color:#557089">"cached"</span><span style="color:#14181F">: True}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">    t0 </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> time.time()</span></span>
+<span class="line"><span style="color:#14181F">    result </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> answer(question)                  </span><span style="color:#8B95A8;font-style:italic"># ← 调答案引擎(P5 RAG)</span></span>
+<span class="line"><span style="color:#14181F">    cache[question] </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> result</span></span>
+<span class="line"><span style="color:#14181F">    print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"POST /ask  </span><span style="color:#557089">{</span><span style="color:#14181F">question</span><span style="color:#14181F;font-weight:bold">!r</span><span style="color:#557089">}</span><span style="color:#557089">  {</span><span style="color:#14181F">time.time()</span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F">t0</span><span style="color:#14181F;font-weight:bold">:.2f</span><span style="color:#557089">}</span><span style="color:#557089">s"</span><span style="color:#14181F">)   </span><span style="color:#8B95A8;font-style:italic"># 日志:给监控供数</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#14181F"> {</span><span style="color:#557089">"answer"</span><span style="color:#14181F">: result, </span><span style="color:#557089">"cached"</span><span style="color:#14181F">: False}</span></span></code></pre>
+      </div>
+      <p>这一个函数就把 A07 的四件事全落地了:密钥在引擎里从环境变量读(前端拿不到)、<code>hits</code> 限流、<code>cache</code> 缓存、<code>print</code> 留痕。前端只会 POST 一个问题到 <code>/ask</code>,别的一概不知道——这就是"唯一关口"的意义(也是治理抓手都集中在这里的原因)。</p>
+      <div class="milestone"><span class="label">✓ 里程碑</span><p>先用假引擎(<code>def answer(q): return "收到:"+q</code>)跑起来,能通就说明后端骨架成立,下一步换真引擎。</p></div>
+
+      <h2 id="s2"><span class="no">4</span><span>第 2 步 · 接上答案引擎</span></h2>
+      <p>后端的"大脑"就是前面做的东西。最省事:把 <a href="P5-个人知识库问答.html">P5 的 <code>rag.py</code></a> 放到同目录,它已经有 <code>answer(question)</code> 函数——第 1 步开头那句 <code>from rag import answer</code> 就直接用上了。想让应用更聪明,换成 <a href="P6-一个小Agent.html">P6 的 agent</a>:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">backend.py · 换引擎(可选)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#8B95A8;font-style:italic"># 方案 A(默认):用 P5 的知识库问答,基于你的文档答、带出处</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> rag </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> answer</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 方案 B:用 P6 的 agent,能自己调工具(检索/算数/查时间…)</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># from agent import run_agent as answer</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 两者接口一样,都是 answer(question) -> str,后端代码一行都不用改</span></span></code></pre>
+      </div>
+      <p>这就是"模块化"的好处:后端只认 <code>answer(question) -&gt; str</code> 这个约定,底下换 RAG 还是 agent,关口代码一动不动。前三个项目在这里合流了。</p>
+      <div class="milestone"><span class="label">✓ 里程碑</span><p>放好 <code>rag.py</code> + <code>docs/</code>,重启后端,用工具发一个真实问题到 <code>/ask</code>,能返回基于自有文档的答案,大脑就接通了。</p></div>
+
+      <h2 id="s3"><span class="no">5</span><span>第 3 步 · 前端页面</span></h2>
+      <p>一个最简单的网页:一个输入框、一个按钮、一块显示区。点按钮就 <code>fetch</code> 到后端的 <code>/ask</code>,拿回答案显示出来。存成 <code>static/index.html</code>:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">static/index.html · 前端</span><span class="rt"><span class="lang">html</span><button class="copy" type="button">复制</button></span></div>
+<pre>&lt;!doctype html&gt;
+&lt;html lang="zh-CN"&gt;
+&lt;body style="max-width:640px;margin:40px auto;font-family:sans-serif"&gt;
+  &lt;h2&gt;我的知识库助手&lt;/h2&gt;
+  &lt;div id="log"&gt;&lt;/div&gt;
+  &lt;input id="q" style="width:78%" placeholder="问点什么…"&gt;
+  &lt;button onclick="ask()"&gt;问&lt;/button&gt;
+
+  &lt;script&gt;
+  async function ask() {
+    const q = document.getElementById('q').value.trim();
+    if (!q) return;
+    const log = document.getElementById('log');
+    log.innerHTML += '&lt;p&gt;&lt;b&gt;问:&lt;/b&gt;' + q + '&lt;/p&gt;';
+    // ← 只跟自己的后端说话,前端不碰密钥(A07)
+    const r = await fetch('/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q }),
+    });
+    const data = await r.json();
+    log.innerHTML += '&lt;p&gt;&lt;b&gt;答:&lt;/b&gt;' + data.answer + '&lt;/p&gt;';
+  }
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+      </div>
+      <p>核心就是那个 <code>fetch('/ask', ...)</code>:前端把问题 POST 给<b>自己的后端</b>,拿回 JSON 里的 <code>answer</code> 显示。注意它<b>从头到尾没碰密钥</b>——密钥在后端,浏览器里看不到(A07 红线)。让后端顺便托管这个页面,加一行:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">backend.py · 托管前端(加在末尾)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> fastapi.staticfiles </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> StaticFiles</span></span>
+<span class="line"><span style="color:#14181F">app.mount(</span><span style="color:#557089">"/"</span><span style="color:#14181F">, StaticFiles(directory</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"static"</span><span style="color:#14181F">, html</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True), name</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"static"</span><span style="color:#14181F">)   </span><span style="color:#8B95A8;font-style:italic"># 访问 / 就给 index.html</span></span></code></pre>
+      </div>
+      <div class="milestone"><span class="label">✓ 里程碑</span><p>本地跑起来(下一节),浏览器打开能看到页面、输入问题能显示答案,前后端就打通了。</p></div>
+
+      <h2 id="s4"><span class="no">6</span><span>第 4 步 · 上线 + 监控四块表</span></h2>
+      <p>本地能跑后,推上云就有了公网网址。入门最省心的是 <b>serverless / 平台托管</b>(如 Render、Railway、Fly.io,或各家云的应用平台):把代码推上去、在平台后台设好环境变量 <code>OPENAI_API_KEY</code>,平台给出一个网址,别人就能访问。上线只是开始,盯住 <b>A06 的四块表</b>:</p>
+      <table class="tbl">
+        <caption>表 1 · 监控四块表(接 A06)</caption>
+        <thead><tr><th>盯什么</th><th>怎么看(最简做法)</th><th>异常了怎么办</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td>延迟</td><td>日志里每次 <code>/ask</code> 的耗时(第 1 步已打)</td><td>加缓存、换快模型、缩短上下文</td></tr>
+          <tr class="sel"><td>错误率</td><td>统计返回非 200 的比例</td><td>看日志定位:密钥?超时?限流?</td></tr>
+          <tr class="sel"><td>成本</td><td>模型平台的用量面板 + 设消费上限</td><td>限流收紧、简单问题走缓存/小模型</td></tr>
+          <tr class="sel"><td>质量</td><td>抽查线上问答,用 <a href="../应用工程/A06-评估幻觉安全成本.html">A06 的评测</a>打分</td><td>改提示词、调 RAG、扩评测集</td></tr>
+        </tbody>
+      </table>
+      <div class="milestone"><span class="label">✓ 里程碑 · 全线完成</span><p>拿到公网网址、发给朋友能打开用、后台能看到四块表的数——就交付了一个真正的 AI 产品。整条"从想法到上线"的路走通了。</p></div>
+
+      <!-- ===== 模块 D ===== -->
+      <h2 id="run"><span class="no">7</span><span>跑起来(本地)</span></h2>
+      <p>目录里放好 <code>backend.py</code>、<code>rag.py</code>、<code>docs/</code>、<code>static/index.html</code>,然后:</p>
+      <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span></span></div><pre>uvicorn backend:app --reload
+# 浏览器打开 http://127.0.0.1:8000</pre></div>
+      <p>就有了一个跑在本地的完整 AI 网页应用。确认无误,再按第 4 步推上云——公网网址到手,收官。</p>
+
+      <h2 id="pitfalls"><span class="no">8</span><span>常见坑</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 排错速查</caption>
+        <thead><tr><th>症状</th><th>多半是</th><th>怎么办</th></tr></thead>
+        <tbody>
+          <tr><td>页面能开,点"问"没反应</td><td>后端没起 / 路径不对 / 看控制台报错</td><td>确认 uvicorn 在跑;浏览器 F12 看 Network 里 /ask 的错</td></tr>
+          <tr><td>上线后报密钥错误</td><td>忘了在平台后台设环境变量</td><td>在平台的 Environment/Secrets 里加 <code>OPENAI_API_KEY</code></td></tr>
+          <tr><td>前端单独打开(file://)调不通</td><td>没经过后端,跨域被拦</td><td>用后端托管前端(第 3 步末),统一走一个网址</td></tr>
+          <tr><td>第一次访问很慢</td><td>serverless 冷启动 / 首次建索引</td><td>正常;可预热,或把索引存盘(P5 扩展①)</td></tr>
+          <tr><td>账单涨得快</td><td>没限流 / 没缓存 / 被刷</td><td>收紧 <code>hits</code> 阈值、确认缓存生效、平台设消费上限</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="extend"><span class="no">9</span><span>进阶扩展</span></h2>
+      <div class="challenge">
+        <span class="label">再往上加(选做)</span>
+        <h3>让它更像真产品</h3>
+        <p>①<b>流式输出</b>:后端改用 <code>StreamingResponse</code>、前端用 <code>ReadableStream</code> 逐字显示(A07 打字机效果)。②<b>用户登录</b>:按账号而非 IP 限流,给每人独立历史。③<b>换 agent 大脑</b>:把引擎换成 P6 的 agent,让它能查库+算数+调工具。④<b>加安全</b>:对输出做一遍 A06 的注入检查再返回。⑤<b>做治理面板</b>:把四块表画成一个内部仪表页,天天盯——这正是治理体系的运营界面雏形。</p>
+      </div>
+
+      <h2 id="learned"><span class="no">10</span><span>到底学到了什么</span></h2>
+      <table class="tbl">
+        <caption>表 3 · 概念 / 项目 → 代码</caption>
+        <thead><tr><th>来自哪里</th><th>在这个项目里变成了</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td><a href="../应用工程/A07-工程化与部署.html">A07</a> 后端 / 密钥 / 关口</td><td>FastAPI 的 <code>/ask</code> + 环境变量密钥</td></tr>
+          <tr class="sel"><td><a href="../应用工程/A07-工程化与部署.html">A07</a> 缓存 / 限流</td><td><code>cache</code> / <code>hits</code> 两个开关</td></tr>
+          <tr class="sel"><td><a href="../应用工程/A06-评估幻觉安全成本.html">A06</a> 监控</td><td>日志 + 四块表(延迟/错误/成本/质量)</td></tr>
+          <tr class="sel"><td><a href="P5-个人知识库问答.html">P5</a> / <a href="P6-一个小Agent.html">P6</a> 引擎</td><td>可替换的 <code>answer(question)</code> 大脑</td></tr>
+          <tr class="sel"><td>全栈结构</td><td>前端 → 后端关口 → 引擎 → 模型</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="reflist"><span class="no">11</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本项目页只给搭建的骨架;真正的参数细节在下面这些一手文档里。每条注明:是什么、为什么选它、精确看哪段、对应哪一步。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;均于 2026-08-16 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener">FastAPI 文档</a></span><span class="spine">本项目主文档</span><span class="tags">框架官方 · 可切中文 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">本项目后端的框架;文档本身就是最好的教程。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">这项目的"后端唯一关口"用它写(密钥/限流/缓存/日志都在后端);跟完 Tutorial 就能搭。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Tutorial(前 6 节)+ Streaming;可切中文。</span></div>
+          <div class="rrow"><span class="rk">对应步骤</span><span class="rv">配"后端(密钥/限流/缓存/日志)"步。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://platform.openai.com/docs/guides/production-best-practices" target="_blank" rel="noopener">OpenAI · 生产最佳实践</a></span><span class="tags">官方 · 参考 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">密钥、限流、错误、上线的官方清单。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">这项目要"能上线";照它把生产该防的都防住。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">密钥 / 限流 / 错误几节。</span></div>
+          <div class="rrow"><span class="rk">对应步骤</span><span class="rv">配"部署监控四块表"步。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://docs.anthropic.com/" target="_blank" rel="noopener">Anthropic API 文档</a></span><span class="tags">厂商官方 · 参考 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">Claude API 的流式、提示缓存文档。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">要做流式输出、用缓存省钱时的一手参考。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Streaming、Prompt caching。</span></div>
+          <div class="rrow"><span class="rk">对应步骤</span><span class="rv">配"流式 + 缓存"实现。</span></div>
+        </div>
+      </div>
+
+      <h2 id="checklist"><span class="no">12</span><span>完成自查</span></h2>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我的应用能在浏览器里问答(不只是终端)</li>
+          <li><input type="checkbox"> 密钥只在后端,前端和 git 里都没有</li>
+          <li><input type="checkbox"> 后端有限流和缓存,我能说清各自作用</li>
+          <li><input type="checkbox"> 我能把 P5/P6 的引擎接进后端,且可替换</li>
+          <li><input type="checkbox"> 我把它部署上线、拿到了公网网址</li>
+          <li><input type="checkbox"> 我知道上线后要盯延迟/错误/成本/质量四块表</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">13</span><span>收官:整条路走通了</span></h2>
+      <p>从 P4 调通第一句模型回答,到 P7 把应用部署上线——已经完整走过了"<b>从想法到能用的 AI 应用</b>"这条路:对话 → 检索 → agent → 全栈上线。这四个项目背后,是应用工程 A01–A07 的全部概念第一次<b>在手里变成能跑、能上线的真东西</b>。</p>
+      <p>对<b>治理体系</b>而言,这一趟的意义远不止"会做应用":现在<b>从里到外看清了一个 AI 系统是怎么搭起来的</b>——模型在哪、harness 在哪、密钥/权限/限流/日志/监控各落在哪一层。治理要管的每一个抓手,都亲手写过一遍。地基已经打好;接下来无论是深化这些项目,还是回到治理体系动手,就有了看得懂、接得住的底子。回<a href="../index.html">课程首页</a>看看还想深入哪一块。</p>
+      <nav class="chapter-nav" aria-label="项目导航">
+        <a href="P6-一个小Agent.html"><span class="lb">上一个项目</span><span class="tt">P6 · 一个小 Agent</span></a>
+        <a href="../index.html" class="next"><span class="lb">收官 · 回到</span><span class="tt">课程首页</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本项目目录">
+      <p class="toc-label">P7 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">看清目标</span>
+        <a data-toc-target="target" href="#target"><i>1</i>成品长什么样</a>
+        <a data-toc-target="prep" href="#prep"><i>2</i>动手前的准备</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">分步搭建</span>
+        <a data-toc-target="s1" href="#s1"><i>3</i>后端关口</a>
+        <a data-toc-target="s2" href="#s2"><i>4</i>接上引擎</a>
+        <a data-toc-target="s3" href="#s3"><i>5</i>前端页面</a>
+        <a data-toc-target="s4" href="#s4"><i>6</i>上线+监控</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾 · 消化</span>
+        <a data-toc-target="run" href="#run"><i>7</i>跑起来</a>
+        <a data-toc-target="pitfalls" href="#pitfalls"><i>8</i>常见坑</a>
+        <a data-toc-target="extend" href="#extend"><i>9</i>进阶扩展</a>
+        <a data-toc-target="learned" href="#learned"><i>10</i>学到了什么</a>
+        <a data-toc-target="reflist" href="#reflist"><i>11</i>外部资源</a>
+        <a data-toc-target="checklist" href="#checklist"><i>12</i>完成自查</a>
+        <a data-toc-target="next" href="#next"><i>13</i>收官</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="P7" data-kind="project" data-title="完整 AI 应用"></script>
+</body>
+</html>

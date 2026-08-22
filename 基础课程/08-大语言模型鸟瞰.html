@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>08 · 大语言模型鸟瞰</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.tok{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.tok-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.tv{font-family:var(--mono);font-size:14px;font-weight:600;fill:var(--ink);}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+.ax{stroke:var(--ink-faint);stroke-width:1;}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="07-神经网络入门.html">07 神经网络</a><span class="sep">—</span>
+      <a href="08-大语言模型鸟瞰.html" class="current">08 大语言模型</a><span class="sep">—</span>
+      <span class="plan">基础课程收官 · 进入深度课程</span>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-08.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">基础课程 · Chapter 08</p>
+        <h1>大语言模型鸟瞰</h1>
+        <p class="recap">这是基础课程的收官。已经知道神经网络怎么算、怎么学;这一章把镜头拉到最热的应用:ChatGPT 这类<b>大语言模型</b>。它其实只做一件极简单的事——<b>预测下一个词</b>,一个接一个地接龙。让它显得「懂」的关键零件,是一个叫<b>注意力</b>的机制。本章只做鸟瞰,把骨架看清,细节留给深度课程。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,外部精读约 3~5 小时。全程用「切词、变数、看上下文、接龙」的直觉,不推公式。这一章的主线还是 3Blue1Brown 的动画。每出现一个新词,当场用白话解释。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>Token——把文字切成一个个小块,每块给个编号</li>
+          <li>Embedding——每个 token 变成一串数(向量),意思近则向量近</li>
+          <li>注意力——每个词按相关度「看」上下文,一词多义靠它定</li>
+          <li>Transformer——注意力 + 神经网络堆很多层,就是 GPT 的骨架</li>
+          <li>预测下一个词——反复猜「下一个 token」,一个个接龙生成回答</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接上一章:</b>Transformer 就是一种特别设计的大型神经网络,前向、反向、梯度下降全都照旧(第 6、7 章)。<b>通向后面:</b>这是基础课程最后一章;深度课程会把 Token、Embedding、Attention、预训练/微调各拆一整章细讲,项目阶段则动手调用和搭建。</p>
+      </div>
+
+      <!-- ========== 模块 A ========== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>懂了神经网络,想知道 ChatGPT 背后到底是怎么回事的人。</li>
+        <li>老听到 Token、Embedding、注意力、Transformer,想一次串成一张图的人。</li>
+        <li>准备做 AI 应用,想先把大模型的骨架和边界搞清楚的人。</li>
+      </ul>
+      <p><b>不适合</b>:已经理解注意力机制、能读 Transformer 论文的人——直接进深度课程。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>一样:<a href="07-神经网络入门.html">第 7 章</a>——神经网络怎么算、怎么学。本章不需要写代码,是纯概念鸟瞰;想动手玩 token,结尾给了一个在线工具链接,浏览器里就能试。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清一句话喂给大模型前,先被切成 token、再变成向量的过程。</li>
+        <li>用「看上下文」解释注意力,以及它为什么能处理一词多义。</li>
+        <li>说出 Transformer 大致是什么(注意力 + 神经网络的多层堆叠)。</li>
+        <li>用一句话讲清 LLM 的本质:反复预测下一个词。</li>
+        <li>看懂一次 ChatGPT 对话从输入到输出的大致流程。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">大语言模型只做一件事:给定前面的文字,<b>预测下一个最可能的词(token)</b>,吐出来后接到末尾,再预测下一个——一个字一个字地接龙,直到成篇。</p>
+      <p>它不是在数据库里查答案,也没有「想法」。它在海量文本上训练,练成了一个超强的「下一个词概率预测器」。问一个问题,它其实是在算「顺着这段话,接下来最像样的词是什么」,一个个接出来。之所以显得连贯、像懂,是因为为了把下一个词预测准,它在训练中不得不学会语法、常识、推理的模式。让它能「顾及上下文」来预测的核心零件,就是下面要讲的注意力。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <p>先记住「就这五块」。中间是本章目标,四周是达成它要用的五块地基,下面模块 C 逐块拆。</p>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="大语言模型五块地基环绕核心目标">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">看懂一次对话</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">内部在做什么</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① Token</text>
+          <rect x="588" y="122" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="670" y="150" text-anchor="middle" class="nl">② Embedding</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ 注意力</text>
+          <rect x="144" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="226" y="358" text-anchor="middle" class="nl">④ Transformer</text>
+          <rect x="8" y="122" width="150" height="46" rx="8" class="d-ink nf"/>
+          <text x="83" y="150" text-anchor="middle" class="nl">⑤ 预测下一词</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。把它们组装起来,就能看懂第 12 节「一次 ChatGPT 对话内部发生了什么」的完整流程。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 B ========== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>本章每一小节只负责把概念用图讲清。真正把大模型看透,靠<b>一条外部主线</b>,这一章的主线仍是 3Blue1Brown 的动画。下面选好主线,顺着走完即可。</p>
+
+      <div class="callout go">
+        <span class="label">默认主线 · 视频</span>
+        <p><b>3Blue1Brown「深度学习」第 5 章:But what is a GPT?(免费)。</b>为什么是它:承接前面的神经网络系列,把 token、embedding、注意力、预测下一词讲成会动的图,是大模型入门最好的一集。<b>先看第 5 章(约 27 分钟)</b>;想把注意力抠细,接着看第 6 章「Attention in transformers」。链接:<a href="https://www.youtube.com/watch?v=yMQPQuz5WpA" target="_blank" rel="noopener">youtube.com/watch?v=yMQPQuz5WpA</a>;第 6 章在 <a href="https://www.3blue1brown.com/lessons/attention" target="_blank" rel="noopener">3blue1brown.com/lessons/attention</a>。</p>
+      </div>
+
+      <p><b>看图学更顺?图解经典 + 想读原论文:</b></p>
+      <ul>
+        <li><b>The Illustrated Transformer · Jay Alammar</b> — <a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">全图解 Transformer 结构</a>,MIT、Cornell 课程都在用的经典图解;把注意力、多头、编码解码画得清清楚楚。</li>
+        <li><b>奠基论文 · Attention Is All You Need(2017)</b> — <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Transformer 的原始论文</a>,今天所有大模型的地基。<b>现在别啃数学</b>:只看摘要和第 3 节那张结构图,建立「哦原来长这样」的印象;等深度课程再逐符号读。这是留给未来的桥。</li>
+      </ul>
+
+      <!-- ========== 模块 C ========== -->
+      <p class="handoff">先看第一步:一句话进模型前,怎么被切开、编号。</p>
+      <h2 id="token"><span class="no">7</span><span>Token:把文字切成块</span></h2>
+      <p class="one-liner">Token<span class="en">词元</span>:模型处理文字的最小单位。不是按字也不是按词,而是按<b>常见子词</b>切;每个 token 对应词表里的一个编号。</p>
+      <p>模型不认字,只认数。第一步就是把输入切成 token,再查词表换成编号。英文里常见词是一个 token、生僻词被拆成几块;中文常一两个字一个 token。为什么不直接按字或按词:按字太碎、按词词表爆炸,子词是折中。用 API 时按 token 计费,一段中文大约每字 1~2 个 token——这就是那个 token。</p>
+      <figure>
+        <div class="fig-code">"机器学习真有意思" → 切成 token</div>
+        <svg viewBox="0 0 620 90" role="img" aria-label="一句话被切成若干 token 块">
+          <g>
+            <rect x="30" y="26" width="70" height="40" rx="6" class="tok-acc"/><text x="65" y="52" text-anchor="middle" class="tv">机器</text>
+            <rect x="110" y="26" width="70" height="40" rx="6" class="tok-acc"/><text x="145" y="52" text-anchor="middle" class="tv">学习</text>
+            <rect x="190" y="26" width="52" height="40" rx="6" class="tok"/><text x="216" y="52" text-anchor="middle" class="tv">真</text>
+            <rect x="252" y="26" width="52" height="40" rx="6" class="tok"/><text x="278" y="52" text-anchor="middle" class="tv">有</text>
+            <rect x="314" y="26" width="70" height="40" rx="6" class="tok"/><text x="349" y="52" text-anchor="middle" class="tv">意思</text>
+            <text x="410" y="52" class="el">→ 每块查词表得一个编号,如 [1024, 88, 5, 12, 763]</text>
+          </g>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>Token:先把句子切成子词块,再各查词表换成编号。模型只吃编号,不吃文字。</figcaption>
+      </figure>
+
+      <p class="handoff">编号只是身份证,不带含义。要让模型「懂意思」,得把编号变成向量。</p>
+      <h2 id="embed"><span class="no">8</span><span>Embedding:把词变成向量</span></h2>
+      <p class="one-liner">Embedding<span class="en">词向量</span>:把每个 token 映射成一串数(向量)。训练后,<b>意思相近的词,向量也相近</b>——含义变成了空间里的位置。</p>
+      <p>光有编号不够,编号 88 和 89 没有含义上的远近。Embedding 给每个 token 一串学出来的数,让「狗」和「小狗」在这个多维空间里离得近、和「汽车」离得远。含义就这样被编码成了几何距离,模型才能做类比和推理。另外,Transformer 本身分不清词序,所以还会加上<b>位置编码</b>,告诉它「这个词排第几」——最终进模型的,是「词义向量 + 位置向量」。</p>
+      <figure>
+        <svg viewBox="0 0 560 220" role="img" aria-label="意思相近的词在向量空间里靠得近">
+          <line x1="50" y1="30" x2="50" y2="185" class="ax"/><line x1="50" y1="185" x2="520" y2="185" class="ax"/>
+          <circle cx="140" cy="80" r="6" class="dot-acc"/><text x="152" y="78" class="el-acc">狗</text>
+          <circle cx="170" cy="100" r="6" class="dot-acc"/><text x="182" y="104" class="el-acc">小狗</text>
+          <circle cx="200" cy="70" r="6" class="dot-acc"/><text x="212" y="66" class="el-acc">猫</text>
+          <ellipse cx="170" cy="85" rx="70" ry="46" class="d-soft"/>
+          <circle cx="420" cy="150" r="6" class="dot"/><text x="432" y="154" class="el">汽车</text>
+          <circle cx="450" cy="130" r="6" class="dot"/><text x="462" y="128" class="el">卡车</text>
+          <ellipse cx="435" cy="140" rx="52" ry="36" class="d-soft"/>
+          <text x="280" y="205" text-anchor="middle" class="el">意思近 → 位置近(动物一堆,交通工具一堆)</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>Embedding:每个词是空间里的一个点,意思相近的词凑成一堆。含义被编码成了「位置」。</figcaption>
+      </figure>
+
+      <p class="handoff">现在到了让大模型「聪明」的核心零件——注意力。</p>
+      <h2 id="attn"><span class="no">9</span><span>注意力:让词看懂上下文</span></h2>
+      <p class="one-liner">注意力<span class="en">attention</span>:处理每个词时,让它<b>按相关度「看」句子里的其它词</b>,把有用的信息加权吸收进来。一词多义、指代关系,全靠它从上下文定。</p>
+      <p>「它」指谁?「苹果」是水果还是公司?孤立地看一个词没法定,必须看上下文。注意力就是干这个:算出当前词和句中每个词的相关度,相关的多吸收、无关的少吸收,于是同一个词在不同句子里能有不同的理解。这是 Transformer 相对老方法最大的突破——一步就能让每个词照顾到全句,还能高度并行。名字里的「Attention」就是它。</p>
+      <figure>
+        <svg viewBox="0 0 620 150" role="img" aria-label="词它通过注意力看向上下文里的猫">
+          <defs><marker id="m-at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <g>
+            <rect x="40" y="30" width="60" height="38" rx="6" class="tok"/><text x="70" y="55" text-anchor="middle" class="tv">猫</text>
+            <rect x="110" y="30" width="72" height="38" rx="6" class="tok"/><text x="146" y="55" text-anchor="middle" class="tv">累了</text>
+            <rect x="192" y="30" width="72" height="38" rx="6" class="tok"/><text x="228" y="55" text-anchor="middle" class="tv">所以</text>
+            <rect x="274" y="30" width="60" height="38" rx="6" class="tok-acc"/><text x="304" y="55" text-anchor="middle" class="tv">它</text>
+            <rect x="344" y="30" width="72" height="38" rx="6" class="tok"/><text x="380" y="55" text-anchor="middle" class="tv">睡了</text>
+          </g>
+          <path d="M300,72 Q190,120 74,72" stroke="#2743c7" stroke-width="3" fill="none" marker-end="url(#m-at)"/>
+          <path d="M306,72 Q250,105 150,72" class="d-soft" marker-end="url(#m-at)"/>
+          <path d="M312,72 Q360,100 380,72" class="d-soft" marker-end="url(#m-at)"/>
+          <text x="150" y="128" text-anchor="middle" class="el-acc">「它」高度注意「猫」(粗线),于是知道「它」= 猫</text>
+        </svg>
+        <figcaption><span class="fig-num">图 4</span>注意力:处理「它」时,它对句中每个词有不同的关注度——对「猫」关注最强(粗线),于是解出「它」指猫。</figcaption>
+      </figure>
+      <div class="callout warn"><span class="label">它没有真的「理解」</span><p>注意力是数学上的加权求和,不是人类的理解。它极擅长捕捉「哪些词该一起看」的统计规律,但没有意图和常识保证——这也是大模型会一本正经胡说(幻觉)的根源之一。</p></div>
+
+      <p class="handoff">把注意力和神经网络堆很多层,就成了 Transformer——GPT 的骨架。</p>
+      <h2 id="transformer"><span class="no">10</span><span>Transformer:把它们堆起来</span></h2>
+      <p class="one-liner">Transformer:把「注意力 + 普通神经网络」打包成一个块,再<b>把这种块叠很多层</b>。每过一层,每个词的向量就被上下文打磨得更精准。GPT 里的「T」就是它。</p>
+      <p>一句话进来变成一串向量后,反复穿过很多层 Transformer 块:每层先用注意力让词互相看、再用神经网络各自加工。层层之后,每个词的向量都饱含了对全句的理解。GPT-3 有几十层、上千亿参数,全靠第 6、7 章那套梯度下降 + 反向传播,在海量文本上训出来。规模,是它能力的主要来源之一。</p>
+
+      <p class="handoff">最后把整条链接上:模型是怎么一个词一个词把回答生成出来的。</p>
+      <h2 id="predict"><span class="no">11</span><span>预测下一个词:接龙生成</span></h2>
+      <p class="one-liner">生成 = 循环:把已有文字送进 Transformer,得到<b>下一个词的概率</b>,挑一个接到末尾,再把加长的文字送回去……一个词一个词地接,直到结束。</p>
+      <p>大模型的输出层给出的是「下一个 token 是词表里每个词的概率」。挑概率最高的(或按温度随机采样一个),接到句子末尾,然后把新的、更长的句子重新喂进去,预测再下一个。如此循环,回答就一个字一个字冒出来——这也是为什么 ChatGPT 的字是逐个蹦出来的。<b>它本质是个接龙机,只是接得极其像样。</b></p>
+      <figure>
+        <svg viewBox="0 0 640 170" role="img" aria-label="预测下一个词的循环">
+          <defs><marker id="m-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="20" y="55" width="130" height="46" rx="8" class="tok"/><text x="85" y="78" text-anchor="middle" class="nl">已有文字</text><text x="85" y="95" text-anchor="middle" class="el">(token 串)</text>
+          <line x1="150" y1="78" x2="196" y2="78" class="d-acc" marker-end="url(#m-p)"/>
+          <rect x="200" y="55" width="130" height="46" rx="8" class="tok-acc"/><text x="265" y="83" text-anchor="middle" class="nl-acc">Transformer</text>
+          <line x1="330" y1="78" x2="376" y2="78" class="d-acc" marker-end="url(#m-p)"/>
+          <rect x="380" y="55" width="150" height="46" rx="8" class="tok"/><text x="455" y="78" text-anchor="middle" class="nl">下一词的概率</text><text x="455" y="95" text-anchor="middle" class="el">睡0.6 跑0.2 …</text>
+          <line x1="530" y1="78" x2="576" y2="78" class="d-acc" marker-end="url(#m-p)"/>
+          <text x="600" y="74" text-anchor="middle" class="el-acc">挑一个</text><text x="600" y="90" text-anchor="middle" class="el">接到末尾</text>
+          <path d="M600,102 L600,140 L85,140 L85,103" class="d-soft" marker-end="url(#m-p)"/>
+          <text x="340" y="158" text-anchor="middle" class="el">把加长后的文字送回去,预测再下一个词(循环)</text>
+        </svg>
+        <figcaption><span class="fig-num">图 5</span>生成的循环:文字 → Transformer → 下一词概率 → 挑一个接上 → 再送回。一圈一个词,回答就这样接龙出来。</figcaption>
+      </figure>
+      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:3B1B 第 5 章把这条链讲成动画。<b>往后连:</b>深度课程会把 Tokenizer、Embedding、Attention、预训练/微调各拆一章;应用与项目阶段则动手调用 API、做 Prompt、搭 RAG 和 Agent——在这里建立的骨架,后面全用得上。</p></div>
+
+      <!-- ========== 模块 D ========== -->
+      <p class="handoff">五块地基到齐了。下面把它们串成「一次对话内部发生了什么」的完整链条。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:一次对话内部发生了什么</span></h2>
+      <p>在 ChatGPT 里打一句话、按下回车到它开始回答,内部大致这样走完全程——每一步都对应本章一块地基:</p>
+      <ol class="steps">
+        <li><b>切成 token。</b>问题被切成子词块、查词表换成编号。(第 7 节)</li>
+        <li><b>变成向量。</b>每个 token 换成词向量,再加位置编码,得到一串带含义、带位置的向量。(第 8 节)</li>
+        <li><b>穿过很多层 Transformer。</b>每层用注意力让词互相看、用神经网络加工;层层之后,每个词都「读懂」了全句上下文。(第 9、10 节)</li>
+        <li><b>预测下一个词。</b>输出层给出「下一个 token 的概率」,挑一个接到末尾。(第 11 节)</li>
+        <li><b>循环。</b>把加长后的文字重新送回第 3 步,再预测下一个词——回答就一个字一个字冒出来,直到模型输出「结束」。</li>
+      </ol>
+      <p>整场对话,没有查数据库、没有「思考」,只有「切词 → 变向量 → 层层注意 → 预测下一个词 → 接龙」这一条链在飞快地转。看懂这条链,对大模型的能力和边界(为什么强、为什么会胡说)就有了地基。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战</span>
+        <h3>动手玩</h3>
+        <p>①打开 <a href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener">在线 Tokenizer 工具</a>,输入几句中英文,看它们被切成几个 token、编号是多少——亲手感受「按子词切」。②想一想:同样长度的中文和英文,谁的 token 更多?为什么用中文调 API 常更贵。③回看第 4 节:既然 LLM 只是「预测下一个词」,就能解释它为什么会「一本正经地胡说」吗?</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。均于 2026-08-14 核实在线;打不开就记住名字搜一下。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=yMQPQuz5WpA" target="_blank" rel="noopener">3Blue1Brown · But what is a GPT?</a></span><span class="spine">默认主线</span><span class="tags">视频 · 有中文字幕 · 27min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">用顶级动画把 GPT/Transformer 鸟瞰讲清的一集。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章是大模型的"地图";它把 Token→向量→注意力→预测下一词的画面摆出来。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">第 5 章;想深入看第 6 章(注意力)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「注意力」「Transformer」「预测下一词」节;是 Track C 的最佳预习。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">The Illustrated Transformer</a></span><span class="tags">图解博客 · 英文 · 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">全网公认最直观的 Transformer 图解长文。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想把"注意力/Transformer"从鸟瞰再看细一点时读它(D09、Track C 也会用)。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">通读一遍,重点看 Self-Attention 的图。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「Transformer」节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener">在线 Tokenizer</a></span><span class="tags">网页 · 交互 · 5min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">输入文字、实时看它被切成哪些 Token 的小工具。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">Token 是最抽象的第一个词;亲手切几句,"为什么中文更费 token"立刻懂。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">输入几句中英文对比 token 数。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「Token」节;通向 D12 Tokenizer。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">Attention Is All You Need(2017)</a></span><span class="tags">奠基论文·桥 · 英文 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">提出 Transformer 的那篇奠基论文。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">当"字典/桥"用:想看一眼"原始的它长什么样"时翻,现在不必细读。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">先只看摘要 + 那张著名的结构图。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「Transformer」节;Track C · D15 会真读它。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>大模型是在数据库里查答案</td><td>它不查库,是一个词一个词地预测「接下来最像样的词」,现算出来的。</td></tr>
+          <tr><td>它真的「理解」并「思考」</td><td>它学的是海量文本里的统计模式;强,但没有意图和常识保证,会自信地胡说(幻觉)。</td></tr>
+          <tr><td>token 就是字或词</td><td>是「子词」块;英文常一词一 token,中文常一两字一 token。API 按 token 计费。</td></tr>
+          <tr><td>注意力是很玄的黑魔法</td><td>就是「按相关度加权吸收上下文」;让每个词能照顾到全句,解决一词多义。</td></tr>
+          <tr><td>Transformer 和神经网络是两码事</td><td>Transformer 就是一种特别的大型神经网络,训练还是梯度下降 + 反向传播。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>一句话本质。</b>用一句话说清大语言模型到底在做什么。<details><summary>参考答案</summary><p>给定前面的文字,反复预测下一个最可能的词(token),接龙生成。</p></details></li>
+        <li><b>流程排序。</b>把这几步排成正确顺序:预测下一词 / 切 token / 穿过 Transformer / 变成向量。<details><summary>参考答案</summary><p>切 token → 变成向量 → 穿过 Transformer → 预测下一词 → (循环)。</p></details></li>
+        <li><b>注意力。</b>「他把苹果吃了」和「他买了苹果的股票」里的「苹果」,模型靠什么区分?<details><summary>参考答案</summary><p>注意力:根据上下文(吃 / 股票)给「苹果」不同的关注与理解,一词多义靠它定。</p></details></li>
+        <li><b>边界。</b>既然 LLM 只是预测下一个词,为什么它会「一本正经胡说」?<details><summary>参考答案</summary><p>它优化的是「像不像下一句话」,不是「对不对」。当训练里没有可靠依据时,它照样会流畅地编一个最像样的答案。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上,基础课程就通关了(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清文字进模型前被切成 token、再变成向量</li>
+          <li><input type="checkbox"> 我知道 embedding 让「意思近的词向量也近」,还要加位置编码</li>
+          <li><input type="checkbox"> 我能用「看上下文」解释注意力,以及它怎么处理一词多义</li>
+          <li><input type="checkbox"> 我知道 Transformer 是「注意力 + 神经网络」堆很多层</li>
+          <li><input type="checkbox"> 我能一句话说清 LLM 的本质:反复预测下一个词</li>
+          <li><input type="checkbox"> 我能大致复述一次对话内部的五步流程</li>
+          <li><input type="checkbox"> 我理解它为什么会「胡说」,知道它的能力来自统计模式而非理解</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>基础课程收官 · 通向深度课程</span></h2>
+      <p>到这里,基础课程八章走完了:从<b>数据</b>(NumPy、Pandas)、到<b>学习</b>(机器学习、训练)、再到<b>模型</b>(神经网络、大模型),已经有了一张能把 AI 领域所有名词都放进去的地图。接下来的<b>深度课程</b>会把这张地图上的每个关键机制拆到底——线性回归全手推、PyTorch 完整训练循环、Attention 逐步手算、Transformer 完整结构、直到 RAG 和 Agent。基础打的是骨架,深度填的是血肉。已经不再是那个「只会复制粘贴 AI 代码」的人了。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="07-神经网络入门.html"><span class="lb">上一章</span><span class="tt">07 · 神经网络</span></a>
+        <a href="../index.html" class="next"><span class="lb">回到</span><span class="tt">课程首页 · 深度课程</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">第 8 章 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="token" href="#token"><i>7</i>Token</a>
+        <a data-toc-target="embed" href="#embed"><i>8</i>Embedding</a>
+        <a data-toc-target="attn" href="#attn"><i>9</i>注意力</a>
+        <a data-toc-target="transformer" href="#transformer"><i>10</i>Transformer</a>
+        <a data-toc-target="predict" href="#predict"><i>11</i>预测下一词</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>一次对话全程</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>基础收官</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="08" data-kind="chapter" data-title="大语言模型鸟瞰"></script>
+</body>
+</html>

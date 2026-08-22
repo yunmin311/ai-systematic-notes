@@ -1,0 +1,365 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>U03 · 指令为什么不生效</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+<nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="U02-上下文经济学.html">U02 上下文经济学</a><span class="sep">—</span>
+      <a href="U03-指令为什么不生效.html" class="current">U03 指令不生效</a><span class="sep">—</span>
+      <a href="U04-派活与成本.html">U04 派活与成本</a>
+      <span class="spacer"></span>
+      <a href="#skill" class="jump">技巧</a>
+      <a href="../排障台/症状索引.html" class="jump">排障台</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">AI 使用 · Stage 5 · Chapter U03 · 本板块最实用的一章</p>
+        <h1>指令为什么不生效</h1>
+        <p class="recap">规则写在文件里、开场也念过一遍,它当场复述得一字不差,过几轮照样违反。这一章讲清楚这件事底下的机制,以及唯一靠得住的解法:<b>把规则换成机械机制</b>——不是让它记住,是让它做不到。</p>
+      </header>
+
+      <p>约 2 小时。第 6 节起是配置和脚本,可以边读边在自己的工作台上动手。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>「复述得出」和「照着做」是两件事,后者没有任何强制机制保证</li>
+          <li>三层失效:没读到 / 读到了被稀释 / 读到了但和另一条冲突</li>
+          <li>规则的强度阶梯:口头 → 文件 → 自动注入 → 脚本校验 → 硬拦截</li>
+          <li>危险动作(删除、花钱、推送)必须落在最后两层</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>中段衰减与上下文挤占在 <a href="U02-上下文经济学.html">U02</a>;权限最小化、高危确认这些从「造 harness」的角度在 <a href="../应用工程/A05-Agent的harness底层框架.html">A05</a> 讲过,这一章是从「配自己的工作台」角度讲。<b>通向后面:</b>多个对话的规则互相打架是 <a href="U06-多对话协作.html">U06</a>;「规则跑没跑到」的验收是 <a href="U07-验收AI的产出.html">U07</a>。</p>
+      </div>
+
+      <h2 id="essence"><span class="no">1</span><span>一句话本质</span></h2>
+      <div class="one-liner">
+        <p>规则进入上下文,只是<b>提高了照做的概率</b>;它和「必须照做」之间,没有任何强制环节。</p>
+      </div>
+      <p>这解释了一个反复出现的场面:让它复述规则,它复述得比谁都全;下一步动作照样违反。复述是一次生成——上下文里有那段文字,续写出来概率极高。照做是另一次生成——这次要在一堆竞争因素(任务目标、上一轮的惯性、语料里的常见做法)里,让那条规则赢。<b>复述和照做,共用的只是同一段输入,不是同一条因果链。</b></p>
+
+      <h2 id="three"><span class="no">2</span><span>三层失效</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>失效层</th><th>表现</th><th>怎么确认</th><th>解法方向</th></tr></thead>
+          <tbody>
+            <tr><td><b>① 根本没读到</b></td><td>规则写在某个文件里,但那个文件这次没被加载</td><td>直接问「现在生效的规则文件有哪几个,把路径列出来」</td><td>改加载方式:自动导入、放进固定区</td></tr>
+            <tr><td><b>② 读到了,被稀释</b></td><td>对话早期照做,聊久了不照做</td><td>看它是第几轮开始违反的;把规则移到末尾再试一次</td><td>提高位置权重,或改成每轮重申</td></tr>
+            <tr class="sel"><td><b>③ 读到了,和别的冲突</b></td><td>规则 A 说不许动某目录,任务 B 却要求改那里的文件</td><td>直接问「这条规则和当前任务冲突吗」</td><td><b>停下来问人</b>,不许它自己重新解释边界</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout warn">
+        <span class="label">第三层最危险</span>
+        <p>因为它<b>不表现为拒绝</b>,表现为「重新理解了一下规则的适用范围」,然后顺理成章地违反,过程读起来完全合理。一个典型情形:一条「不许动某个目录」的规则和当前任务打架,模型自己把这条规则的作用域重新解释了一遍,还把这个解释顺手写进计划书里当成既定前提。<br><b>硬规矩:遇到规则冲突,单拎出来问人,不许自裁。</b>这条本身也要落在机制层——见第 6 节。</p>
+      </div>
+
+      <h2 id="ladder"><span class="no">3</span><span>规则的强度阶梯</span></h2>
+      <p>同一条规则,写在不同的地方,强度差好几个数量级。</p>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>层</th><th>形式</th><th>强度</th><th>失效方式</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>对话里口头说一句</td><td>最弱</td><td>几轮之后就被稀释</td></tr>
+            <tr><td>2</td><td>写进规则文件,靠它自己去读</td><td>弱</td><td>可能压根没加载</td></tr>
+            <tr><td>3</td><td>自动注入(每次开工都进上下文)</td><td>中</td><td>读到了,但仍可能输给任务目标</td></tr>
+            <tr><td>4</td><td>脚本校验(做完跑一遍,不绿不算完)</td><td>强</td><td>只能事后发现,不能阻止</td></tr>
+            <tr class="sel"><td>5</td><td><b>硬拦截</b>(动作在执行前被挡住)</td><td>最强</td><td>基本不失效;代价是配置麻烦</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fig-note">第 1–3 层都是「提高概率」,第 4–5 层才是「保证」。<b>凡是不能接受偶发违反的事,必须放到 4 或 5。</b></p>
+
+      <h2 id="case"><span class="no">4</span><span>一个活案例:出的题有系统性偏差</span></h2>
+      <p>规则:出选择题时,干扰项必须是真实存在的错误认知,答案位置要打散。这条 2026-07-22 就立过,写在规则文件里(第 2 层)。</p>
+      <p>2026-08 生成 32 套题、284 道之后,实测:</p>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>指标</th><th>实测</th><th>后果</th></tr></thead>
+          <tbody>
+            <tr><td>正确答案落在 B</td><td>86.4%</td><td rowspan="3">闭眼「全选 B + 判断全选错」得 188/222 分,随机基准只有 70.5</td></tr>
+            <tr><td>判断题答「错」</td><td>80%</td></tr>
+            <tr><td>正确选项是四个里最长的</td><td>93.5%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>规则被记住了吗?被记住了——问起来复述得很完整。有用吗?没用。<b>因为没有任何环节会在交付前检查这三个数。</b></p>
+      <div class="callout go">
+        <span class="label">解法:把规则升到第 4 层</span>
+        <p>写一个脚本,出完题跑一次,查答案位置分布、正确项与错误项的平均长度比、判断题真假比、疑似一眼假的干扰项,最后给一个总闸:<b>蒙题策略能得多少分,等于随机基准才算过</b>。不合格点名到文件、退出码非 0。<br>修完实测:位置 25.3/25.3/24.7/24.7,长度比 1.37× → 0.99×,蒙题得分 188 → 70(随机基准 70.5)。<br><b>同一条规则,从第 2 层挪到第 4 层,才第一次真正生效。</b></p>
+      </div>
+
+      <h2 id="skill"><span class="no">5</span><span>技巧:把规则改造成机制</span></h2>
+      <p>拿到一条规则,先问它属于哪一类,再决定往哪一层放。</p>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>规则类型</th><th>例子</th><th>该放第几层</th><th>怎么落</th></tr></thead>
+          <tbody>
+            <tr><td>口味偏好</td><td>回复用中文、别加粗太多</td><td>3</td><td>自动注入的规则文件即可,偶尔跑偏无所谓</td></tr>
+            <tr><td>产出质量</td><td>干扰项必须是真误解、页面不许有对读者说话的口吻</td><td><b>4</b></td><td>写校验脚本,交付前必跑,不绿不算完</td></tr>
+            <tr><td>不可逆动作</td><td>删除、force-push、花钱、对外发布</td><td><b>5</b></td><td>在工具层拦住:权限白名单、执行前人工确认</td></tr>
+            <tr><td>边界与禁区</td><td>不许写另一个项目的文件</td><td><b>5</b></td><td>拦截 + 「冲突必须问人」也写成拦截,不靠自觉</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="steps">
+        <ol>
+          <li><b>先找可判定的量。</b>一条规则如果没法变成一个能被程序算出来的数,就还停在第 3 层。「干扰项要真实」→ 可判定量是「蒙题策略的得分」。</li>
+          <li><b>写成脚本,定一条合格线。</b>合格线要能解释来源,别拍脑袋。上例的合格线就是随机基准。</li>
+          <li><b>让它退出码非 0。</b>这样才能被任何自动流程接住,而不是靠人记得去看输出。</li>
+          <li><b>把脚本本身写进规则文件</b>,写成「交付前必跑」,而不是「注意要遵守」。</li>
+        </ol>
+      </div>
+
+      <h2 id="reflist"><span class="no">6</span><span>外部资源</span></h2>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://docs.claude.com/en/docs/claude-code/hooks" target="_blank" rel="noopener">Claude Code · Hooks 官方文档</a></span><span class="spine">主线</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">在工具调用前后插入自己的检查与拦截。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">这是第 5 层「硬拦截」在手边就能用的实现,不用自己造 harness。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">PreToolUse 一节,以及退出码的语义(非 0 = 阻止)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">第 3 节第 5 层、第 5 节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://docs.claude.com/en/docs/claude-code/memory" target="_blank" rel="noopener">Claude Code · Memory / CLAUDE.md</a></span><span class="spine">桥</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">规则文件的加载规则:哪些会被自动读、导入怎么写、优先级如何。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">第 2 节「① 根本没读到」多半是加载规则理解错了,这页说得最准。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">导入语法与查找顺序两段。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">第 2 节、第 3 节第 2–3 层。</span></div>
+        </div>
+      </div>
+
+      <h2 id="practice"><span class="no">7</span><span>自测</span></h2>
+      <div class="challenge">
+        <span class="label">三道题</span>
+        <p><b>①</b> 一条规则「所有对外发布前必须先问人」。现在它写在规则文件里。属于第几层?要升到第几层?怎么升?<br>
+           <b>②</b> 某条规则在短对话里一直照做,长对话里经常违反。这是三层失效里的哪一层?两个可行解法各是什么?<br>
+           <b>③</b> 「页面里不许出现对读者说话的口吻」这条,怎么变成一个可判定的量?合格线定在哪、理由是什么?</p>
+      </div>
+      <details class="hint"><summary>参考答案</summary>
+        <p><b>①</b> 现在是第 2 层(甚至第 1 层,如果那个文件没被自动加载)。对外发布不可逆,必须升到第 5 层:在工具层把发布类动作设成需要人工确认,而不是写一句提醒了事。<br>
+           <b>②</b> 第 ② 层,被稀释。解法一:把规则挪到固定区开头并保证每轮都在(位置权重);解法二(更可靠):改成第 4 层,做完跑一个脚本检查有没有违反。<br>
+           <b>③</b> 可判定量:全站扫描 <code>你</code>、<code>现在该做什么</code>、<code>已全部开放</code> 这类字样的命中数,扣掉白名单(引用的示例原文)。合格线 = <b>0 处</b>,理由是这条规则不接受偶发违反——它一出现就毁掉整页的性质。实际的脚本就是这么写的。</p>
+      </details>
+
+      <h2 id="link"><span class="no">8</span><span>连接</span></h2>
+      <p class="handoff">机制能保证规则生效,但保证不了活派得对。下一章讲另一半:同一件事交给不同的模型、不同的对话、开不开子 agent,代价差多少;以及「小改被做成大工程」这件事的机制。</p>
+
+      <nav class="chapter-nav">
+        <a href="U02-上下文经济学.html"><span class="lb">上一章</span><span class="tt">U02 上下文经济学</span></a>
+        <a href="U04-派活与成本.html" class="next"><span class="lb">下一章</span><span class="tt">U04 派活与成本</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">U03 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 机制</span>
+        <a data-toc-target="essence" href="#essence"><i>1</i>一句话本质</a>
+        <a data-toc-target="three" href="#three"><i>2</i>三层失效</a>
+        <a data-toc-target="ladder" href="#ladder"><i>3</i>强度阶梯</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 案例</span>
+        <a data-toc-target="case" href="#case"><i>4</i>题库偏差</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 怎么办</span>
+        <a data-toc-target="skill" href="#skill"><i>5</i>改造成机制</a>
+        <a data-toc-target="reflist" href="#reflist"><i>6</i>外部资源</a>
+        <a data-toc-target="practice" href="#practice"><i>7</i>自测</a>
+        <a data-toc-target="link" href="#link"><i>8</i>连接</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="U03" data-kind="usage" data-title="指令为什么不生效"></script>
+</body>
+</html>

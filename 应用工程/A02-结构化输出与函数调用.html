@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A02 · 结构化输出与函数调用</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.mono{font-family:var(--mono);font-size:12px;fill:var(--ink);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="A01-提示词工程与上下文.html">A01 提示词工程</a><span class="sep">—</span>
+      <a href="A02-结构化输出与函数调用.html" class="current">A02 结构化输出</a><span class="sep">—</span>
+      <a href="A03-RAG检索增强生成.html">A03 RAG</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-A02.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">应用工程 · Chapter A02</p>
+        <h1>结构化输出与函数调用</h1>
+        <p class="recap">上一章让模型稳定地"说人话"。但应用不吃自然语言——它要能<b>解析、能执行</b>的东西:每次都合法的 JSON、一次准确的工具调用。这一章讲怎么把模型的输出从"一段话"变成"程序能直接用的结构",以及怎么让模型<b>调用函数</b>。这是把"和模型聊天"升级成"让模型驱动程序"的关键一步,也是后面 Agent 的地基。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,动手 + 精读约 3~5 小时。有个能调的模型接口最好(能试结构化输出和函数调用);概念都用第 4 章的 JSON / 字典直觉。每出现一个新词,当场用白话解释。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>为什么要结构化——应用要能解析的输出,不是一段话</li>
+          <li>结构化输出——让模型只吐合法 JSON,还符合定的结构</li>
+          <li>函数调用——由程序描述有哪些工具,模型决定何时调、给出参数</li>
+          <li>Schema 设计——用 JSON Schema 定字段、类型、必填、给例子</li>
+          <li>校验与兜底——模型偶尔出错,程序要校验、重试、降级</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接上一章:</b>A01 会写提示词后,这一章把输出"钉"成固定结构。<b>通向后面:</b>函数调用是 <a href="../index.html">A04/A05 Agent</a> 的核心零件——agent 就是"模型反复决定调哪个工具、拿结果再决定",本章的函数调用正是那个循环的一步。</p>
+      </div>
+
+      <!-- ========== 模块 A ========== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>会写提示词,但想把模型输出接进程序、每次都能稳定解析的人。</li>
+        <li>想让模型"调用工具/查数据/执行动作",却不知道怎么接的人。</li>
+        <li>准备做 Agent,得先把"函数调用"这块地基打牢的人。</li>
+      </ul>
+      <p><b>不适合</b>:已经会用 JSON schema 约束输出、熟练做函数调用的人——直接看 A03。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>两样:<a href="A01-提示词工程与上下文.html">A01</a>(会写提示词、懂上下文窗口),以及<a href="../基础课程/04-Pandas表格数据.html">第 4 章</a>的 JSON / 字典直觉(<code>{"键": 值}</code>)。有个模型接口能跑本章例子最好。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清为什么应用需要结构化输出,而不是自然语言。</li>
+        <li>用"结构化输出 / JSON 模式"让模型每次都吐出合法、符合结构的 JSON。</li>
+        <li>用函数调用让模型触发函数,并给出正确参数。</li>
+        <li>用 JSON Schema 定义想要的输出/工具的形状。</li>
+        <li>给输出加校验和兜底,处理模型偶尔的出错。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">结构化输出 = <b>给模型一张"表格模板(schema)",逼它把答案填进格子里</b>,而不是随意写一段话;函数调用 = 把"有哪些工具、每个工具要什么参数"也做成 schema,让模型决定<b>填哪张表(调哪个函数)、怎么填(参数)</b>。</p>
+      <p>本质上都是"用 schema 约束模型的输出形状"。自然语言对人友好、对程序灾难:同一个意思模型能有一百种写法,没法稳定解析。给它一个明确的结构(JSON Schema),让它只能按格子填,程序就能可靠地取到 <code>result["city"]</code>。函数调用只是更进一步:模型填的不是最终答案,而是"我要调 <code>get_weather</code>,参数是 <code>{city: 北京}</code>"——程序执行后把结果喂回,它再继续。这一步把语言模型接到了真实世界。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="结构化输出与函数调用五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">让模型驱动程序</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">(不只是聊天)</text>
+          <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 为什么要结构化</text>
+          <rect x="588" y="122" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="670" y="150" text-anchor="middle" class="nl">② 结构化输出</text>
+          <rect x="452" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="534" y="358" text-anchor="middle" class="nl">③ 函数调用</text>
+          <rect x="144" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="226" y="358" text-anchor="middle" class="nl">④ Schema 设计</text>
+          <rect x="8" y="122" width="150" height="46" rx="8" class="d-ink nf"/>
+          <text x="83" y="150" text-anchor="middle" class="nl">⑤ 校验兜底</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。组装起来,就能写出第 12 节那段"让模型稳定吐 JSON 并调用一个函数"的代码。</figcaption>
+      </figure>
+
+      <!-- ========== 模块 B ========== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <p>本章每一小节把概念用图讲清。真正练熟靠<b>厂商官方文档 + 动手试</b>,因为具体写法各家略有不同、也在更新——正文讲不变的原理,细节看官方。</p>
+      <div class="callout go">
+        <span class="label">默认主线 · 官方文档</span>
+        <p><b>OpenAI「Structured Outputs」+「Function Calling」,以及 Anthropic「Tool use」。</b>为什么是它们:一手、权威、可直接照做,而且各家实现几乎同构(OpenAI 叫函数调用,Anthropic 叫工具使用,思路一样)。链接:<a href="https://developers.openai.com/api/docs/guides/structured-outputs" target="_blank" rel="noopener">OpenAI 结构化输出</a> · <a href="https://developers.openai.com/api/docs/guides/function-calling" target="_blank" rel="noopener">函数调用</a> · <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview" target="_blank" rel="noopener">Anthropic 工具使用</a>。</p>
+      </div>
+      <p><b>再配两件:</b></p>
+      <ul>
+        <li><b>OpenAI Cookbook</b> — <a href="https://cookbook.openai.com/" target="_blank" rel="noopener">结构化输出 / 函数调用的实战配方</a>,直接抄改。</li>
+        <li><b>JSON Schema 官网</b> — <a href="https://json-schema.org/learn/getting-started-step-by-step" target="_blank" rel="noopener">用来定义"表格模板"的标准</a>,函数参数和结构化输出都靠它。</li>
+      </ul>
+
+      <!-- ========== 模块 C ========== -->
+      <p class="handoff">先想清楚:为什么应用宁可要 JSON,也不要一段更"自然"的话。</p>
+      <h2 id="why"><span class="no">7</span><span>为什么要结构化</span></h2>
+      <p class="one-liner">应用程序要的是<b>能可靠解析的数据</b>,不是自然语言。同一个意思,模型能用一百种句式写;而 <code>{"城市":"北京","温度":28}</code> 只有一种解析法。</p>
+      <p>假设要从用户输入里抽出"城市、日期、人数"。让模型用自然语言回,它可能写"你要去北京,3 个人,下周五"——就得再写一堆字符串处理去抠,还抠不稳。让它直接吐 <code>{"city":"北京","date":"...","people":3}</code>,程序一行 <code>data["people"]</code> 就拿到了。<b>结构化是把不确定的语言,收进确定的格子</b>——这是所有 AI 应用能"接得住"模型输出的前提。</p>
+      <figure>
+        <svg viewBox="0 0 620 160" role="img" aria-label="自然语言输出难解析,JSON 输出程序直接用">
+          <rect x="20" y="30" width="270" height="100" rx="8" class="box"/>
+          <text x="36" y="52" class="el">自然语言输出</text>
+          <text x="36" y="76" class="mono">"你要去北京,3 个人,</text>
+          <text x="36" y="94" class="mono"> 下周五出发哦~"</text>
+          <text x="36" y="120" class="el">→ 程序难解析、不稳定</text>
+          <rect x="330" y="30" width="270" height="100" rx="8" class="box-acc"/>
+          <text x="346" y="52" class="el-acc" font-weight="700">结构化输出(JSON)</text>
+          <text x="346" y="76" class="mono">{"city":"北京",</text>
+          <text x="346" y="94" class="mono"> "people":3, "date":"..."}</text>
+          <text x="346" y="120" class="el">→ data["people"] 直接取</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>同一件事:自然语言对程序是灾难,结构化 JSON 一取即得。应用要的是后者。</figcaption>
+      </figure>
+
+      <p class="handoff">那怎么逼模型每次都吐合法、且符合要求的 JSON?</p>
+      <h2 id="structured"><span class="no">8</span><span>结构化输出</span></h2>
+      <p class="one-liner">结构化输出:调用时附上一个 <b>JSON Schema</b>(想要的结构),开启严格模式,模型就<b>保证</b>吐出既合法、又符合该结构的 JSON——不用再靠提示词祈祷。</p>
+      <p>早期只能在提示词里写"请只返回 JSON",模型有时还是会多说两句、或漏个字段。现在主流接口支持传一个 schema、开 <code>strict</code>,由系统<b>保证</b>输出符合结构(该有的字段都在、类型对)。这比"JSON 模式"(只保证是合法 JSON、不保证符合结构)更进一步,是数据抽取、表单填充这类任务的生产默认。</p>
+
+      <p class="handoff">如果模型不该"回答",而该"去做一件事"呢?那就是函数调用。</p>
+      <h2 id="func"><span class="no">9</span><span>函数调用 / 工具使用</span></h2>
+      <p class="one-liner">函数调用<span class="en">function calling / tool use</span>:把"有哪些函数、每个要什么参数"用 schema 描述给模型;它<b>不直接执行</b>,而是决定"该调哪个、参数是什么",<b>程序去执行</b>,再把结果喂回让它继续。</p>
+      <p>这是把语言模型接到真实世界的关键。模型自己不能查天气、不能读数据库、不能下单;但可以告诉它"你有一个 <code>get_weather(city)</code> 工具"。它判断需要时,就返回一个结构化的"调用请求":<code>get_weather</code>、参数 <code>{"city":"北京"}</code>。程序真正去调 API 拿到结果,再把结果喂回,它据此给出最终回答。<b>模型负责"决定做什么",代码负责"真的去做"</b>——这条循环就是 Agent 的雏形。</p>
+      <figure>
+        <svg viewBox="0 0 640 200" role="img" aria-label="函数调用的循环">
+          <defs><marker id="m-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="30" y="80" width="120" height="46" rx="8" class="box"/><text x="90" y="108" text-anchor="middle" class="nl">用户提问</text>
+          <line x1="150" y1="103" x2="196" y2="103" class="d-acc" marker-end="url(#m-f)"/>
+          <rect x="200" y="80" width="130" height="46" rx="8" class="box-acc"/><text x="265" y="102" text-anchor="middle" class="nl-acc">模型</text><text x="265" y="119" text-anchor="middle" class="el">决定调哪个工具</text>
+          <line x1="330" y1="103" x2="376" y2="103" class="d-acc" marker-end="url(#m-f)"/>
+          <rect x="380" y="80" width="140" height="46" rx="8" class="box"/><text x="450" y="102" text-anchor="middle" class="nl">程序</text><text x="450" y="119" text-anchor="middle" class="el">真的执行 get_weather</text>
+          <line x1="520" y1="103" x2="566" y2="103" class="d-acc" marker-end="url(#m-f)"/>
+          <text x="595" y="99" text-anchor="middle" class="el">结果</text><text x="595" y="115" text-anchor="middle" class="el">28°C</text>
+          <path d="M595,126 L595,168 L265,168 L265,128" class="d-soft" marker-end="url(#m-f)"/>
+          <text x="360" y="188" text-anchor="middle" class="el">把工具结果喂回模型 → 它给出最终回答(可多轮)</text>
+        </svg>
+        <figcaption><span class="fig-num">图 3</span>函数调用循环:模型决定调哪个工具、给参数 → 程序执行 → 结果喂回 → 模型作答。这条循环就是 Agent 的核心。</figcaption>
+      </figure>
+      <div class="callout warn"><span class="label">模型不会自己执行</span><p>模型只<b>产生调用请求</b>,真正跑代码、访问数据、花钱的是<b>程序</b>。所以工具的权限、校验、安全全在调用方这边把关——这点到 A05/A06 会反复强调。</p></div>
+
+      <p class="handoff">不管结构化输出还是函数调用,核心都是描述好那张"表格模板"——schema。</p>
+      <h2 id="schema"><span class="no">10</span><span>Schema 设计</span></h2>
+      <p class="one-liner">用 <b>JSON Schema</b> 描述要的结构:每个字段的<b>名字、类型、是否必填、可选值</b>,必要时给例子。schema 写得越清楚,模型填得越准。</p>
+      <p>schema 就是那张"表格模板"。设计要点:字段名要见名知意(<code>people_count</code> 比 <code>n</code> 好);类型写死(数字就 <code>integer</code>,别让它填 "三个");有固定取值的用枚举(<code>"enum": ["正面","负面","中性"]</code>);必填字段列进 <code>required</code>;复杂字段配一两个例子。这些既约束模型,也是程序侧的"数据契约"——双方照它对齐。函数的参数,用的也是同一套 schema。</p>
+
+      <p class="handoff">最后一块:模型不是 100% 可靠,程序得兜得住。</p>
+      <h2 id="validate"><span class="no">11</span><span>校验与兜底</span></h2>
+      <p class="one-liner">就算开了严格模式,也要在程序里<b>校验</b>模型的输出(字段全不全、值合不合理),不合格就<b>重试或降级</b>——生产应用不能假设模型永远对。</p>
+      <p>严格模式保证"格式对",但保证不了"内容对":它可能填了一个不存在的城市、一个负数的人数。所以拿到输出后,程序要再校验一遍业务规则;函数调用的参数尤其要校验(别让模型的参数直接去删库)。不合格的处理:重试(有时换个说法就好)、退回让模型改、或降级到一个安全的默认。<b>把模型当成一个能力强但偶尔犯错的实习生:活给它干,但结果要复核。</b></p>
+
+      <!-- ========== 模块 D ========== -->
+      <p class="handoff">五块地基到齐了。下面用代码让模型稳定吐 JSON、并调用一个函数。</p>
+      <h2 id="assemble"><span class="no">12</span><span>实战:让模型填表 + 调一个函数</span></h2>
+      <p>先看结构化输出:从一句话里抽出结构化信息(以 OpenAI 兼容接口为例,Anthropic 等同理):</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">structured_output.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> openai </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> OpenAI</span></span>
+<span class="line"><span style="color:#14181F">client </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> OpenAI()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">schema </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> {                       </span><span style="color:#8B95A8;font-style:italic"># ④ 用 schema 定义想要的"表格模板"</span></span>
+<span class="line"><span style="color:#557089">  "type"</span><span style="color:#14181F">: </span><span style="color:#557089">"object"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#557089">  "properties"</span><span style="color:#14181F">: {</span></span>
+<span class="line"><span style="color:#557089">    "city"</span><span style="color:#14181F">:   {</span><span style="color:#557089">"type"</span><span style="color:#14181F">: </span><span style="color:#557089">"string"</span><span style="color:#14181F">},</span></span>
+<span class="line"><span style="color:#557089">    "people"</span><span style="color:#14181F">: {</span><span style="color:#557089">"type"</span><span style="color:#14181F">: </span><span style="color:#557089">"integer"</span><span style="color:#14181F">},</span></span>
+<span class="line"><span style="color:#557089">    "date"</span><span style="color:#14181F">:   {</span><span style="color:#557089">"type"</span><span style="color:#14181F">: </span><span style="color:#557089">"string"</span><span style="color:#14181F">},</span></span>
+<span class="line"><span style="color:#14181F">  },</span></span>
+<span class="line"><span style="color:#557089">  "required"</span><span style="color:#14181F">: [</span><span style="color:#557089">"city"</span><span style="color:#14181F">, </span><span style="color:#557089">"people"</span><span style="color:#14181F">, </span><span style="color:#557089">"date"</span><span style="color:#14181F">],</span></span>
+<span class="line"><span style="color:#557089">  "additionalProperties"</span><span style="color:#14181F">: False,</span></span>
+<span class="line"><span style="color:#14181F">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">resp </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> client.chat.completions.create(</span></span>
+<span class="line"><span style="color:#14181F">    model</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"gpt-4o-mini"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#14181F">    messages</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">[{</span><span style="color:#557089">"role"</span><span style="color:#14181F">: </span><span style="color:#557089">"user"</span><span style="color:#14181F">, </span><span style="color:#557089">"content"</span><span style="color:#14181F">: </span><span style="color:#557089">"下周五我和另外两个人去北京"</span><span style="color:#14181F">}],</span></span>
+<span class="line"><span style="color:#14181F">    response_format</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">{</span><span style="color:#557089">"type"</span><span style="color:#14181F">: </span><span style="color:#557089">"json_schema"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#557089">                     "json_schema"</span><span style="color:#14181F">: {</span><span style="color:#557089">"name"</span><span style="color:#14181F">: </span><span style="color:#557089">"trip"</span><span style="color:#14181F">, </span><span style="color:#557089">"schema"</span><span style="color:#14181F">: schema, </span><span style="color:#557089">"strict"</span><span style="color:#14181F">: True}},</span></span>
+<span class="line"><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> json</span></span>
+<span class="line"><span style="color:#14181F">data </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> json.loads(resp.choices[0].message.content)  </span><span style="color:#8B95A8;font-style:italic"># ② 保证是合法且符合结构的 JSON</span></span>
+<span class="line"><span style="color:#14181F">print(data[</span><span style="color:#557089">"people"</span><span style="color:#14181F">])            </span><span style="color:#8B95A8;font-style:italic"># 3 —— 程序直接取,不用抠字符串</span></span></code></pre>
+      </div>
+      <p>再看函数调用:告诉模型有个 <code>get_weather</code> 工具,让它决定调用:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">function_calling.py(要点)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">tools </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [{                       </span><span style="color:#8B95A8;font-style:italic"># ③ 描述工具:名字 + 参数 schema</span></span>
+<span class="line"><span style="color:#557089">  "type"</span><span style="color:#14181F">: </span><span style="color:#557089">"function"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#557089">  "function"</span><span style="color:#14181F">: {</span></span>
+<span class="line"><span style="color:#557089">    "name"</span><span style="color:#14181F">: </span><span style="color:#557089">"get_weather"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#557089">    "description"</span><span style="color:#14181F">: </span><span style="color:#557089">"查询某城市当前天气"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#557089">    "parameters"</span><span style="color:#14181F">: {</span><span style="color:#557089">"type"</span><span style="color:#14181F">: </span><span style="color:#557089">"object"</span><span style="color:#14181F">,</span></span>
+<span class="line"><span style="color:#557089">                   "properties"</span><span style="color:#14181F">: {</span><span style="color:#557089">"city"</span><span style="color:#14181F">: {</span><span style="color:#557089">"type"</span><span style="color:#14181F">: </span><span style="color:#557089">"string"</span><span style="color:#14181F">}},</span></span>
+<span class="line"><span style="color:#557089">                   "required"</span><span style="color:#14181F">: [</span><span style="color:#557089">"city"</span><span style="color:#14181F">]},</span></span>
+<span class="line"><span style="color:#14181F">  }</span></span>
+<span class="line"><span style="color:#14181F">}]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">resp </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> client.chat.completions.create(</span></span>
+<span class="line"><span style="color:#14181F">    model</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"gpt-4o-mini"</span><span style="color:#14181F">, tools</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">tools,</span></span>
+<span class="line"><span style="color:#14181F">    messages</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">[{</span><span style="color:#557089">"role"</span><span style="color:#14181F">: </span><span style="color:#557089">"user"</span><span style="color:#14181F">, </span><span style="color:#557089">"content"</span><span style="color:#14181F">: </span><span style="color:#557089">"北京现在天气怎么样?"</span><span style="color:#14181F">}],</span></span>
+<span class="line"><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">call </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> resp.choices[0].message.tool_calls[0]     </span><span style="color:#8B95A8;font-style:italic"># 模型返回:要调 get_weather</span></span>
+<span class="line"><span style="color:#14181F">args </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> json.loads(call.function.arguments)       </span><span style="color:#8B95A8;font-style:italic"># {"city": "北京"}</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># ⑤ 校验 args 后,你的程序真正去执行,再把结果作为新消息喂回,模型据此作答</span></span>
+<span class="line"></span></code></pre>
+      </div>
+      <p>读一遍:第一段用 <b>schema + strict</b> 拿到可解析的 JSON(结构化输出);第二段把工具做成 <b>schema</b>,模型返回"要调 <code>get_weather</code>、参数 <code>{city:北京}</code>"(函数调用),<b>执行前先校验</b>,执行后喂回。把这条循环反复跑,就是 A04 的 Agent。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战</span>
+        <h3>改改看</h3>
+        <p>①给 schema 的 <code>city</code> 加一个枚举(只允许几个城市),看模型被约束的效果。②再加一个工具 <code>get_time(city)</code>,问"北京现在几点、天气如何",观察模型是否连调两个工具。③故意问一个不需要工具的问题(如"你好"),看模型是否<b>不</b>调用工具、直接回答——这说明"何时调"是它自己判断的。</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;下列链接均于 2026-08-16 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://developers.openai.com/api/docs/guides/structured-outputs" target="_blank" rel="noopener">OpenAI · Structured Outputs</a></span><span class="spine">默认主线</span><span class="tags">官方文档 · 英文 · 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">官方讲"让模型稳定吐出符合 JSON Schema 的结构化结果",含 strict 严格模式。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章讲"为什么要结构化输出",它给"怎么强制它照模板吐"的一手做法。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">整页 + strict 模式那节(它保证输出一定合规)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「让模型稳定吐 JSON」节,照它的 schema 写法改一遍。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://developers.openai.com/api/docs/guides/function-calling" target="_blank" rel="noopener">OpenAI · Function Calling</a></span><span class="tags">官方文档 · 英文 · 1h · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">官方讲"让模型请求调用定义的函数/工具"。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">函数调用是把"聊天"升级成"驱动程序"、也是 Agent 的地基,必须吃透。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">整页;重点看工具定义格式 + 模型返回的 tool_call 怎么接。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「函数调用 / 工具调用」节,直通 <a href="A04-Agent基础.html">A04 Agent</a>。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview" target="_blank" rel="noopener">Anthropic · Tool use</a></span><span class="tags">厂商官方 · 英文 · 30min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">Claude 这边"工具调用"的等价实现文档。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">对比着看两家写法,会发现是同一套思想——不被某一家绑定。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Overview。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「函数调用」节做横向对照。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://json-schema.org/learn/getting-started-step-by-step" target="_blank" rel="noopener">JSON Schema 入门</a></span><span class="tags">规范站 · 英文 · 30min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">JSON Schema——用来给模型下"表格模板"的那套标准的官方入门。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">结构化输出和函数调用都靠它描述"我要什么形状";会写 schema 是前提。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Getting Started(type / properties / required 几个关键字)。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">动手写第 12 节代码里的 schema 前先扫一眼。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>在提示词里写"只返回 JSON"就够了</td><td>不稳。用 schema + strict 由系统保证结构,别靠祈祷。</td></tr>
+          <tr><td>JSON 模式 = 结构化输出</td><td>JSON 模式只保证"是合法 JSON",不保证符合字段结构;结构化输出(带 schema)才保证。</td></tr>
+          <tr><td>函数调用时模型会自己执行函数</td><td>模型只产生"调用请求";真正执行的是程序。权限和安全在调用方这边。</td></tr>
+          <tr><td>开了严格模式就不用校验了</td><td>严格模式保证格式对,不保证内容对。业务校验、参数校验仍要做。</td></tr>
+          <tr><td>schema 越复杂越好</td><td>字段清晰、类型准、必填明确最重要;过度嵌套反而降准确率、增 token。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>为什么结构化。</b>一句话说清:应用为什么宁要 JSON 不要自然语言?<details><summary>参考答案</summary><p>自然语言写法千变万化、难可靠解析;JSON 有确定结构,程序能稳定取字段。</p></details></li>
+        <li><b>区分。</b>"JSON 模式"和"结构化输出(带 schema)"差在哪?<details><summary>参考答案</summary><p>前者只保证是合法 JSON;后者还保证符合定义的字段结构(该有的都在、类型对)。</p></details></li>
+        <li><b>函数调用。</b>模型返回一个 <code>get_weather({city:北京})</code> 的调用请求后,接下来发生什么?<details><summary>参考答案</summary><p>程序校验参数、真正执行 get_weather、拿到结果,再把结果喂回模型,模型据此给最终回答。</p></details></li>
+        <li><b>兜底。</b>严格模式已开,为什么还要校验?举一个它保证不了的例子。<details><summary>参考答案</summary><p>它保证格式对、保证不了内容对——比如 people 填了负数、city 填了不存在的地名。业务规则要程序再校验。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上再进 A03(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清应用为什么需要结构化输出而非自然语言</li>
+          <li><input type="checkbox"> 我会用 schema + strict 让模型稳定吐符合结构的 JSON</li>
+          <li><input type="checkbox"> 我知道 JSON 模式和结构化输出的区别</li>
+          <li><input type="checkbox"> 我能解释函数调用:模型决定调什么,程序负责执行</li>
+          <li><input type="checkbox"> 我会用 JSON Schema 定义字段/参数(名字、类型、必填、枚举)</li>
+          <li><input type="checkbox"> 我知道输出要校验、参数执行前要把关,并有重试/降级</li>
+          <li><input type="checkbox"> 我看懂了第 12 节的结构化输出 + 函数调用代码</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>会让模型稳定输出结构、会调用函数之后,一个大问题浮现:模型只知道它训练时见过的东西,<b>不知道私有资料、也不知道最新信息</b>。<a href="A03-RAG检索增强生成.html">A03 · RAG(检索增强生成)</a>解决这个:先从文档里检索出相关内容,拼进上下文,再让模型基于它作答。它会用到 A01 的上下文管理和本章的结构化思路。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="A01-提示词工程与上下文.html"><span class="lb">上一章</span><span class="tt">A01 · 提示词工程</span></a>
+        <a href="A03-RAG检索增强生成.html" class="next"><span class="lb">下一章</span><span class="tt">A03 · RAG</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">A02 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="why" href="#why"><i>7</i>为什么要结构化</a>
+        <a data-toc-target="structured" href="#structured"><i>8</i>结构化输出</a>
+        <a data-toc-target="func" href="#func"><i>9</i>函数调用</a>
+        <a data-toc-target="schema" href="#schema"><i>10</i>Schema 设计</a>
+        <a data-toc-target="validate" href="#validate"><i>11</i>校验兜底</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>实战:填表+调函数</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="A02" data-kind="chapter" data-title="结构化输出与函数调用"></script>
+</body>
+</html>

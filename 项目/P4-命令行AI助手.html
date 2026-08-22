@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P4 · 命令行 AI 助手</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg,.term .thead{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0;}
+.badge{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.04em;color:var(--ink-soft);border:1px solid var(--rule);border-radius:20px;padding:4px 12px;background:var(--surface);}
+.badge b{color:var(--acc);font-weight:700;}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.milestone{border-left:3px solid var(--acc);padding:2px 0 2px 15px;margin:18px 0 18px -18px;}
+.milestone .label{display:block;font-family:var(--sans);font-size:var(--fs-small);font-weight:600;color:var(--acc);margin:0 0 4px;}
+.milestone p{margin:4px 0;}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.term{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:#12151b;}
+.term .thead{display:flex;align-items:center;gap:8px;padding:7px 14px;background:#1b1f27;border-bottom:1px solid #2a2f3a;color:#8b95a8;}
+.term .dots{display:flex;gap:5px;}
+.term .dots i{width:9px;height:9px;border-radius:50%;display:block;background:#3a4150;}
+.term pre{margin:0;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;color:#d7dce5;}
+.term .u{color:#8fa7ff;} .term .a{color:#e6e9f0;} .term .c{color:#6b7688;} .term .p{color:#5fd39a;}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <span class="plan">项目 · 从练习到应用</span><span class="sep">—</span>
+      <a href="P4-命令行AI助手.html" class="current">P4 命令行 AI 助手</a><span class="sep">—</span>
+      <a href="P5-个人知识库问答.html">P5 知识库问答</a>
+      <span class="spacer"></span>
+      <a href="#build" class="jump">开始搭建</a>
+      <a href="#run" class="jump">跑起来</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">项目 · Project P4</p>
+        <h1>命令行 AI 助手</h1>
+        <p class="recap">第一个真正"能用"的成品:一个跑在终端里、能连续对话的 AI 助手。它把前面学的落成能跑的代码——<b>调用 LLM API</b>(A02)、<b>记住多轮对话</b>(A04 的状态)、<b>流式逐字输出</b>(A07)、<b>出错不崩</b>(A06/A07)。一百来行 Python,就有了一个自己的"终端版 ChatGPT",还看清了它内部到底怎么转。</p>
+        <div class="badges">
+          <span class="badge">难度 <b>入门</b></span>
+          <span class="badge">语言 <b>Python</b></span>
+          <span class="badge">用时 <b>2~4 小时</b></span>
+          <span class="badge">前置 <b>A01 · A02</b></span>
+          <span class="badge">产出 <b>可运行的终端助手</b></span>
+        </div>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">做完这个项目,会有 / 会做</p>
+        <ul>
+          <li>一个能连续对话的终端 AI 助手(能给别人演示)</li>
+          <li>亲手把"调模型 API"这件事跑通,不再是黑箱</li>
+          <li>会维护多轮对话的 messages 状态(agent 的雏形)</li>
+          <li>会做流式输出的"打字机效果",体验拉满</li>
+          <li>会用环境变量管密钥、用 try/except 兜住网络错误</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">这个项目用到哪些章</span>
+        <p><a href="../应用工程/A02-结构化输出与函数调用.html">A02</a>(怎么调模型)、<a href="../应用工程/A01-提示词工程与上下文.html">A01</a>(系统提示词、上下文)、<a href="../应用工程/A07-工程化与部署.html">A07</a>(密钥安全、流式)、<a href="../应用工程/A06-评估幻觉安全成本.html">A06</a>(错误与成本意识)。做完它,P5/P6 就是在这套骨架上继续加东西。</p>
+      </div>
+
+      <!-- ===== 模块 A:看清目标 ===== -->
+      <h2 id="target"><span class="no">1</span><span>成品长什么样</span></h2>
+      <p>先看终点。跑起来后,终端里是这样一段对话——输入,它<b>逐字</b>吐出回答,记得上文,输入 <code>exit</code> 退出:</p>
+      <div class="term">
+        <div class="thead"><span class="dots"><i></i><i></i><i></i></span><span>终端 · python assistant.py</span></div>
+<pre><span class="p">AI 助手已就绪(输入 exit 退出)</span>
+<span class="u">你 ›</span> <span class="a">帮我想三个给猫咪起的名字</span>
+<span class="u">AI ›</span> <span class="a">1. 豆豆  2. 布丁  3. 芝麻。要更优雅的还是更可爱的?</span>
+<span class="u">你 ›</span> <span class="a">第二个不错,它是橘猫,再顺着起两个</span>
+<span class="u">AI ›</span> <span class="a">顺着"布丁"的甜品风,给橘猫:焦糖、蛋挞。都暖橘色系~</span>
+<span class="c"># ↑ 它记得"布丁""橘猫"——这就是多轮对话状态在起作用</span>
+<span class="u">你 ›</span> <span class="a">exit</span>
+<span class="p">再见 👋</span></pre>
+      </div>
+      <p class="one-liner">这个项目的本质:一个 <b>while 循环</b>,每轮把话追加进一个 <b>messages 列表</b>,连整段历史发给模型,再把回答<b>流式</b>打印出来、也追加回列表。就这么简单——但它是所有对话式 AI 应用的地基。</p>
+      <figure>
+        <svg viewBox="0 0 600 210" role="img" aria-label="命令行助手的数据流循环">
+          <defs><marker id="m-p4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
+          <rect x="40" y="82" width="120" height="46" rx="8" class="box"/><text x="100" y="104" text-anchor="middle" class="nl">在终端输入</text><text x="100" y="121" text-anchor="middle" class="el">一句话</text>
+          <line x1="160" y1="105" x2="216" y2="105" class="d-acc" marker-end="url(#m-p4)"/>
+          <rect x="220" y="76" width="150" height="58" rx="8" class="box-acc"/><text x="295" y="98" text-anchor="middle" class="nl-acc">messages 列表</text><text x="295" y="116" text-anchor="middle" class="el">追加话 + 整段历史</text>
+          <line x1="370" y1="105" x2="426" y2="105" class="d-acc" marker-end="url(#m-p4)"/>
+          <rect x="430" y="82" width="120" height="46" rx="8" class="box"/><text x="490" y="104" text-anchor="middle" class="nl">模型 API</text><text x="490" y="121" text-anchor="middle" class="el">流式返回</text>
+          <path d="M490 134 C 490 180, 295 180, 295 134" class="d-acc" marker-end="url(#m-p4)"/>
+          <text x="392" y="196" text-anchor="middle" class="el-acc">回答逐字打印 + 追加回 messages</text>
+          <path d="M220 118 C 150 150, 120 150, 100 128" class="d-soft" marker-end="url(#m-p4)"/>
+          <text x="150" y="162" text-anchor="middle" class="el">↻ 下一轮</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>数据流:输入 → 追加进 messages(带全部历史)→ 发给模型 → 流式打印回答 → 追加回 messages → 下一轮。"记得上文"就靠这个不断增长的列表。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 B:准备 ===== -->
+      <h2 id="prep"><span class="no">2</span><span>动手前的准备</span></h2>
+      <p>三样东西:</p>
+      <ol class="steps">
+        <li><b>Python 环境</b>(3.9+)。终端能跑 <code>python --version</code> 即可。</li>
+        <li><b>装 SDK</b>。这里用 OpenAI 的 Python 库(最通用;换 Claude 等只改几行,思路一样):<br>
+          <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span></span></div><pre>pip install openai</pre></div>
+        </li>
+        <li><b>API 密钥放进环境变量</b>——<b>绝不写进代码</b>(A07 红线:密钥=钱包,进了代码/git 就会泄露被盗刷)。在终端设一次:<br>
+          <div class="code-block"><div class="chead"><span class="fn">终端(当次会话有效)</span><span class="rt"><span class="lang">bash</span></span></div><pre># macOS / Linux
+export OPENAI_API_KEY="你的密钥"
+# Windows PowerShell
+$env:OPENAI_API_KEY="你的密钥"</pre></div>
+        </li>
+      </ol>
+      <div class="callout warn"><span class="label">花钱提示(A06)</span><p>调 API 按 token 计费,聊天很便宜(一次几分钱),但别把密钥泄露出去。用完这个项目,建议去平台给密钥设个消费上限,睡得安稳。</p></div>
+
+      <!-- ===== 模块 C:分步搭建 ===== -->
+      <p class="handoff" id="build">分四步,从"能回一句"一路加到"像样的助手"。每步都能单独跑、单独验证。</p>
+
+      <h2 id="s1"><span class="no">3</span><span>第 1 步 · 最小闭环:能回一句话</span></h2>
+      <p>先跑通"发一句、收一句"。这是整个项目的心脏:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">assistant.py · v1</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> os</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> openai </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> OpenAI</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">client </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> OpenAI(api_key</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">os.environ[</span><span style="color:#557089">"OPENAI_API_KEY"</span><span style="color:#14181F">])   </span><span style="color:#8B95A8;font-style:italic"># A07:密钥从环境变量读</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">resp </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> client.chat.completions.create(</span></span>
+<span class="line"><span style="color:#14181F">    model</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"gpt-4o-mini"</span><span style="color:#14181F">,                    </span><span style="color:#8B95A8;font-style:italic"># 便宜够用的小模型(A06:按难度选)</span></span>
+<span class="line"><span style="color:#14181F">    messages</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">[{</span><span style="color:#557089">"role"</span><span style="color:#14181F">: </span><span style="color:#557089">"user"</span><span style="color:#14181F">, </span><span style="color:#557089">"content"</span><span style="color:#14181F">: </span><span style="color:#557089">"用一句话介绍你自己"</span><span style="color:#14181F">}],</span></span>
+<span class="line"><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">print(resp.choices[0].message.content)      </span><span style="color:#8B95A8;font-style:italic"># 取出模型回答的文字</span></span></code></pre>
+      </div>
+      <p><code>messages</code> 是一个"对话记录"列表,每条有 <code>role</code>(谁说的)和 <code>content</code>(说了啥)——这正是 A01/A04 讲的上下文。<code>create</code> 把它发给模型,回答藏在 <code>resp.choices[0].message.content</code> 里。</p>
+      <div class="milestone"><span class="label">✓ 里程碑</span><p><code>python assistant.py</code> 能打印出一句模型的自我介绍,就说明<b>密钥、SDK、调用</b>全通了。这一关过了,后面都是加料。</p></div>
+
+      <h2 id="s2"><span class="no">4</span><span>第 2 步 · 多轮对话:让它记得上文</span></h2>
+      <p>单次问答不够,要能连续聊。办法:开一个 <code>messages</code> 列表<b>一直往里追加</b>,每轮把<b>整段历史</b>发过去(A04 的"状态"):</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">assistant.py · v2</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> os</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> openai </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> OpenAI</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">client </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> OpenAI(api_key</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">os.environ[</span><span style="color:#557089">"OPENAI_API_KEY"</span><span style="color:#14181F">])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># A01:系统提示词,一句话定角色和风格</span></span>
+<span class="line"><span style="color:#14181F">messages </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> [{</span><span style="color:#557089">"role"</span><span style="color:#14181F">: </span><span style="color:#557089">"system"</span><span style="color:#14181F">, </span><span style="color:#557089">"content"</span><span style="color:#14181F">: </span><span style="color:#557089">"你是简洁友好的中文助手,回答尽量短。"</span><span style="color:#14181F">}]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"AI 助手已就绪(输入 exit 退出)"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">while</span><span style="color:#14181F"> True:                                  </span><span style="color:#8B95A8;font-style:italic"># 对话主循环</span></span>
+<span class="line"><span style="color:#14181F">    user_input </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> input(</span><span style="color:#557089">"你 › "</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F"> user_input.strip() </span><span style="color:#14181F;font-weight:bold">==</span><span style="color:#557089"> "exit"</span><span style="color:#14181F">:</span></span>
+<span class="line"><span style="color:#14181F">        print(</span><span style="color:#557089">"再见 👋"</span><span style="color:#14181F">); </span><span style="color:#14181F;font-weight:bold">break</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">    messages.append({</span><span style="color:#557089">"role"</span><span style="color:#14181F">: </span><span style="color:#557089">"user"</span><span style="color:#14181F">, </span><span style="color:#557089">"content"</span><span style="color:#14181F">: user_input})   </span><span style="color:#8B95A8;font-style:italic"># 追加你的话</span></span>
+<span class="line"><span style="color:#14181F">    resp </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> client.chat.completions.create(model</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"gpt-4o-mini"</span><span style="color:#14181F">, messages</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">messages)</span></span>
+<span class="line"><span style="color:#14181F">    answer </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> resp.choices[0].message.content</span></span>
+<span class="line"><span style="color:#14181F">    print(</span><span style="color:#557089">"AI ›"</span><span style="color:#14181F">, answer)</span></span>
+<span class="line"><span style="color:#14181F">    messages.append({</span><span style="color:#557089">"role"</span><span style="color:#14181F">: </span><span style="color:#557089">"assistant"</span><span style="color:#14181F">, </span><span style="color:#557089">"content"</span><span style="color:#14181F">: answer})  </span><span style="color:#8B95A8;font-style:italic"># 把回答也追加回去 ← 关键</span></span></code></pre>
+      </div>
+      <p>最关键的是最后一行:<b>把模型的回答也追加回 <code>messages</code></b>。下一轮就带着完整的一来一回发过去,模型才"记得"。漏了这行,它就成了每句都失忆的金鱼。</p>
+      <div class="milestone"><span class="label">✓ 里程碑</span><p>连问两句相关的(如"推荐本书"→"它讲什么"),它能接住上文,就说明多轮状态成立了——这就是 A04 里 agent 状态的最小版。</p></div>
+
+      <h2 id="s3"><span class="no">5</span><span>第 3 步 · 流式输出:打字机效果</span></h2>
+      <p>现在它是"憋十几秒、整段蹦出来"。改成<b>边生成边逐字打印</b>(A07 的流式),体感立刻不一样。只需给 <code>create</code> 加 <code>stream=True</code>,然后<b>逐块</b>取字:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">assistant.py · v3(替换第 2 步里的调用部分)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">    messages.append({</span><span style="color:#557089">"role"</span><span style="color:#14181F">: </span><span style="color:#557089">"user"</span><span style="color:#14181F">, </span><span style="color:#557089">"content"</span><span style="color:#14181F">: user_input})</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">    stream </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> client.chat.completions.create(</span></span>
+<span class="line"><span style="color:#14181F">        model</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"gpt-4o-mini"</span><span style="color:#14181F">, messages</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">messages, stream</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True,   </span><span style="color:#8B95A8;font-style:italic"># ← 开流式</span></span>
+<span class="line"><span style="color:#14181F">    )</span></span>
+<span class="line"><span style="color:#14181F">    print(</span><span style="color:#557089">"AI › "</span><span style="color:#14181F">, end</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">""</span><span style="color:#14181F">, flush</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)</span></span>
+<span class="line"><span style="color:#14181F">    answer </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089"> ""</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    for</span><span style="color:#14181F"> chunk </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> stream:                        </span><span style="color:#8B95A8;font-style:italic"># 一块一块地收</span></span>
+<span class="line"><span style="color:#14181F">        delta </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> chunk.choices[0].delta.content  </span><span style="color:#8B95A8;font-style:italic"># 这一块新增的文字(可能为空)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        if</span><span style="color:#14181F"> delta:</span></span>
+<span class="line"><span style="color:#14181F">            print(delta, end</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">""</span><span style="color:#14181F">, flush</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)    </span><span style="color:#8B95A8;font-style:italic"># 立刻打印,不换行、不缓冲</span></span>
+<span class="line"><span style="color:#14181F">            answer </span><span style="color:#14181F;font-weight:bold">+=</span><span style="color:#14181F"> delta                      </span><span style="color:#8B95A8;font-style:italic"># 同时攒起完整回答</span></span>
+<span class="line"><span style="color:#14181F">    print()                                      </span><span style="color:#8B95A8;font-style:italic"># 收尾换行</span></span>
+<span class="line"><span style="color:#14181F">    messages.append({</span><span style="color:#557089">"role"</span><span style="color:#14181F">: </span><span style="color:#557089">"assistant"</span><span style="color:#14181F">, </span><span style="color:#557089">"content"</span><span style="color:#14181F">: answer})   </span><span style="color:#8B95A8;font-style:italic"># 攒好的完整回答入历史</span></span></code></pre>
+      </div>
+      <p>要点:<code>stream=True</code> 让模型<b>逐块</b>返回;<code>print(delta, end="", flush=True)</code> 里的 <code>flush=True</code> 是"立刻显示别攒着"——少了它就看不到打字机效果。同时用 <code>answer</code> 把碎块拼回完整的一句,才能存进历史。</p>
+      <div class="milestone"><span class="label">✓ 里程碑</span><p>回答像打字一样一个字一个字冒出来,就成了。总时间没变,但"干等"变成了"边读边等"(A07 图 3)。</p></div>
+
+      <h2 id="s4"><span class="no">6</span><span>第 4 步 · 出错不崩:错误处理与收尾</span></h2>
+      <p>最后一步把它从"玩具"变"能用":网络会抖、接口会超时、手会滑按到 Ctrl+C。用 <code>try/except</code> 兜住,别让一次报错掀翻整个程序(A06/A07):</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">assistant.py · v4(把调用包进 try)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">    try</span><span style="color:#14181F">:</span></span>
+<span class="line"><span style="color:#14181F">        stream </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> client.chat.completions.create(</span></span>
+<span class="line"><span style="color:#14181F">            model</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">"gpt-4o-mini"</span><span style="color:#14181F">, messages</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">messages, stream</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True,</span></span>
+<span class="line"><span style="color:#14181F">        )</span></span>
+<span class="line"><span style="color:#14181F">        print(</span><span style="color:#557089">"AI › "</span><span style="color:#14181F">, end</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">""</span><span style="color:#14181F">, flush</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)</span></span>
+<span class="line"><span style="color:#14181F">        answer </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089"> ""</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">        for</span><span style="color:#14181F"> chunk </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> stream:</span></span>
+<span class="line"><span style="color:#14181F">            delta </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> chunk.choices[0].delta.content</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">            if</span><span style="color:#14181F"> delta:</span></span>
+<span class="line"><span style="color:#14181F">                print(delta, end</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#557089">""</span><span style="color:#14181F">, flush</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True); answer </span><span style="color:#14181F;font-weight:bold">+=</span><span style="color:#14181F"> delta</span></span>
+<span class="line"><span style="color:#14181F">        print()</span></span>
+<span class="line"><span style="color:#14181F">        messages.append({</span><span style="color:#557089">"role"</span><span style="color:#14181F">: </span><span style="color:#557089">"assistant"</span><span style="color:#14181F">, </span><span style="color:#557089">"content"</span><span style="color:#14181F">: answer})</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    except</span><span style="color:#14181F"> KeyboardInterrupt:                 </span><span style="color:#8B95A8;font-style:italic"># 你按了 Ctrl+C</span></span>
+<span class="line"><span style="color:#14181F">        print(</span><span style="color:#557089">"\n再见 👋"</span><span style="color:#14181F">); </span><span style="color:#14181F;font-weight:bold">break</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">    except</span><span style="color:#14181F"> Exception </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> e:                     </span><span style="color:#8B95A8;font-style:italic"># 网络/接口出错:提示但不崩</span></span>
+<span class="line"><span style="color:#14181F">        print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"</span><span style="color:#557089">\n</span><span style="color:#557089">[出错了,再试一次] </span><span style="color:#557089">{</span><span style="color:#14181F">e</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)</span></span>
+<span class="line"><span style="color:#14181F">        messages.pop()                          </span><span style="color:#8B95A8;font-style:italic"># 把这轮没答成的用户消息撤回,保持历史干净</span></span></code></pre>
+      </div>
+      <p>两个细节值得记:出错时 <code>messages.pop()</code> 把"这轮没答成功的提问"撤掉,避免脏历史让下一轮更乱;<code>KeyboardInterrupt</code> 单独接,让 Ctrl+C 优雅退出而不是喷一屏红字。这就是 A06 说的"假设会出错、把它当主线设计"。</p>
+      <div class="milestone"><span class="label">✓ 里程碑 · 完成</span><p>拔掉网线问一句,它提示"出错了,再试一次"而不是崩溃;按 Ctrl+C 干净退出。到这,一个<b>能给别人演示</b>的终端 AI 助手就做完了。</p></div>
+
+      <!-- ===== 模块 D:跑与收尾 ===== -->
+      <h2 id="run"><span class="no">7</span><span>跑起来</span></h2>
+      <p>确认密钥已设(第 2 节),然后:</p>
+      <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span></span></div><pre>python assistant.py</pre></div>
+      <p>就得到本章开头那段对话。恭喜——这是第一个能用的 AI 应用。它虽小,但骨架(循环 + 状态 + 流式 + 兜错)和真正的产品一模一样,后面几个项目都在它上面长。</p>
+
+      <h2 id="pitfalls"><span class="no">8</span><span>常见坑</span></h2>
+      <table class="tbl">
+        <caption>表 1 · 排错速查</caption>
+        <thead><tr><th>症状</th><th>多半是</th><th>怎么办</th></tr></thead>
+        <tbody>
+          <tr><td><code>KeyError: 'OPENAI_API_KEY'</code></td><td>密钥没设 / 换了终端窗口失效</td><td>回第 2 节重设;或换用 <code>.env</code> 文件长期保存</td></tr>
+          <tr><td>它每句都"失忆"</td><td>漏了把回答 append 回 messages</td><td>补上第 4 节最后那行</td></tr>
+          <tr><td>回答一次性蹦出、没打字机效果</td><td><code>flush=True</code> 漏了 / 没开 stream</td><td>照第 5 步补 <code>stream=True</code> 和 <code>flush=True</code></td></tr>
+          <tr><td>报 <code>AuthenticationError</code></td><td>密钥错 / 没充值 / 没权限</td><td>去平台核对密钥和余额</td></tr>
+          <tr><td>中文乱码(旧 Windows)</td><td>终端编码</td><td>终端执行 <code>chcp 65001</code> 切 UTF-8</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="extend"><span class="no">9</span><span>进阶扩展</span></h2>
+      <div class="challenge">
+        <span class="label">再往上加(选做)</span>
+        <h3>让它更像真产品</h3>
+        <p>①<b>限制历史长度</b>:对话太长会越来越贵(A06 成本)。当 <code>messages</code> 超过 N 条时,保留 system + 最近若干条(这就是 A05 的上下文管理雏形)。②<b>存档与续聊</b>:退出时把 <code>messages</code> 存成 JSON,下次启动读回来。③<b>加个 system 开关</b>:命令行参数选"简洁版/详细版/翻译版"不同人设(A01)。④<b>换模型对比</b>:同一问题分别用小模型和大模型,感受质量与成本的差(A06)。</p>
+      </div>
+
+      <h2 id="learned"><span class="no">10</span><span>到底学到了什么</span></h2>
+      <p>别小看这一百行——四章的抽象概念,变成了会转的代码:</p>
+      <table class="tbl">
+        <caption>表 2 · 概念 → 代码</caption>
+        <thead><tr><th>哪一章的概念</th><th>在这个项目里变成了</th></tr></thead>
+        <tbody>
+          <tr class="sel"><td><a href="../应用工程/A02-结构化输出与函数调用.html">A02</a> 调用模型</td><td><code>client.chat.completions.create(...)</code></td></tr>
+          <tr class="sel"><td><a href="../应用工程/A01-提示词工程与上下文.html">A01</a> 系统提示 / 上下文</td><td><code>system</code> 消息 + 不断增长的 <code>messages</code></td></tr>
+          <tr class="sel"><td><a href="../应用工程/A04-Agent基础.html">A04</a> 状态 / 记忆</td><td>把每轮问答 append 回 <code>messages</code></td></tr>
+          <tr class="sel"><td><a href="../应用工程/A07-工程化与部署.html">A07</a> 密钥 / 流式</td><td>环境变量读密钥 + <code>stream=True</code></td></tr>
+          <tr class="sel"><td><a href="../应用工程/A06-评估幻觉安全成本.html">A06</a> 出错与成本</td><td><code>try/except</code> 兜错 + 成本意识</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="reflist"><span class="no">11</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本项目页只给搭建的骨架;真正的参数细节在下面这些一手文档里。每条注明:是什么、为什么选它、精确看哪段、对应哪一步。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;均于 2026-08-16 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://platform.openai.com/docs/api-reference/chat" target="_blank" rel="noopener">OpenAI · Chat API 参考</a></span><span class="spine">本项目主文档</span><span class="tags">官方 · 当字典查 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">本项目调用的那个对话 API 的一手参考(消息格式、参数、流式)。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">多轮对话、流式输出的确切写法都在这;写代码卡住第一个查它。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">messages 结构、stream 参数两处。</span></div>
+          <div class="rrow"><span class="rk">对应步骤</span><span class="rv">配"多轮对话""流式输出"两步。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://platform.openai.com/docs/guides/production-best-practices" target="_blank" rel="noopener">OpenAI · 生产最佳实践</a></span><span class="tags">官方 · 参考 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">密钥、错误处理、限流的官方建议。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">这项目要"错误处理";照它把该兜的错兜住。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">密钥安全 / 错误与重试。</span></div>
+          <div class="rrow"><span class="rk">对应步骤</span><span class="rv">配"错误处理"步。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://docs.anthropic.com/" target="_blank" rel="noopener">Anthropic API 文档</a></span><span class="tags">厂商官方 · 参考 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">Claude 的等价 API 文档。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想把助手换成 Claude 时对照——思路一模一样,不被一家绑定。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Messages / Streaming。</span></div>
+          <div class="rrow"><span class="rk">对应步骤</span><span class="rv">选做:换后端。</span></div>
+        </div>
+      </div>
+
+      <h2 id="checklist"><span class="no">12</span><span>完成自查</span></h2>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我的助手能连续多轮对话,记得上文</li>
+          <li><input type="checkbox"> 回答是流式逐字打印的</li>
+          <li><input type="checkbox"> 密钥在环境变量里,代码里没有明文密钥</li>
+          <li><input type="checkbox"> 断网/Ctrl+C 时它不崩、能优雅处理</li>
+          <li><input type="checkbox"> 我能说清 messages 列表怎么让它"记得上文"</li>
+          <li><input type="checkbox"> 我能把这五段概念和对应代码对上号(表 2)</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">13</span><span>下一个项目</span></h2>
+      <p>助手现在只靠模型脑子里的知识答题——它不知道<b>自己的资料</b>。下一个项目 <a href="P5-个人知识库问答.html">P5 · 个人知识库问答</a>给它接上一个"随身资料库":把笔记做成 <a href="../应用工程/A03-RAG检索增强生成.html">RAG</a>,让它基于文档、带出处地回答。骨架还是这个循环,只是在"发给模型前"多插一步检索。</p>
+      <nav class="chapter-nav" aria-label="项目导航">
+        <a href="../index.html"><span class="lb">返回</span><span class="tt">课程首页 · 项目列表</span></a>
+        <a href="P5-个人知识库问答.html" class="next"><span class="lb">下一个项目</span><span class="tt">P5 · 个人知识库问答</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本项目目录">
+      <p class="toc-label">P4 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">看清目标</span>
+        <a data-toc-target="target" href="#target"><i>1</i>成品长什么样</a>
+        <a data-toc-target="prep" href="#prep"><i>2</i>动手前的准备</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">分步搭建</span>
+        <a data-toc-target="s1" href="#s1"><i>3</i>最小闭环</a>
+        <a data-toc-target="s2" href="#s2"><i>4</i>多轮对话</a>
+        <a data-toc-target="s3" href="#s3"><i>5</i>流式输出</a>
+        <a data-toc-target="s4" href="#s4"><i>6</i>错误处理</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾 · 消化</span>
+        <a data-toc-target="run" href="#run"><i>7</i>跑起来</a>
+        <a data-toc-target="pitfalls" href="#pitfalls"><i>8</i>常见坑</a>
+        <a data-toc-target="extend" href="#extend"><i>9</i>进阶扩展</a>
+        <a data-toc-target="learned" href="#learned"><i>10</i>学到了什么</a>
+        <a data-toc-target="reflist" href="#reflist"><i>11</i>外部资源</a>
+        <a data-toc-target="checklist" href="#checklist"><i>12</i>完成自查</a>
+        <a data-toc-target="next" href="#next"><i>13</i>下一个项目</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="P4" data-kind="project" data-title="命令行 AI 助手"></script>
+</body>
+</html>

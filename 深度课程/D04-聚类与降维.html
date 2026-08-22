@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D04 · 聚类与降维</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="D03-决策树随机森林与梯度提升.html">D03 决策树与集成</a><span class="sep">—</span>
+      <a href="D04-聚类与降维.html" class="current">D04 聚类与降维</a><span class="sep">—</span>
+      <a href="D05-评价指标与验证深挖.html">D05 评价与验证</a>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    <a href="../题库/quiz-D04.html" class="jump quizlink">本章题库</a></div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">深度课程 · Track A · Chapter D04</p>
+        <h1>聚类与降维</h1>
+        <p class="recap">前三章都是<b>监督学习</b>——数据带着"正确答案"(标签)当老师。这一章转向<b>无监督学习</b>:数据<b>没有标签</b>,让机器自己在里面找结构。两件最常用的事:<b>聚类</b>——把相似的样本自动聚成一堆堆(如给用户分群);<b>降维</b>——把几十上百个特征压到二三维,好可视化、也去噪。没有"正确答案"时,机器照样能学到东西——这一章讲清它怎么学。</p>
+      </header>
+
+      <p>图解骨架约 40 分钟,动手 + 精读约 4~6 小时。用前三章的"监督学习"作对照,会清楚地看到"无监督"到底少了什么、又能做什么。</p>
+
+      <section class="schema-panel">
+        <p class="label">这一章要立起来的骨架</p>
+        <ul>
+          <li>无监督学习——数据没标签,找它自身的结构(对比监督)</li>
+          <li>K-Means——把数据分成 K 堆,反复"分配 → 更新中心"</li>
+          <li>选 K / 层次聚类——肘部法则选 K;层次聚类不用预设 K</li>
+          <li>降维为什么——特征太多、想可视化、去噪</li>
+          <li>PCA 与 t-SNE——一个找最大方差方向(快),一个专为可视化保邻近</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">从哪来 · 到哪去</span>
+        <p><b>接前面:</b>前三章(线性/逻辑/树)都是监督学习;这一章是硬币的另一面。降维用到<a href="../基础课程/03-NumPy数组与形状.html">向量/距离</a>的直觉。<b>通向后面:</b>降维和"把数据压成向量"的思想,直接连到 <a href="../index.html">D13 Embedding 与向量空间</a>——大模型把词压成向量,和 PCA 把数据压到低维是同一种"降维"精神。聚类也是数据探索、给 <a href="../index.html">D06 特征工程</a>找线索的常用手段。</p>
+      </div>
+
+      <!-- ===== 模块 A ===== -->
+      <h2 id="fit"><span class="no">1</span><span>适合谁</span></h2>
+      <ul>
+        <li>手里有一堆<b>没有标注</b>的数据,想先看看"里面有没有自然的分组"的人。</li>
+        <li>特征太多、模型跑不动或看不懂,想<b>压维度 / 画出来看</b>的人。</li>
+        <li>想理解"没有正确答案时,机器学习还能做什么"的人。</li>
+      </ul>
+      <p><b>不适合</b>:只做有标签的预测任务、暂时用不到探索性分析的人——可略读,重点看第 4 节和降维那两节的直觉(它们连向 Embedding)。</p>
+
+      <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
+      <p>会前三章的"监督学习"概念,能形成对照即可。再有一点"两个点之间的距离"(欧氏距离)和"向量"的直觉(<a href="../基础课程/03-NumPy数组与形状.html">第 3 章</a>)就够——聚类和降维大量用到"谁离谁近"。</p>
+
+      <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
+      <ol>
+        <li>说清监督与无监督学习的区别,各举一个例子。</li>
+        <li>描述 K-Means 的"分配 → 更新中心"循环。</li>
+        <li>知道怎么大致选 K(肘部法则),以及层次聚类的不同之处。</li>
+        <li>解释降维在解决什么问题、PCA 和 t-SNE 各自适合什么。</li>
+        <li>用 scikit-learn 对数据做聚类和降维可视化。</li>
+      </ol>
+
+      <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
+      <p class="one-liner">无监督学习:数据<b>只有特征、没有标签</b>(没有人给出"正确答案"),目标是<b>发现数据自身的结构</b>。两大任务:<b>聚类</b>把样本按相似度分成几堆;<b>降维</b>把高维数据压到低维,同时尽量保住原来的结构。前者回答"有哪些自然的群",后者回答"这堆高维数据长什么样"。</p>
+      <p>和监督学习对照最清楚:监督学习像<b>有标准答案的练习册</b>——每道题(样本)都配好答案(标签),模型学"题→答案"的映射(预测房价、判断类别)。无监督学习像<b>没有答案的一堆资料</b>——没有人给出对错,只能自己找规律:哪些资料像一类(聚类)、能不能用更少的维度概括它们(降维)。它常用于<b>探索</b>(拿到新数据先聚类看看有几群)、<b>预处理</b>(先降维再喂给别的模型)、<b>可视化</b>(把高维压到二维画出来)。少了标签这根拐杖,评价好坏也更主观——这是无监督的特点,也是难点。</p>
+
+      <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
+      <figure>
+        <svg viewBox="0 0 760 412" role="img" aria-label="聚类与降维五块地基">
+          <defs><marker id="m-hub" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
+          <line x1="380" y1="78" x2="380" y2="178" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="600" y1="168" x2="476" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="510" y1="330" x2="452" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="250" y1="330" x2="308" y2="244" class="d-soft" marker-end="url(#m-hub)"/>
+          <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
+          <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
+          <text x="380" y="210" text-anchor="middle" class="nl-acc">没标签时,</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">自己找结构</text>
+          <rect x="288" y="32" width="184" height="46" rx="8" class="d-ink nf"/>
+          <text x="380" y="60" text-anchor="middle" class="nl">① 无监督学习</text>
+          <rect x="600" y="122" width="152" height="46" rx="8" class="d-ink nf"/>
+          <text x="676" y="150" text-anchor="middle" class="nl">② K-Means</text>
+          <rect x="446" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="528" y="358" text-anchor="middle" class="nl">③ 选 K / 层次</text>
+          <rect x="150" y="330" width="164" height="46" rx="8" class="d-ink nf"/>
+          <text x="232" y="358" text-anchor="middle" class="nl">④ 降维为什么</text>
+          <rect x="8" y="122" width="160" height="46" rx="8" class="d-ink nf"/>
+          <text x="88" y="150" text-anchor="middle" class="nl">⑤ PCA 与 t-SNE</text>
+        </svg>
+        <figcaption><span class="fig-num">图 1</span>本章五块地基。左半讲聚类(把样本分堆),右半讲降维(把维度压低)——无监督学习的两大主力。</figcaption>
+      </figure>
+
+      <!-- ===== 模块 B ===== -->
+      <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
+      <div class="callout go">
+        <span class="label">默认主线 · 直觉优先</span>
+        <p><b>StatQuest 的 K-means / PCA / t-SNE 三支视频。</b>为什么:聚类和降维极其适合"看动画建直觉",StatQuest 把"分配-更新循环""PCA 怎么找主方向""t-SNE 怎么保邻近"讲得一目了然,远胜啃公式。链接:<a href="https://www.youtube.com/watch?v=4b5d3muPQmA" target="_blank" rel="noopener">StatQuest · K-means</a>、<a href="https://www.youtube.com/watch?v=FgakZw6K1QQ" target="_blank" rel="noopener">PCA</a>、<a href="https://www.youtube.com/watch?v=NEaUSP4YerM" target="_blank" rel="noopener">t-SNE</a>。</p>
+      </div>
+      <p><b>再配两件:</b></p>
+      <ul>
+        <li><b>scikit-learn 文档</b> — <a href="https://scikit-learn.org/stable/modules/clustering.html" target="_blank" rel="noopener">Clustering</a> 与 <a href="https://scikit-learn.org/stable/modules/decomposition.html#pca" target="_blank" rel="noopener">PCA</a>,动手一手参考。</li>
+        <li><b>可视化神器 UMAP</b> — <a href="https://umap-learn.readthedocs.io/en/latest/" target="_blank" rel="noopener">t-SNE 的现代替代</a>,更快、常用于给 Embedding 降维画图。</li>
+      </ul>
+
+      <!-- ===== 模块 C ===== -->
+      <p class="handoff">先把"无监督"和前三章的"监督"彻底分清。</p>
+      <h2 id="unsup"><span class="no">7</span><span>无监督学习是什么</span></h2>
+      <p class="one-liner"><b>监督学习</b>:每个样本都有标签(答案),学"特征 → 标签"。<b>无监督学习</b>:样本<b>只有特征、没有标签</b>,学"数据自身的结构"。区别就一个字:<b>有没有答案在旁边当老师。</b></p>
+      <p>为什么需要它:现实里<b>绝大多数数据是没标签的</b>——标注要花大量人力钱财。给一百万用户打上"高价值/低价值"标签很贵,但直接拿他们的行为数据<b>聚类分群</b>几乎免费,还常常能发现没预设的群体。无监督学习正是榨取"未标注数据"价值的钥匙。它的两大用途——聚类(分堆)和降维(压维)——一个负责<b>发现群体</b>,一个负责<b>看清全貌 / 给别的模型减负</b>。顺带一提:大模型的"预训练"(D16)本质也是无监督的近亲——从海量无标注文本里自己找规律,不需要人逐句标注。</p>
+
+      <p class="handoff">先看最经典的聚类算法:K-Means。</p>
+      <h2 id="kmeans"><span class="no">8</span><span>K-Means:把数据分成 K 堆</span></h2>
+      <p class="one-liner">K-Means:先定要分几堆(K),它就找 K 个"中心点",反复做两件事——<b>①把每个样本分给最近的中心 ②把每个中心挪到它那堆样本的正中间</b>——来回迭代到不再变化。最后每个中心 + 它周围的样本,就是一堆(一个簇)。</p>
+      <p>这个"分配 → 更新"的循环特别好懂:一开始随机撒 K 个中心;每个样本看自己离哪个中心最近,就归到那堆(分配);然后每个中心搬到"自己这堆样本的平均位置"(更新);位置一变,有些样本的"最近中心"就变了,于是再分配、再更新……几轮后中心稳定下来,聚类完成。<b>它简单、快、可扩展</b>,是聚类的第一选择。局限也明确:得<b>先指定 K</b>(下一节解决)、只擅长找"团状(球形)"的簇、对初始位置和离群点敏感。但作为"拿到无标签数据先跑一下看看"的工具,它无可替代。</p>
+      <figure>
+        <svg viewBox="0 0 560 240" role="img" aria-label="K-Means 把散点分成三堆">
+          <line x1="40" y1="210" x2="530" y2="210" class="d-ink"/><line x1="40" y1="210" x2="40" y2="20" class="d-ink"/>
+          <circle cx="110" cy="70" r="5" class="dot-acc"/><circle cx="140" cy="95" r="5" class="dot-acc"/><circle cx="95" cy="110" r="5" class="dot-acc"/><circle cx="135" cy="60" r="5" class="dot-acc"/>
+          <path d="M118 85 l-6 -6 m6 6 l6 -6 m-6 6 l-6 6 m6 -6 l6 6" class="d-acc"/><text x="150" y="60" class="el-acc">簇 1 中心</text>
+          <circle cx="300" cy="150" r="5" class="dot"/><circle cx="330" cy="175" r="5" class="dot"/><circle cx="285" cy="180" r="5" class="dot"/><circle cx="320" cy="145" r="5" class="dot"/>
+          <path d="M308 165 l-6 -6 m6 6 l6 -6 m-6 6 l-6 6 m6 -6 l6 6" class="d-ink"/><text x="270" y="205" class="el">簇 2 中心</text>
+          <circle cx="440" cy="70" r="5" class="dot"/><circle cx="470" cy="95" r="5" class="dot"/><circle cx="425" cy="105" r="5" class="dot"/><circle cx="465" cy="60" r="5" class="dot"/>
+          <path d="M448 85 l-6 -6 m6 6 l6 -6 m-6 6 l-6 6 m6 -6 l6 6" class="d-ink"/><text x="470" y="55" class="el">簇 3 中心</text>
+          <text x="285" y="30" text-anchor="middle" class="el">✕ = 中心;每个样本归给最近的中心</text>
+        </svg>
+        <figcaption><span class="fig-num">图 2</span>K-Means:找 K 个中心(✕),每个样本归给最近的中心成一堆。中心反复挪到各自堆的正中间,直到稳定。这里 K=3。</figcaption>
+      </figure>
+
+      <p class="handoff">K 得自己定——定多少?不想定又怎么办?</p>
+      <h2 id="choosek"><span class="no">9</span><span>选 K 与层次聚类</span></h2>
+      <p class="one-liner">K 不好定时,用<b>肘部法则</b>:把 K 从小到大试,画"K vs 簇内总离散度"曲线,曲线明显变缓的那个"肘部"就是不错的 K。若压根不想预设 K,用<b>层次聚类</b>:它从每个点各成一簇开始,不断把最近的两簇合并,生成一棵可以在任意高度"切一刀"决定簇数的树。</p>
+      <p><b>肘部法则</b>的直觉:K 越大,每堆越小、堆内越紧凑(离散度越低),但 K 到一定程度后再加,收益就骤减——曲线从陡降变平缓,那个转折(肘)就是性价比最高的 K。它不给唯一答案,给一个合理区间。<b>层次聚类</b>换了思路:不预设 K,而是自底向上不断合并最近的簇,画成一棵<b>树状图(dendrogram)</b>;想要几簇,就在相应高度横切一刀。它还能揭示簇之间的"亲疏层级"(哪两群更像),信息比 K-Means 丰富,代价是更慢、不适合超大数据。<b>没有唯一正确的簇数</b>——这正是无监督"没有标准答案"的体现,K 的选择往往要结合业务判断。</p>
+
+      <p class="handoff">聚类之外的另一大主力:把维度压下来。</p>
+      <h2 id="whydr"><span class="no">10</span><span>降维为什么</span></h2>
+      <p class="one-liner">降维:把<b>几十上百个特征压成两三个</b>,同时尽量保住数据的结构。三个动机:<b>可视化</b>(人只能看二三维,高维得压下来才能画)、<b>去噪 / 提效</b>(去掉冗余特征,模型更快更稳)、<b>对抗"维度灾难"</b>(维度越高,数据越稀疏、距离越失真)。</p>
+      <p>"维度灾难"值得记一下:特征一多,样本在高维空间里就变得极其稀疏,"谁离谁近"这种判断开始失灵(所有点看起来都差不多远),很多算法性能因此崩坏。降维把数据投影到"最有信息量"的少数几个方向,既缓解这个问题,又让人能把上百维的数据<b>画在一张二维图上</b>用肉眼看结构——这在探索阶段极其有用。注意:降维会<b>丢一部分信息</b>(从 100 维压到 2 维不可能无损),目标是"丢掉最不重要的、保住最重要的"。这和聚类常常配合:先降维、再在低维空间聚类或可视化。</p>
+
+      <p class="handoff">怎么"保住最重要的"?两种主流思路。</p>
+      <h2 id="pca"><span class="no">11</span><span>PCA 与 t-SNE</span></h2>
+      <p class="one-liner"><b>PCA(主成分分析)</b>:找数据<b>最"铺得开"(方差最大)的几个方向</b>,把数据投影上去。线性、快、可解释,适合压维 + 去噪 + 喂给别的模型。<b>t-SNE / UMAP</b>:非线性,<b>专为可视化</b>——它努力让"原本挨得近的点,在二维图上也挨得近",能把复杂结构摊平成好看的分组图。</p>
+      <p>直觉对比:<b>PCA</b> 像给一团数据云找"最佳拍照角度"——从哪个方向看,这团云铺得最开、信息损失最小,就从那个方向拍(投影)。它保的是"全局的大方向",快且稳,常作为预处理。<b>t-SNE/UMAP</b> 目标不同:它不在乎全局距离对不对,只死磕"邻居关系"——原来是邻居的,压到二维也让它们做邻居;于是画出来常常是一坨坨清晰的分组,特别适合"看看数据里有没有天然的群"。<b>代价</b>:t-SNE 慢、结果随机、图上簇的大小和间距<b>不能当真</b>(只表示邻近、不代表实际距离)。经验:<b>要压维喂模型用 PCA;要画图看分组用 t-SNE/UMAP。</b>这套"把高维数据压成低维向量、还保住关系"的思想,正是理解 <a href="../index.html">D13 Embedding</a> 的直接铺垫——大模型也把词压成向量,常用 UMAP 降到二维给人看。</p>
+
+      <!-- ===== 模块 D ===== -->
+      <p class="handoff">把聚类和降维放到一份数据上跑一遍。</p>
+      <h2 id="assemble"><span class="no">12</span><span>组装:聚类 + 降维可视化</span></h2>
+      <p>用经典的鸢尾花数据:先 PCA 压到二维好画,再 K-Means 聚成三堆,看机器"没看标签"能不能自己分出三种花:</p>
+      <div class="code-block">
+        <div class="chead"><span class="fn">cluster_pca.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
+<pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.datasets </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> load_iris</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.cluster </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> KMeans</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.decomposition </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> PCA</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#14181F">X, y_true </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> load_iris(return_X_y</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)     </span><span style="color:#8B95A8;font-style:italic"># y_true 只用来最后对答案,训练时不看</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># ⑤ 降维:4 个特征 → 2 维,好画图</span></span>
+<span class="line"><span style="color:#14181F">X2 </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> PCA(n_components</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">2).fit_transform(X)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># ⑧ 聚类:不看标签,自己分 3 堆</span></span>
+<span class="line"><span style="color:#14181F">labels </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> KMeans(n_clusters</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">3, n_init</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">10, random_state</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">0).fit_predict(X)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 看每个「机器分出的堆」里,真实花的种类分布(评估聚类合不合理)</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> numpy </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> np</span></span>
+<span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> c </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> range(3):</span></span>
+<span class="line"><span style="color:#14181F">    print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"簇 </span><span style="color:#557089">{</span><span style="color:#14181F">c</span><span style="color:#557089">}</span><span style="color:#557089">: 真实种类分布 ="</span><span style="color:#14181F">, np.bincount(y_true[labels </span><span style="color:#14181F;font-weight:bold">==</span><span style="color:#14181F"> c], minlength</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">3))</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 你会看到:三个簇大体对应三种花——机器没看答案也分出来了</span></span></code></pre>
+      </div>
+      <p>逐块对照:<code>PCA(n_components=2)</code> 把 4 维压成 2 维(⑤,为了能画在平面上);<code>KMeans(n_clusters=3)</code> <b>不看 <code>y_true</code></b> 就把样本分成 3 堆(⑧)。最后拿 <code>y_true</code> 只是<b>对答案</b>:会发现三个机器分出的簇,大体各自对应一种真花——<b>它没被告诉任何标签,却重新发现了"这里有三种花"</b>。这就是无监督的魔力。若把 <code>X2</code> 用散点画出来(<code>matplotlib</code> 一句 <code>scatter</code>),还能亲眼看到三团分开的点。</p>
+      <div class="challenge">
+        <span class="label">进阶挑战</span>
+        <h3>改改看</h3>
+        <p>①把 <code>n_clusters</code> 改成 2 和 5,用肘部法则(对每个 K 记 <code>kmeans.inertia_</code> 画曲线)找"肘"在哪。②把 PCA 换成 <code>TSNE(n_components=2)</code>,对比两张二维图——t-SNE 的分组通常更"抱团"。③先只用 PCA 画图、用真实标签 <code>y_true</code> 上色,直观看看这三种花本来分不分得开。④想想:如果事先不知道有"三种花",肘部法则会不会也指向 K=3?</p>
+      </div>
+
+      <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——真正的细节和深度在那里。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html">AI 学习资源库</a>;下列链接均于 2026-08-17 核实在线。</p>
+      <div class="reslist">
+        <div class="res spine-card">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=4b5d3muPQmA" target="_blank" rel="noopener">StatQuest · K-means</a></span><span class="spine">默认主线</span><span class="tags">视频 · 英文(可开字幕) · 20min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">用动画把 K-Means"就近归堆 → 重算中心"的循环讲透。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">无监督不好想象;它把"机器自己分堆"这件事画得一目了然。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全片(含"K 怎么定")。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「K-Means 分堆」节。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=FgakZw6K1QQ" target="_blank" rel="noopener">StatQuest · PCA</a></span><span class="tags">视频 · 英文(可开字幕) · 20min · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">一步步讲 PCA 怎么找"方差最大的主方向"来降维。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">降维听着抽象;它把"压维度还保住主要信息"讲成看得见的几何。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Step-by-Step 那集。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「PCA/t-SNE 压维可视化」节——通向 D13 Embedding。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://umap-learn.readthedocs.io/en/latest/" target="_blank" rel="noopener">UMAP 文档</a></span><span class="tags">官方 · 工具 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">比 t-SNE 更快的降维可视化工具,常用来把词向量/Embedding 画到二维。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">以后想把大模型的 Embedding"看"出结构时,基本就用它。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Basic Usage。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「降维可视化」节的延伸。</span></div>
+        </div>
+        <div class="res">
+          <div class="rh"><span class="rt2"><a href="https://scikit-learn.org/stable/modules/clustering.html" target="_blank" rel="noopener">scikit-learn · Clustering</a></span><span class="tags">官方 · 当字典查 · 按需 · 免费</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">各种聚类算法的一手文档 + 对比图。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">动手时查用法;那张"各算法在不同数据上的表现"对比图很值得看。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">K-Means / 层次聚类;顶部的对比图。</span></div>
+          <div class="rrow"><span class="rk">对应本章</span><span class="rv">配本章 PCA+KMeans on iris 代码。</span></div>
+        </div>
+      </div>
+
+      <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
+      <table class="tbl">
+        <caption>表 2 · 五个常见误区</caption>
+        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <tbody>
+          <tr><td>聚类会告诉我"正确的分组"</td><td>无监督没有标准答案。簇数和分法要结合业务判断,不同 K 都可能"对"。</td></tr>
+          <tr><td>K-Means 能分出任意形状的簇</td><td>它擅长团状(球形)簇;细长/环形结构分不好,要换 DBSCAN 等。</td></tr>
+          <tr><td>降维不损失信息</td><td>从高维压到二三维必然丢信息,目标是丢最不重要的、保最重要的。</td></tr>
+          <tr><td>t-SNE 图上簇的大小/距离有意义</td><td>不能当真。t-SNE 只保邻近关系;簇的大小和间距是"画出来的",别过度解读。</td></tr>
+          <tr><td>PCA 和 t-SNE 可以互换</td><td>PCA 快、线性、可喂模型;t-SNE 慢、非线性、专为可视化。用途不同。</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
+      <ol class="steps">
+        <li><b>一句话本质。</b>无监督学习和监督学习差在哪?<details><summary>参考答案</summary><p>有没有标签(答案)。监督学"特征→标签";无监督只有特征,找数据自身结构(聚类/降维)。</p></details></li>
+        <li><b>K-Means。</b>它反复做的两件事是什么?<details><summary>参考答案</summary><p>①把每个样本分给最近的中心;②把每个中心挪到它那堆样本的平均位置。迭代到稳定。</p></details></li>
+        <li><b>选 K。</b>肘部法则怎么用?<details><summary>参考答案</summary><p>试不同 K,画"K vs 簇内离散度"曲线,曲线明显变缓的"肘"处就是性价比高的 K。没有唯一答案。</p></details></li>
+        <li><b>降维。</b>PCA 和 t-SNE 各适合什么?<details><summary>参考答案</summary><p>PCA:找最大方差方向,线性快,压维/去噪/喂模型;t-SNE/UMAP:非线性、保邻近,专为可视化看分组。</p></details></li>
+      </ol>
+
+      <h2 id="checklist"><span class="no">16</span><span>学完之后自查清单</span></h2>
+      <p>能勾 6 条以上再进 D05(勾选状态存在本机浏览器):</p>
+      <div class="self-check">
+        <ul class="checklist">
+          <li><input type="checkbox"> 我能说清监督与无监督学习的区别并各举一例</li>
+          <li><input type="checkbox"> 我能描述 K-Means 的"分配 → 更新中心"循环</li>
+          <li><input type="checkbox"> 我知道肘部法则怎么帮我选 K</li>
+          <li><input type="checkbox"> 我理解层次聚类不用预设 K、能给出树状层级</li>
+          <li><input type="checkbox"> 我知道降维在解决可视化 / 去噪 / 维度灾难</li>
+          <li><input type="checkbox"> 我能说清 PCA 与 t-SNE 的区别与各自用途</li>
+          <li><input type="checkbox"> 我明白降维/向量化的思想连向 D13 Embedding</li>
+        </ul>
+      </div>
+
+      <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
+      <p>Track A 走到这里,已见过监督(线性/逻辑/树)和无监督(聚类/降维)两大类模型。但有个问题一直悬着:<b>怎么知道一个模型到底好不好?</b>光看"准确率"其实常常骗人(比如 99% 的邮件不是垃圾,一个"全判不是垃圾"的模型准确率也有 99%,却毫无用处)。<a href="D05-评价指标与验证深挖.html">D05 · 评价指标与验证深挖</a>专治这个:混淆矩阵、精确率/召回率、ROC/AUC、交叉验证、超参搜索——学会科学地评价模型,才敢相信它。学完 D05,就能动手做项目 <a href="../index.html">P2 第一个预测模型</a>了。</p>
+      <nav class="chapter-nav" aria-label="章节导航">
+        <a href="D03-决策树随机森林与梯度提升.html"><span class="lb">上一章</span><span class="tt">D03 · 决策树与集成</span></a>
+        <a href="D05-评价指标与验证深挖.html" class="next"><span class="lb">下一章</span><span class="tt">D05 · 评价指标与验证深挖</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">D04 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">A 先看清楚</span>
+        <a data-toc-target="fit" href="#fit"><i>1</i>适合谁</a>
+        <a data-toc-target="prereq" href="#prereq"><i>2</i>前置知识</a>
+        <a data-toc-target="outcome" href="#outcome"><i>3</i>读完能做到什么</a>
+        <a data-toc-target="essence" href="#essence"><i>4</i>一句话本质</a>
+        <a data-toc-target="map" href="#map"><i>5</i>概念地图</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">B 怎么学(重点)</span>
+        <a data-toc-target="path" href="#path"><i>6</i>统一学习路径</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">C 五块地基</span>
+        <a data-toc-target="unsup" href="#unsup"><i>7</i>无监督学习</a>
+        <a data-toc-target="kmeans" href="#kmeans"><i>8</i>K-Means</a>
+        <a data-toc-target="choosek" href="#choosek"><i>9</i>选 K / 层次</a>
+        <a data-toc-target="whydr" href="#whydr"><i>10</i>降维为什么</a>
+        <a data-toc-target="pca" href="#pca"><i>11</i>PCA 与 t-SNE</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">D 组装 · 消化</span>
+        <a data-toc-target="assemble" href="#assemble"><i>12</i>聚类+降维</a>
+        <a data-toc-target="reflist" href="#reflist"><i>13</i>外部资源</a>
+        <a data-toc-target="myths" href="#myths"><i>14</i>常见误区</a>
+        <a data-toc-target="practice" href="#practice"><i>15</i>自测思考</a>
+        <a data-toc-target="checklist" href="#checklist"><i>16</i>自查清单</a>
+        <a data-toc-target="next" href="#next"><i>17</i>连接下一章</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/study-tracker.js" data-ch="D04" data-kind="chapter" data-title="聚类与降维"></script>
+</body>
+</html>
