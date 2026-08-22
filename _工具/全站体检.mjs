@@ -10,6 +10,8 @@ const files = []
 ;(function walk(d) {
   for (const n of readdirSync(d)) {
     if (n === '_备份' || n === '_工具' || n === '_样本预览' || n === 'node_modules') continue
+    // skill/ 是模板库,里面的 THIS.html、#path 这类是占位符,不是死链
+    if (n === 'skill' || n === '.git') continue
     const p = join(d, n)
     if (statSync(p).isDirectory()) walk(p)
     else if (n.endsWith('.html') && !n.includes('.bak')) files.push(p)

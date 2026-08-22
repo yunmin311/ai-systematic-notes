@@ -1,0 +1,61 @@
+<!doctype html><meta charset="utf-8"><body style="background:#fff;font-family:'Noto Sans SC',sans-serif;padding:20px">
+
+<pre class="mermaid" id="d1">
+flowchart TD
+  V["① 变量与类型"] --> C
+  L["② 容器 list / dict"] --> C
+  F["③ 控制流 if / for"] --> C
+  D["④ 函数 def"] --> C
+  E["⑤ 读报错"] --> C
+  C(["读懂并改写数据代码"])
+  classDef accent fill:#eef1f6,stroke:#2743c7,stroke-width:1.6px,color:#2743c7;
+  class C accent;
+</pre>
+
+<pre class="mermaid" id="d4">
+flowchart LR
+  K1["「名字」"] --> V1["「阿岩」"]
+  K2["「年龄」"] --> V2["20"]
+  K3["「分数」"] --> V3["[95, 85]"]
+</pre>
+
+<pre class="mermaid" id="d5">
+flowchart TD
+  A["score = 55"] --> B{"score ≥ 60 ?"}
+  B -->|"成立 True"| C["print(及格)"]
+  B -->|"不成立 False"| D["print(不及格)"]
+</pre>
+
+<pre class="mermaid" id="d6">
+flowchart LR
+  S(["scores = [88, 92, 79]"]) --> T{"还有下一个?"}
+  T -->|"有"| B["取出 s，total = total + s"]
+  B --> T
+  T -->|"取完了"| E["循环结束，算平均"]
+</pre>
+
+<pre class="mermaid" id="d7">
+flowchart LR
+  I["参数进<br/>[88, 92, 79]"] --> F["average(numbers)<br/>sum / len"]
+  F --> O["return 出<br/>86.33"]
+  classDef box fill:#f4f6fb,stroke:#2743c7,stroke-width:1.6px,color:#14181f;
+  class F box;
+</pre>
+
+<script type="module">
+  import mermaid from './node_modules/mermaid/dist/mermaid.esm.mjs'
+  mermaid.initialize({
+    startOnLoad:false, theme:'base', securityLevel:'loose',
+    themeVariables:{
+      background:'#ffffff', primaryColor:'#ffffff', primaryBorderColor:'#14181f',
+      primaryTextColor:'#14181f', lineColor:'#8b95a8', secondaryColor:'#f4f6fb',
+      tertiaryColor:'#ffffff', fontFamily:"'Microsoft YaHei','Noto Sans SC',sans-serif", fontSize:'14px',
+      edgeLabelBackground:'#ffffff'
+    },
+    htmlLabels:false,
+    flowchart:{ curve:'basis', htmlLabels:false, nodeSpacing:48, rankSpacing:52, padding:16 }
+  })
+  await mermaid.run()
+  window.__done = true
+</script>
+</body>

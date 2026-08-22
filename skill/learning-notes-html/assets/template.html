@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NN · 章节标题</title>
+<style>
+/* ============================================================
+   笔记基准线 · 单一强调色(群青蓝)+ 灰阶,自足单文件、离线可看
+   —— 这份 CSS 是 02-Python 定稿后的成品,直接用、别重造。
+   6 级字号 / 单一左边线(悬挂竖线)/ 说明块共用一个骨架 / 图带外框
+
+   ★ 定制窗口(换皮不动骨):下面这个 :root 就是配色/字体/间距的总开关。
+     换个性化配色只改这里的 token;换主题、加动效见 references/theming.md。
+     结构和三条不变量(字号只 7 种 / 只一个强调色 / 正文一条左边线)别动。
+   ============================================================ */
+:root{
+  --bg:#eef1f6;          /* 冷灰蓝纸 */
+  --surface:#ffffff;     /* 卡片/代码/图 底 */
+  --raise:#f4f6fb;       /* 报错面板等浅底 */
+  --bg-edge:#e9edf5;     /* 代码头 */
+  --ink:#14181f;         /* 正墨 */
+  --ink-soft:#55617a;    /* 次要 */
+  --ink-faint:#8b95a8;   /* 更淡 */
+  --rule:#d8dee9;        /* 分隔线/描边 */
+  --acc:#2743c7;         /* 唯一强调色 · 群青蓝 */
+  --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  /* 字号阶梯:全站只有这 6 级,任何元素只能取其一,不许再冒别的数字 */
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px;
+  --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;   /* 标题要够突出:和正文拉开档 */
+  --pad-block:14px 18px; --gap-block:20px;
+  --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+
+/* 边角小标(面包屑/目录/代码头):等宽、克制,属于「界面」 */
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,
+.toc-sidebar .toc-label,.toc-group .tg{
+  font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;
+  letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+/* 内容块的小标签:安静的小灰字,不大写、不上色、不加字距 */
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{
+  font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;
+  letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);
+  backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);
+  padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;
+  max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:24px;}}
+
+/* 骨架面板:与说明块同一套悬挂竖线,左线更粗更墨 */
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}  /* margin:0 覆盖通用 article li 的 .9em,否则骨架项行距过大 */
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+
+/* 正文 */
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+/* 行内代码:底色和页面拉开(#dbe2ef),文字走 ink-soft,看得出又不刺眼 */
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;
+  padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);
+  text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+/* 过渡句:朴素段落,字号同正文、灰、左对齐、无符号、不加粗、不用斜体 */
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+/* 列表:文字左对齐到正文边线,标记(—/序号)悬挂到沟槽,不用小圆点 */
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+/* 行距逻辑:分点「内」收紧(1.55)、分点「间」放开(.85em)——一条 li 读成一个单元 */
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+
+/* 标题层级:只靠字号 + 等宽序号 + 顶边线,不靠颜色。节号与标题文字同墨色、加粗、略大 */
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;
+  margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;
+  display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}  /* .9em:跟着标题走、和标题贴合 */
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+article h2.bare{border-top:none;padding-top:0;margin-top:0;}
+
+/* 一句话定义 */
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;
+  margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+
+/* 说明块统一骨架:悬挂左线3px + 小标签 + 正文;只用左线颜色区分,文字左边缘=正文 */
+.rationale,.callout,.predict,.challenge{
+  background:none;border-left:3px solid var(--ink-faint);
+  padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+/* 左线一律中性灰,只有真正的「警示」才上强调色的左线;所有块标签一律灰,不给 warn 标签上蓝(否则又冒出多种标签样式) */
+.callout.warn{border-left-color:var(--acc);}
+
+/* 代码块(壳)——里面的 <pre> 交给 Shiki 渲染,见 scripts/convert-code.mjs */
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;
+  background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);
+  cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+
+/* 表格:细横线、不填色、留足空隙;题注在下方居中、灰 */
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);
+  text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);
+  padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl-scroll{overflow-x:auto;}
+
+/* 图:每张都套白底外框;里面的 SVG 交给 Mermaid / 自制,见 scripts/ 与 production-pipeline.md */
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}  /* 兜底:图里没写字体的文字不落回 Arial */
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-code{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink);text-align:center;margin:0 0 16px;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+/* 索引格子:本质是表→做成表,不手绘 */
+.idxgrid{margin:0 auto;border-collapse:collapse;text-align:center;}
+.idxgrid th{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);font-weight:600;text-align:right;padding:6px 14px 6px 0;white-space:nowrap;}
+.idxgrid td{font-family:var(--mono);width:62px;padding:6px 0;font-size:var(--fs-small);color:var(--ink-faint);}
+.idxgrid tr.cells td{border:1px solid var(--rule);padding:12px 0;font-size:var(--fs-lead);font-weight:700;color:var(--ink);}
+/* 报错面板:本质是文本→做成面板,不画图。倒着读,末行是钥匙 */
+.trace{font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;background:var(--raise);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;overflow-x:auto;}
+.trace>span{display:block;white-space:pre-wrap;}
+.trace .dim{color:var(--ink-faint);}
+.trace .dim b{color:var(--ink-soft);font-weight:600;}
+.trace .key{margin-top:8px;padding-left:10px;border-left:2px solid var(--acc);color:var(--ink);font-weight:700;}
+.trace .key em{font-style:normal;color:var(--ink-soft);font-weight:400;margin-left:8px;}
+/* 自制 SVG 图的工具类(辐射/概念图复用,和 Mermaid 视觉一致):三线三填充 + 白描边光晕 */
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nf-ink{fill:var(--ink);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.nl-inv{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--surface);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-mono{font-family:var(--mono);font-size:12px;fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+
+/* 折叠(答案):盒子样式已并入说明块骨架,这里只管三角 */
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);
+  letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;
+  overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+
+/* 练习步骤 */
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;
+  border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;
+  line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+
+/* 自测清单 */
+.self-check{margin:20px 0;}  /* 自查区不自带重线,分节靠 h2 顶边线即可(h2 别加 .bare) */
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+
+/* 进阶挑战:盒子并入统一骨架,只管内部小标题 */
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+
+/* 章节导航(章尾) */
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.chapter-nav a.disabled{opacity:.55;pointer-events:none;}
+
+/* 常驻目录 */
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;
+  border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+
+@media(prefers-reduced-motion:no-preference){
+  .chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}
+  .schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}
+}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <!-- 面包屑:改成本章的上一/当前/下一 -->
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="PREV.html">NN-1 上一章</a><span class="sep">—</span>
+      <a href="THIS.html" class="current">NN 本章</a><span class="sep">—</span>
+      <span class="plan">NN+1 下一章(制作中)</span>
+      <span class="spacer"></span>
+      <a href="#path" class="jump">学习路径</a>
+      <a href="#practice" class="jump">练习</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">基础课程 · Chapter NN</p>
+        <h1>章节标题</h1>
+        <p class="recap">一段 recap:从上一章接来什么、本章角色是什么、通向下一章什么。</p>
+      </header>
+
+      <!-- 章首骨架清单(第二段固定件) -->
+      <section class="schema-panel">
+        <p class="label">读完这一章,你脑子里会立起来的骨架</p>
+        <ul>
+          <li>地基一——一句话</li>
+          <li>地基二——一句话</li>
+        </ul>
+      </section>
+
+      <!-- ↓↓↓ 正文小节从这里开始。每个概念节的固定节奏:
+           <p class="handoff">过渡句</p>
+           <h2 id="xxx"><span class="no">N</span><span>小节标题</span></h2>
+           <p class="one-liner">术语<span class="en">en</span>:一句话定义。</p>
+           <p>散文讲解(加粗领句省着用)…</p>
+           <figure>…一张图…</figure>
+           <div class="code-block"><div class="chead">…</div><pre>…交给 Shiki…</pre></div>
+           <div class="callout go"><span class="label">去精读</span><p>外链三件套…</p></div>
+      -->
+      <!-- CONTENT -->
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本章目录">
+      <p class="toc-label">第 NN 章 · 目录</p>
+      <!-- 每个大模块一个 .toc-group;a 的 data-toc-target 必须等于对应 h2 的 id -->
+      <div class="toc-group">
+        <span class="tg">A 模块名</span>
+        <a data-toc-target="xxx" href="#xxx"><i>1</i>小节标题</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+/* 1. 进度条 */
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;
+  progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+
+/* 2. 目录高亮当前小节(data-toc-target 对应 h2 的 id) */
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){
+  var link=tocByCid.get(e.target.id);if(!link)return;
+  if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}
+});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+
+/* 3. 代码复制 */
+document.querySelectorAll('.code-block .copy').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;
+    navigator.clipboard.writeText(pre.innerText).then(function(){
+      var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');
+      setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);
+    }).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});
+  });
+});
+</script>
+</body>
+</html>

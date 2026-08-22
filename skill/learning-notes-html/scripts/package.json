@@ -1,0 +1,1 @@
+{"name":"render","private":true,"type":"module","dependencies":{"mermaid":"^11.16.1","shiki":"^4.4.3"}}
