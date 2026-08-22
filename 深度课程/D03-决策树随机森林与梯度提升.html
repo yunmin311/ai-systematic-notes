@@ -185,10 +185,10 @@ body{
         <p class="recap">前两章的模型都用"一条直线"分界。这一章换一条完全不同的思路:<b>不画线,而是一层层地问"是/否",把数据切成一块块</b>——像玩"二十个问题"。这就是<b>决策树</b>:直观、可解释,但单棵容易过拟合。于是把很多棵树<b>组合</b>起来——<b>随机森林</b>(投票)和<b>梯度提升</b>(接力纠错)。后者(XGBoost/LightGBM)至今是<b>表格数据上最能打的模型之一</b>,Kaggle 常胜将军。</p>
       </header>
 
-      <p>图解骨架约 45 分钟,动手 + 精读约 5~7 小时。用 D01/D02 的"直线边界"作对照,会看到"边界"也可以是一块块拼出来的。</p>
+      <p>图解骨架约 45 分钟,动手 + 精读约 5~7 小时。用 D01/D02 的"直线边界"作对照,我会看到"边界"也可以是一块块拼出来的。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>决策树——一串 if-else 问题把数据分到叶子,直观可解释</li>
           <li>怎么分裂——每次选让两边"更纯"的特征和阈值(贪心)</li>
@@ -258,7 +258,7 @@ body{
       <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
       <div class="callout go">
         <span class="label">默认主线 · 直觉优先</span>
-        <p><b>StatQuest 的决策树 / 随机森林 / 梯度提升三部曲。</b>为什么:它用画图把"怎么分裂、怎么投票、怎么接力纠错"讲得极清楚,是这套算法公认最好的入门。看完会对"集成为什么强"有扎实直觉。链接:<a href="https://www.youtube.com/watch?v=_L39rN6gz7Y" target="_blank" rel="noopener">StatQuest · Decision Trees</a>、<a href="https://www.youtube.com/watch?v=J4Wdy0Wc_xQ" target="_blank" rel="noopener">Random Forests</a>、<a href="https://www.youtube.com/watch?v=3CC4N4z3GJc" target="_blank" rel="noopener">Gradient Boost</a>。</p>
+        <p><b>StatQuest 的决策树 / 随机森林 / 梯度提升三部曲。</b>为什么:它用画图把"怎么分裂、怎么投票、怎么接力纠错"讲得极清楚,是这套算法公认最好的入门。看完我会对"集成为什么强"有扎实直觉。链接:<a href="https://www.youtube.com/watch?v=_L39rN6gz7Y" target="_blank" rel="noopener">StatQuest · Decision Trees</a>、<a href="https://www.youtube.com/watch?v=J4Wdy0Wc_xQ" target="_blank" rel="noopener">Random Forests</a>、<a href="https://www.youtube.com/watch?v=3CC4N4z3GJc" target="_blank" rel="noopener">Gradient Boost</a>。</p>
       </div>
       <p><b>再配两件:</b></p>
       <ul>
@@ -270,7 +270,7 @@ body{
       <p class="handoff">先看一棵树本身:它就是一串问题。</p>
       <h2 id="tree"><span class="no">7</span><span>决策树是什么</span></h2>
       <p class="one-liner">决策树是<b>一串嵌套的是非问题</b>:从根节点问一个问题(如"面积 > 80?"),按答案往左或往右,再问下一个,直到走到<b>叶子</b>——叶子里存的就是预测(某个类别或某个数值)。预测一个新样本,就是顺着问题从根走到叶。</p>
-      <p>这就是"二十个问题"游戏:每问一个好问题,就把可能性砍掉一半。举例判断一套房贵不贵:先问"面积 > 100 吗?"——是,再问"地段是市中心吗?"——是,落到"贵"这个叶子。整棵树把特征空间切成了一块块矩形区域,每块给一个预测。<b>最大的好处是可解释</b>:能一眼看出模型凭什么这么判(哪几个问题、什么阈值),这在很多需要说明理由的场景(信贷、医疗)极其宝贵——线性模型看权重,树模型看路径。</p>
+      <p>这就是"二十个问题"游戏:每问一个好问题,就把可能性砍掉一半。举例判断一套房贵不贵:先问"面积 > 100 吗?"——是,再问"地段是市中心吗?"——是,落到"贵"这个叶子。整棵树把特征空间切成了一块块矩形区域,每块给一个预测。<b>最大的好处是可解释</b>:我能一眼看出模型凭什么这么判(哪几个问题、什么阈值),这在很多需要说明理由的场景(信贷、医疗)极其宝贵——线性模型看权重,树模型看路径。</p>
       <figure>
         <svg viewBox="0 0 560 250" role="img" aria-label="一棵决策树的结构">
           <defs><marker id="m-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
@@ -363,11 +363,11 @@ body{
 <span class="line"><span style="color:#14181F">    te </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> model.score(X_te, y_te)          </span><span style="color:#8B95A8;font-style:italic"># 测试集准确率(才是真本事)</span></span>
 <span class="line"><span style="color:#14181F">    print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"</span><span style="color:#557089">{</span><span style="color:#14181F">name</span><span style="color:#14181F;font-weight:bold">:22s</span><span style="color:#557089">}</span><span style="color:#557089"> 训练 </span><span style="color:#557089">{</span><span style="color:#14181F">tr</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089">  测试 </span><span style="color:#557089">{</span><span style="color:#14181F">te</span><span style="color:#14181F;font-weight:bold">:.3f</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)</span></span></code></pre>
       </div>
-      <p>跑出来会看到几件典型的事:<b>不限深度的决策树训练集常常 1.000(背下来了)、测试集却明显更低</b>——活教材式的过拟合(⑨);<code>max_depth=3</code> 的树训练集降一点、但测试集反而更稳;<b>随机森林和梯度提升的测试集通常最高</b>(⑩⑪),集成的威力。把 <code>DecisionTreeClassifier</code> 换成 <code>...Regressor</code>、数据换成回归任务,同一套代码就做回归——树天生通吃分类和回归。</p>
+      <p>跑出来我会看到几件典型的事:<b>不限深度的决策树训练集常常 1.000(背下来了)、测试集却明显更低</b>——活教材式的过拟合(⑨);<code>max_depth=3</code> 的树训练集降一点、但测试集反而更稳;<b>随机森林和梯度提升的测试集通常最高</b>(⑩⑪),集成的威力。把 <code>DecisionTreeClassifier</code> 换成 <code>...Regressor</code>、数据换成回归任务,同一套代码就做回归——树天生通吃分类和回归。</p>
       <div class="challenge">
         <span class="label">进阶挑战</span>
         <h3>改改看</h3>
-        <p>①把决策树的 <code>max_depth</code> 从 1 调到 20,画出训练集和测试集准确率随深度的变化——会看到经典的"过拟合剪刀差"。②看 <code>RandomForestClassifier(...).feature_importances_</code>,哪些特征最重要?对比 D02 逻辑回归的 <code>coef_</code>。③装上 <code>xgboost</code> 或 <code>lightgbm</code>,用 <code>XGBClassifier</code> 跑同一份数据,看能不能再高一点。④把 <code>n_estimators</code>(树的数量)从 10 加到 500,看森林的测试准确率怎么变(通常先升后平)。</p>
+        <p>①把决策树的 <code>max_depth</code> 从 1 调到 20,画出训练集和测试集准确率随深度的变化——我会看到经典的"过拟合剪刀差"。②看 <code>RandomForestClassifier(...).feature_importances_</code>,哪些特征最重要?对比 D02 逻辑回归的 <code>coef_</code>。③装上 <code>xgboost</code> 或 <code>lightgbm</code>,用 <code>XGBClassifier</code> 跑同一份数据,看能不能再高一点。④把 <code>n_estimators</code>(树的数量)从 10 加到 500,看森林的测试准确率怎么变(通常先升后平)。</p>
       </div>
 
       <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
@@ -406,7 +406,7 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 2 · 五个常见误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>深度学习最强,树模型过时了</td><td>表格数据上,梯度提升(XGBoost/LightGBM)常胜过神经网络,且更快更省心。</td></tr>
           <tr><td>树越深越准</td><td>越深越容易过拟合(背训练集)。要限深度/剪枝,看的是测试集表现。</td></tr>
@@ -439,7 +439,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
-      <p>到这里,已经会用"有标签数据"训练预测模型了(线性、逻辑、树)——这些都叫<b>监督学习</b>(有正确答案作老师)。<a href="D04-聚类与降维.html">D04 · 聚类与降维</a>转向<b>无监督学习</b>:数据<b>没有标签</b>,让模型自己找结构——把相似的样本<b>聚成一堆堆</b>(聚类,如给用户分群),或把高维数据<b>压到二三维好可视化</b>(降维,如 PCA/t-SNE)。没有"正确答案"时,机器还能学到什么?下一章揭晓。</p>
+      <p>到这里,我已经会用"有标签数据"训练预测模型了(线性、逻辑、树)——这些都叫<b>监督学习</b>(有正确答案作老师)。<a href="D04-聚类与降维.html">D04 · 聚类与降维</a>转向<b>无监督学习</b>:数据<b>没有标签</b>,让模型自己找结构——把相似的样本<b>聚成一堆堆</b>(聚类,如给用户分群),或把高维数据<b>压到二三维好可视化</b>(降维,如 PCA/t-SNE)。没有"正确答案"时,机器还能学到什么?下一章揭晓。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="D02-逻辑回归与分类边界.html"><span class="lb">上一章</span><span class="tt">D02 · 逻辑回归与分类边界</span></a>
         <a href="D04-聚类与降维.html" class="next"><span class="lb">下一章</span><span class="tt">D04 · 聚类与降维</span></a>

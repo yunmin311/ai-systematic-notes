@@ -190,7 +190,7 @@ body{
       <p>图解骨架约 30 分钟,精读 + 算账约 3~4 小时。这一章最实用:<b>它把前面所有技术细节,换算成了钱、延迟和显存这三个能直接决策的量。</b></p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>自回归生成——一次只出一个 Token,再把它接回输入重来一遍</li>
           <li>预填充 vs 解码——两个阶段的瓶颈完全不同(算力 vs 显存带宽)</li>
@@ -278,13 +278,13 @@ body{
 
       <p class="handoff">这个循环其实分成性质完全不同的两段。</p>
       <h2 id="phase"><span class="no">8</span><span>预填充 vs 解码:两个阶段,两种瓶颈</span></h2>
-      <p class="one-liner"><b>预填充(prefill)</b>:把整段提示词一次性喂进去算完(所有位置可并行)——<b>吃算力</b>,但一次搞定。<b>解码(decode)</b>:之后每生成一个词跑一遍网络——每次计算量很小,却要把整个模型权重读一遍,<b>吃显存带宽</b>。这解释了几乎所有关于速度和价格的现象。</p>
-      <p>对照着看很清楚:<b>预填充</b>阶段有几百上千个位置同时算,GPU 能被喂满,所以"读完长提示词"通常很快(它还决定了看到的<b>首字延迟</b>);<b>解码</b>阶段每步只算一个位置,几十 GB 权重却仍要完整读一遍,GPU 算力大量闲置——<b>瓶颈是把权重从显存搬出来的速度</b>。由此推出三条实用结论:<b>①输出 Token 通常比输入 Token 贵</b>(各家定价表上,输出单价常是输入的 3~5 倍),因为输出是逐个"跑全网络"跑出来的;<b>②批处理能大幅提高吞吐</b>——多个请求拼一起,权重只读一次却服务了多个用户,这是服务商成本优化的主力;<b>③让模型少说废话就是省钱</b>,这比压缩提示词更有效(<a href="../应用工程/A06-评估幻觉安全成本.html">A06 成本控制</a>)。</p>
+      <p class="one-liner"><b>预填充(prefill)</b>:把我的整段提示词一次性喂进去算完(所有位置可并行)——<b>吃算力</b>,但一次搞定。<b>解码(decode)</b>:之后每生成一个词跑一遍网络——每次计算量很小,却要把整个模型权重读一遍,<b>吃显存带宽</b>。这解释了几乎所有关于速度和价格的现象。</p>
+      <p>对照着看很清楚:<b>预填充</b>阶段有几百上千个位置同时算,GPU 能被喂满,所以"读完我的长提示词"通常很快(它还决定了我看到的<b>首字延迟</b>);<b>解码</b>阶段每步只算一个位置,几十 GB 权重却仍要完整读一遍,GPU 算力大量闲置——<b>瓶颈是把权重从显存搬出来的速度</b>。由此推出三条实用结论:<b>①输出 Token 通常比输入 Token 贵</b>(各家定价表上,输出单价常是输入的 3~5 倍),因为输出是逐个"跑全网络"跑出来的;<b>②批处理能大幅提高吞吐</b>——多个请求拼一起,权重只读一次却服务了多个用户,这是服务商成本优化的主力;<b>③让模型少说废话就是省钱</b>,这比压缩提示词更有效(<a href="../应用工程/A06-评估幻觉安全成本.html">A06 成本控制</a>)。</p>
 
       <p class="handoff">解码阶段有大量重复劳动——KV cache 就是来消掉它的。</p>
       <h2 id="kv"><span class="no">9</span><span>KV cache:别把算过的再算一遍</span></h2>
       <p class="one-liner">生成第 t 个词时,注意力需要前面所有词的 K 和 V(<a href="D14-注意力机制逐步手算.html">D14</a>)。但这些 K/V 在前几步<b>早就算过了</b>,而且不会变。<b>KV cache</b> 就是把它们缓存下来:每步只算<b>新词</b>的 K/V 并追加进缓存,其余直接复用——把每步的计算从"重算整段"降到"只算一个"。</p>
-      <p>没有它,生成第 100 个词就要把前 99 个词的 K/V 全部重算一遍,总计算量随长度平方增长,长对话根本跑不动。<b>代价是显存</b>:缓存要一直存着,大小 ≈ <code>2(K和V) × 层数 × 上下文长度 × 隐藏维度 × 精度字节数 × 并发数</code>——对一个 32 层、4096 维的模型,单个长上下文请求的 KV cache 就能吃掉好几 GB。这就带出两个早就见过的现象的真正原因:<b>①上下文窗口为什么有上限</b>——不只是 <a href="D14-注意力机制逐步手算.html">D14</a> 的 n² 计算,更是 KV cache 的显存线性膨胀;<b>②为什么长对话越聊越慢、越贵</b>——每一轮都要带着越来越长的历史。业界的应对包括分页管理缓存(PagedAttention/vLLM)、多个查询头共享 K/V(GQA)等,目标都是同一个:<b>把 KV cache 压下去。</b></p>
+      <p>没有它,生成第 100 个词就要把前 99 个词的 K/V 全部重算一遍,总计算量随长度平方增长,长对话根本跑不动。<b>代价是显存</b>:缓存要一直存着,大小 ≈ <code>2(K和V) × 层数 × 上下文长度 × 隐藏维度 × 精度字节数 × 并发数</code>——对一个 32 层、4096 维的模型,单个长上下文请求的 KV cache 就能吃掉好几 GB。这就带出两个我早就见过的现象的真正原因:<b>①上下文窗口为什么有上限</b>——不只是 <a href="D14-注意力机制逐步手算.html">D14</a> 的 n² 计算,更是 KV cache 的显存线性膨胀;<b>②为什么长对话越聊越慢、越贵</b>——每一轮都要带着越来越长的历史。业界的应对包括分页管理缓存(PagedAttention/vLLM)、多个查询头共享 K/V(GQA)等,目标都是同一个:<b>把 KV cache 压下去。</b></p>
       <figure>
         <svg viewBox="0 0 700 240" role="img" aria-label="有无 KV cache 的对比">
           <defs><marker id="m-kv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#14181f"/></marker></defs>
@@ -352,7 +352,7 @@ body{
       <div class="challenge">
         <span class="label">进阶挑战 · 给自己的用例算一次</span>
         <h3>把整条链路走一遍</h3>
-        <p>①拿一个真想做的 AI 功能,用 <a href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener">tiktokenizer</a>(D12)量出真实的输入/输出 Token 数,代进 <code>api_cost</code>,算出月成本。②去查一次各家最新定价页,把 <code>price_in/price_out</code> 换成真实值——顺便体会"过时改链接不改正文"这条策展原则为什么重要。③用 <code>vram_need</code> 算:如果自建一个 7B 模型、开 32K 上下文,要多少显存?4-bit 够不够?④综合第 11 节的四条判据,写下结论:这个功能该用 API 还是自建,为什么。<b>写完这四条,就完成了一次完整的 AI 方案技术决策。</b></p>
+        <p>①拿一个我真想做的 AI 功能,用 <a href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener">tiktokenizer</a>(D12)量出真实的输入/输出 Token 数,代进 <code>api_cost</code>,算出月成本。②去查一次各家最新定价页,把 <code>price_in/price_out</code> 换成真实值——顺便体会"过时改链接不改正文"这条策展原则为什么重要。③用 <code>vram_need</code> 算:如果自建一个 7B 模型、开 32K 上下文,要多少显存?4-bit 够不够?④综合第 11 节的四条判据,写下我的结论:这个功能该用 API 还是自建,为什么。<b>写完这四条,我就完成了一次完整的 AI 方案技术决策。</b></p>
       </div>
 
       <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
@@ -383,7 +383,7 @@ body{
           <div class="rh"><span class="rt2"><a href="https://huggingface.co/docs/transformers/main/en/quantization/overview" target="_blank" rel="noopener">HF · Quantization 概览</a></span><span class="tags">官方文档 · 英文 · 1h · 免费</span></div>
           <div class="rrow"><span class="rk">是什么</span><span class="rv">各种量化方案(8-bit / 4-bit / GPTQ / AWQ)的对比与用法。</span></div>
           <div class="rrow"><span class="rk">为什么选它</span><span class="rv">想在本地把模型跑起来时,照它选一个方案即可。</span></div>
-          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">概览表(选型)+ 选中那种的用法。</span></div>
+          <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">概览表(选型)+ 我选中那种的用法。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">§10。</span></div>
         </div>
       </div>
@@ -425,8 +425,8 @@ body{
 
       <h2 id="next"><span class="no">17</span><span>Track C 收官 · 全课程回望</span></h2>
       <p>到这里,<b>Track C 大模型内部全通了</b>:文字怎么变成 Token(<a href="D12-Tokenizer与词表.html">D12</a>)、Token 怎么变成有含义的向量(<a href="D13-Embedding与向量空间.html">D13</a>)、注意力怎么让词与词交流(<a href="D14-注意力机制逐步手算.html">D14</a>)、这些零件怎么堆成 GPT(<a href="D15-Transformer完整结构.html">D15</a>)、随机参数怎么被训成会聊天的助手(<a href="D16-预训练微调与RLHF.html">D16</a>),以及它跑起来要花多少钱(本章)。</p>
-      <p><b>更值得回望的是整条路</b>:从<a href="../基础课程/01-人工智能全景与学习环境.html">第 1 章</a>那 17 行、只有 1 个参数的快递运费模型开始——模型、损失、训练三件套;到经典机器学习(Track A)、深度学习(Track B)、再到今天大模型的内部。<b>会发现那三件套从头到尾没变过</b>:GPT 也只是"模型形式换成几十层 Transformer、损失换成预测下一个词、找参数的方法还是梯度下降"。这正是<a href="../基础课程/01-人工智能全景与学习环境.html">第 1 章</a>许下的那个承诺:<b>打透不会变的底层逻辑,再新的模型出来也看得懂。</b></p>
-      <p>接下来怎么走:<b>①把 <a href="../应用工程/A01-提示词工程与上下文.html">应用工程 A01–A07</a> 和<a href="../index.html">项目 P1–P7</a> 做完</b>——理解已经到位,现在是把它变成能交付的东西;<b>②带着这套底层知识回看 <a href="../应用工程/A05-Agent的harness底层框架.html">A05 的 harness</a></b>,会发现 agent 的每一层都能对应到本 Track 学过的机制;<b>③保持追新</b>——地基不变,变的是上层(<a href="../资料/AI学习资源库.html">资源库</a>的论文与前沿清单就是为此准备的)。</p>
+      <p><b>更值得回望的是整条路</b>:从<a href="../基础课程/01-人工智能全景与学习环境.html">第 1 章</a>那 17 行、只有 1 个参数的快递运费模型开始——模型、损失、训练三件套;到经典机器学习(Track A)、深度学习(Track B)、再到今天大模型的内部。<b>我会发现那三件套从头到尾没变过</b>:GPT 也只是"模型形式换成几十层 Transformer、损失换成预测下一个词、找参数的方法还是梯度下降"。这正是<a href="../基础课程/01-人工智能全景与学习环境.html">第 1 章</a>许下的那个承诺:<b>打透不会变的底层逻辑,再新的模型出来也看得懂。</b></p>
+      <p>接下来怎么走:<b>①把 <a href="../应用工程/A01-提示词工程与上下文.html">应用工程 A01–A07</a> 和<a href="../index.html">项目 P1–P7</a> 做完</b>——理解已经到位,现在是把它变成能交付的东西;<b>②带着这套底层知识回看 <a href="../应用工程/A05-Agent的harness底层框架.html">A05 的 harness</a></b>,我会发现 agent 的每一层都能对应到本 Track 学过的机制;<b>③保持追新</b>——地基不变,变的是上层(<a href="../资料/AI学习资源库.html">资源库</a>的论文与前沿清单就是为此准备的)。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="D16-预训练微调与RLHF.html"><span class="lb">上一章</span><span class="tt">D16 · 预训练、微调与 RLHF</span></a>
         <a href="../index.html" class="next"><span class="lb">全课程收官</span><span class="tt">回课程首页 · 去做项目</span></a>

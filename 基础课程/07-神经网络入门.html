@@ -190,7 +190,7 @@ body{
       <p>图解骨架约 40 分钟,外部精读 + 动手约 4~6 小时。全程用「一层层传递」的直觉,不推导公式。这一章的最佳主线是 3Blue1Brown 的动画——神经网络这东西,动着看比读着看清楚十倍。每出现一个新词,当场用白话解释。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>神经元——加权求和 + 激活,一个最小的计算单元</li>
           <li>层与网络——神经元排成层,一层喂给下一层,连成一张网</li>
@@ -362,12 +362,12 @@ body{
         </svg>
         <figcaption><span class="fig-num">图 4</span>前向(蓝,往右)算出预测与损失;反向(灰,往左)把误差传回、算出每个权重的梯度。再用梯度下降更新——就是上一章的循环。</figcaption>
       </figure>
-      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:3B1B 第 1 章看结构、第 3 章看反向传播。<b>往后连:</b>第 8 章的 Transformer 就是一种特别的大型神经网络,前向/反向、梯度下降全都照旧——在这里省下的力,那里全能省。</p></div>
+      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:3B1B 第 1 章看结构、第 3 章看反向传播。<b>往后连:</b>第 8 章的 Transformer 就是一种特别的大型神经网络,前向/反向、梯度下降全都照旧——我在这里省下的力,那里全能省。</p></div>
 
       <!-- ========== 模块 D ========== -->
       <p class="handoff">五块地基到齐了。下面用几行 NumPy,手算一个神经元的前向传播,把抽象落到数上。</p>
       <h2 id="assemble"><span class="no">12</span><span>实战:手算一个神经元</span></h2>
-      <p>不用任何深度学习库,就用 NumPy,把「加权求和 + 偏置 + 激活」这一个神经元算出来。会发现它简单得出奇——神经网络的全部神奇,都在于把这件小事重复上百万次:</p>
+      <p>不用任何深度学习库,就用 NumPy,把「加权求和 + 偏置 + 激活」这一个神经元算出来。我会发现它简单得出奇——神经网络的全部神奇,都在于把这件小事重复上百万次:</p>
       <div class="code-block">
         <div class="chead"><span class="fn">one_neuron.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
 <pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> numpy </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> np</span></span>
@@ -386,7 +386,7 @@ body{
       <div class="challenge">
         <span class="label">进阶挑战</span>
         <h3>改改看</h3>
-        <p>①把三个神经元并成一层:把 <code>w</code> 换成一个 <code>(3, 3)</code> 的权重矩阵 <code>W</code>,用 <code>W @ x + b</code> 一次算出三个输出(这就是「一层」)。②把两层串起来:第一层的输出当第二层的输入,各带自己的 <code>W</code> 和激活——就手写出了一个两层网络的前向传播。③去掉激活(直接用 <code>z</code>),想想为什么两层叠起来等于一层。</p>
+        <p>①把三个神经元并成一层:把 <code>w</code> 换成一个 <code>(3, 3)</code> 的权重矩阵 <code>W</code>,用 <code>W @ x + b</code> 一次算出三个输出(这就是「一层」)。②把两层串起来:第一层的输出当第二层的输入,各带自己的 <code>W</code> 和激活——我就手写出了一个两层网络的前向传播。③去掉激活(直接用 <code>z</code>),想想为什么两层叠起来等于一层。</p>
       </div>
 
       <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
@@ -418,7 +418,7 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 3 · 五个新手误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>神经网络像人脑一样思考</td><td>只是「加权求和 + 激活」重复很多层的数学函数,借了「神经元」这个名字而已。</td></tr>
           <tr><td>单个神经元很复杂</td><td>极简单:乘、加、压一下。复杂来自数量和层数,不是单个单元。</td></tr>
@@ -451,7 +451,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
-      <p>神经元、层、前向、激活、反向——这套「网络怎么算、怎么学」的骨架,是所有现代 AI 的地基。<a href="08-大语言模型鸟瞰.html">第 8 章 大语言模型鸟瞰</a>会看到:ChatGPT 背后的 Transformer,本质就是一种特别设计的、超大的神经网络。它多出来的核心零件叫<b>注意力(attention)</b>,但底下前向传播、反向传播、梯度下降,和这一章学的一模一样。地基打好了,下一章只是往上摞一块新积木。</p>
+      <p>神经元、层、前向、激活、反向——这套「网络怎么算、怎么学」的骨架,是所有现代 AI 的地基。<a href="08-大语言模型鸟瞰.html">第 8 章 大语言模型鸟瞰</a>会看到:ChatGPT 背后的 Transformer,本质就是一种特别设计的、超大的神经网络。它多出来的核心零件叫<b>注意力(attention)</b>,但底下前向传播、反向传播、梯度下降,和我这一章学的一模一样。地基打好了,下一章只是往上摞一块新积木。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="06-训练的本质.html"><span class="lb">上一章</span><span class="tt">06 · 训练的本质</span></a>
         <a href="08-大语言模型鸟瞰.html" class="next"><span class="lb">下一章</span><span class="tt">08 · 大语言模型鸟瞰</span></a>

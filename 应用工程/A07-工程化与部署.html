@@ -181,16 +181,16 @@ body{
       <header class="chapter-opener">
         <p class="chapter-label">应用工程 · Chapter A07 · 收官</p>
         <h1>工程化与部署</h1>
-        <p class="recap">前六章让人做出了一个<b>可信、可控、可负担</b>的 AI 应用。最后一步:把它<b>真正交到用户手里,并让它稳定持续地运行</b>。这一章讲从"能在本机上跑一次"到"很多人能天天用"之间那段路——后端封装与密钥安全、流式输出、缓存限流、上线与监控。学完它,就走通了"从想法到能用的 AI 应用"整条路,也补齐了推进治理体系所需的最后一块工程拼图。</p>
+        <p class="recap">前六章让我做出了一个<b>可信、可控、可负担</b>的 AI 应用。最后一步:把它<b>真正交到用户手里,并让它稳定持续地运行</b>。这一章讲从"能在我电脑上跑一次"到"很多人能天天用"之间那段路——后端封装与密钥安全、流式输出、缓存限流、上线与监控。学完它,我就走通了"从想法到能用的 AI 应用"整条路,也补齐了推进治理体系所需的最后一块工程拼图。</p>
       </header>
 
       <p>图解骨架约 40 分钟,动手部署约 4~6 小时。所有话题接着 A06 的成本与安全、A05 的日志往下落地。每个新词当场白话解释。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>从 demo 到产品——差的不是功能,是稳定、安全、可持续</li>
-          <li>后端封装与密钥——模型调用必须走后端,密钥永不进前端/git</li>
+          <li>后端封装与密钥——模型调用必须走我的后端,密钥永不进前端/git</li>
           <li>流式输出——边生成边显示,别让用户干等</li>
           <li>缓存与限流——省钱省时、防滥用防爆预算(接 A06 成本)</li>
           <li>部署与监控——上线到哪、上线后盯延迟/错误/成本/质量四块表</li>
@@ -199,7 +199,7 @@ body{
 
       <div class="callout">
         <span class="label">从哪来 · 到哪去</span>
-        <p><b>接前面:</b>缓存限流落实 <a href="A06-评估幻觉安全成本.html">A06</a> 的成本控制;监控延续 A06 的评测闭环 + <a href="A05-Agent的harness底层框架.html">A05</a> 的日志;密钥与权限接 A06 安全。<b>通向后面:</b>本章是应用工程 A 系列的<b>收官</b>——学完就能做 <a href="../index.html">项目 P4/P6/P7</a>(命令行助手、小 agent、完整应用)。<b>连向目标:</b>监控四块表就是治理体系日常要盯的运营仪表。</p>
+        <p><b>接前面:</b>缓存限流落实 <a href="A06-评估幻觉安全成本.html">A06</a> 的成本控制;监控延续 A06 的评测闭环 + <a href="A05-Agent的harness底层框架.html">A05</a> 的日志;密钥与权限接 A06 安全。<b>通向后面:</b>本章是应用工程 A 系列的<b>收官</b>——学完就能做 <a href="../index.html">项目 P4/P6/P7</a>(命令行助手、小 agent、完整应用)。<b>连向我的目标:</b>监控四块表就是治理体系日常要盯的运营仪表。</p>
       </div>
 
       <!-- ========== 模块 A ========== -->
@@ -225,7 +225,7 @@ body{
 
       <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
       <p class="one-liner">工程化与部署:把"<b>能跑一次的脚本</b>"改造成"<b>很多人能稳定、安全、持续用的服务</b>"。差距不在功能,在<b>稳(不崩)、安全(不泄密不被刷)、可持续(不烧穿预算、坏了能发现)</b>。</p>
-      <p>一个在本机终端里 <code>python app.py</code> 能跑的脚本,离产品还很远:密钥直接写在代码里(一上线就泄露)、用户点了要干等十几秒(体验差)、有人恶意狂刷就破产(没限流)、半夜挂了没人知道(没监控)。工程化就是补齐这一整套"看不见但缺了就出事"的东西。它不新增炫酷功能,却决定应用能不能真的活在真实世界里。对做治理的人尤其重要:<b>密钥、限流、监控这些正是 AI 系统的运营与安全底盘</b>,是治理要落到的具体抓手。</p>
+      <p>一个在我终端里 <code>python app.py</code> 能跑的脚本,离产品还很远:密钥直接写在代码里(一上线就泄露)、用户点了要干等十几秒(体验差)、有人恶意狂刷我就破产(没限流)、半夜挂了没人知道(没监控)。工程化就是补齐这一整套"看不见但缺了就出事"的东西。它不新增炫酷功能,却决定我的应用能不能真的活在真实世界里。对做治理的人尤其重要:<b>密钥、限流、监控这些正是 AI 系统的运营与安全底盘</b>,是治理要落到的具体抓手。</p>
 
       <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
       <figure>
@@ -258,7 +258,7 @@ body{
       <p>部署路子很多,别一次学全。选一条最短的能上线路径走通,再按需深入。</p>
       <div class="callout go">
         <span class="label">默认主线 · 一手最佳实践</span>
-        <p><b>模型厂商的"生产最佳实践"文档 + 一个后端框架。</b>为什么:厂商文档把密钥、限流、流式、错误处理这些讲得最准;后端框架(推荐 <b>FastAPI</b>,Python、上手快)让人几十行搭出一个能上线的服务。链接:<a href="https://platform.openai.com/docs/guides/production-best-practices" target="_blank" rel="noopener">OpenAI 生产最佳实践</a>、<a href="https://docs.anthropic.com/" target="_blank" rel="noopener">Anthropic API 文档</a>、<a href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener">FastAPI 文档</a>。</p>
+        <p><b>模型厂商的"生产最佳实践"文档 + 一个后端框架。</b>为什么:厂商文档把密钥、限流、流式、错误处理这些讲得最准;后端框架(推荐 <b>FastAPI</b>,Python、上手快)让我几十行搭出一个能上线的服务。链接:<a href="https://platform.openai.com/docs/guides/production-best-practices" target="_blank" rel="noopener">OpenAI 生产最佳实践</a>、<a href="https://docs.anthropic.com/" target="_blank" rel="noopener">Anthropic API 文档</a>、<a href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener">FastAPI 文档</a>。</p>
       </div>
       <p><b>再配一件:</b></p>
       <ul>
@@ -268,20 +268,20 @@ body{
       <!-- ========== 模块 C ========== -->
       <p class="handoff">先认清:一个能跑的脚本,到底缺了哪些才不算产品。</p>
       <h2 id="gap"><span class="no">7</span><span>从 demo 到产品:差的是什么</span></h2>
-      <p class="one-liner">demo 只需<b>在手里、跑通一次</b>;产品要<b>在别人手里、天天跑、还不出事</b>。差的四样:<b>稳</b>(并发/出错不崩)、<b>安全</b>(密钥不泄、不被刷)、<b>可持续</b>(预算不爆、坏了能发现)、<b>体验</b>(别让人干等)。</p>
-      <p>这一步的心态转变最关键:写 demo 想的是"功能能不能实现",做产品想的是"出错了会怎样"。用户会同时点、会输入奇怪的东西、会有人恶意刷;网络会抖、模型接口会超时、预算会被烧。产品化就是把这些"边缘情况"当成主线来设计。好消息是:这些几乎都是<b>成熟套路</b>,后面几节逐个给出——不需要重新发明,照着做即可。</p>
+      <p class="one-liner">demo 只需<b>在我手里、跑通一次</b>;产品要<b>在别人手里、天天跑、还不出事</b>。差的四样:<b>稳</b>(并发/出错不崩)、<b>安全</b>(密钥不泄、不被刷)、<b>可持续</b>(预算不爆、坏了能发现)、<b>体验</b>(别让人干等)。</p>
+      <p>这一步的心态转变最关键:写 demo 想的是"功能能不能实现",做产品想的是"出错了会怎样"。用户会同时点、会输入奇怪的东西、会有人恶意刷;网络会抖、模型接口会超时、我的预算会被烧。产品化就是把这些"边缘情况"当成主线来设计。好消息是:这些几乎都是<b>成熟套路</b>,后面几节逐个给我——不需要重新发明,照着做即可。</p>
 
-      <p class="handoff">四样里最不能错的一样,是密钥——它决定会不会一上线就出事。</p>
+      <p class="handoff">四样里最不能错的一样,是密钥——它决定我会不会一上线就出事。</p>
       <h2 id="backend"><span class="no">8</span><span>后端封装与密钥安全(最不能错的一条)</span></h2>
-      <p class="one-liner">模型调用<b>必须走自己的后端服务器</b>,由后端保管密钥、再去调模型 API。<b>密钥绝不能出现在前端代码、也绝不能提交进 git</b>——前端代码人人可见,git 历史删不干净。这是红线中的红线。</p>
-      <p>为什么:API 密钥就是钱包,谁拿到谁能花钱。如果前端(浏览器里的网页/App)直接拿着密钥调模型,任何用户按 F12 就能看到它、复制走、疯狂盗刷——几小时烧光预算是常事。正确做法:前端只跟<b>后端</b>说话,后端从<b>环境变量</b>(不是代码里)读密钥,替用户去调模型,再把结果转回来。后端这一层顺便还是放<b>限流、缓存、A06 的安全拦截和日志</b>的地方——它是整个应用的"关口"。同理,密钥要用环境变量或密钥管理服务,<b>永远不 <code>git commit</code> 进仓库</b>;真不小心提交了,要立刻作废重发,而不是删一次 commit 了事。</p>
+      <p class="one-liner">模型调用<b>必须走我自己的后端服务器</b>,由后端保管密钥、再去调模型 API。<b>密钥绝不能出现在前端代码、也绝不能提交进 git</b>——前端代码人人可见,git 历史删不干净。这是红线中的红线。</p>
+      <p>为什么:API 密钥就是我的钱包,谁拿到谁能花我的钱。如果前端(浏览器里的网页/App)直接拿着密钥调模型,任何用户按 F12 就能看到它、复制走、疯狂盗刷——几小时烧光预算是常事。正确做法:前端只跟<b>我的后端</b>说话,后端从<b>环境变量</b>(不是代码里)读密钥,替用户去调模型,再把结果转回来。后端这一层顺便还是放<b>限流、缓存、A06 的安全拦截和日志</b>的地方——它是我整个应用的"关口"。同理,密钥要用环境变量或密钥管理服务,<b>永远不 <code>git commit</code> 进仓库</b>;真不小心提交了,要立刻作废重发,而不是删一次 commit 了事。</p>
       <figure>
         <svg viewBox="0 0 640 230" role="img" aria-label="正确的生产架构:前端经后端再到模型">
           <defs><marker id="m-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
           <text x="320" y="24" text-anchor="middle" class="nl-acc">✓ 正确:密钥锁在后端</text>
           <rect x="30" y="40" width="120" height="48" rx="8" class="box"/><text x="90" y="62" text-anchor="middle" class="nl">前端</text><text x="90" y="79" text-anchor="middle" class="el">浏览器/App</text>
           <line x1="150" y1="64" x2="202" y2="64" class="d-acc" marker-end="url(#m-b)"/>
-          <rect x="206" y="36" width="184" height="56" rx="8" class="box-acc"/><text x="298" y="58" text-anchor="middle" class="nl-acc">后端</text><text x="298" y="76" text-anchor="middle" class="el">🔑密钥 · 限流 · 缓存 · 日志</text>
+          <rect x="206" y="36" width="184" height="56" rx="8" class="box-acc"/><text x="298" y="58" text-anchor="middle" class="nl-acc">我的后端</text><text x="298" y="76" text-anchor="middle" class="el">🔑密钥 · 限流 · 缓存 · 日志</text>
           <line x1="390" y1="64" x2="436" y2="64" class="d-acc" marker-end="url(#m-b)"/>
           <rect x="440" y="40" width="120" height="48" rx="8" class="box"/><text x="500" y="62" text-anchor="middle" class="nl">模型 API</text><text x="500" y="79" text-anchor="middle" class="el">OpenAI/Claude</text>
           <line x1="30" y1="120" x2="610" y2="120" class="d-soft"/>
@@ -291,12 +291,12 @@ body{
           <rect x="390" y="164" width="130" height="44" rx="8" class="box"/><text x="455" y="190" text-anchor="middle" class="el">模型 API</text>
           <text x="320" y="224" text-anchor="middle" class="el-acc">→ 密钥泄露,预算被盗刷</text>
         </svg>
-        <figcaption><span class="fig-num">图 2</span>生产架构:前端只跟后端说话,密钥锁在后端(顺带做限流/缓存/日志)。前端直连模型 = 密钥人人可见,必被盗刷。</figcaption>
+        <figcaption><span class="fig-num">图 2</span>生产架构:前端只跟我的后端说话,密钥锁在后端(顺带做限流/缓存/日志)。前端直连模型 = 密钥人人可见,必被盗刷。</figcaption>
       </figure>
 
       <p class="handoff">关口搭好,接着解决体验第一杀手:让用户干等。</p>
       <h2 id="stream"><span class="no">9</span><span>流式输出</span></h2>
-      <p class="one-liner">流式输出<span class="en">streaming</span>:模型是<b>一个字一个字生成</b>的,别等它整段写完再给用户,而是<b>边生成边推给前端逐字显示</b>——就是在各种 AI 对话里看到的"打字机效果"。它把"干等十几秒"变成"立刻开始看见"。</p>
+      <p class="one-liner">流式输出<span class="en">streaming</span>:模型是<b>一个字一个字生成</b>的,别等它整段写完再给用户,而是<b>边生成边推给前端逐字显示</b>——就是我在各种 AI 对话里看到的"打字机效果"。它把"干等十几秒"变成"立刻开始看见"。</p>
       <p>为什么重要:一段长回答模型可能要生成十几秒,一次性返回的话,用户对着空白屏干等,体感极差、还以为卡死了。流式让第一个字几乎立刻出现,用户一边读一边等,体感快了好几倍——虽然总时间没变。技术上,后端从模型那边<b>逐块接收</b>、再<b>逐块转发</b>给前端(常用 SSE / 流式响应)。代价是代码比"一次性返回"略复杂(要处理流、要处理中途断开),但对任何面向人的 AI 应用,这几乎是必备体验。</p>
       <figure>
         <svg viewBox="0 0 600 180" role="img" aria-label="一次性返回与流式输出的时间轴对比">
@@ -319,12 +319,12 @@ body{
       <p class="handoff">体验顺了,再回头把 A06 的成本账,用两个开关落地。</p>
       <h2 id="cache"><span class="no">10</span><span>缓存与限流</span></h2>
       <p class="one-liner"><b>缓存</b>:相同的请求别重复烧钱,把上次的答案存起来直接返回(省钱 + 秒回)。<b>限流</b><span class="en">rate limit</span>:给每个用户/每段时间的调用次数设上限,防恶意刷爆、防单点烧穿预算(保命)。</p>
-      <p>这两个开关都装在第 8 节的后端关口上。<b>缓存</b>:很多请求是重复的(同样的问题、同样的文档),把"输入→输出"存进缓存,再来相同输入就直接给,既省 A06 说的 token 钱、又快;还有厂商提供的<b>提示词缓存</b>,能把重复的长前缀(如系统提示)算一次反复用。<b>限流</b>:没有它,一个脚本或恶意用户几分钟就能把预算刷光、或把服务打垮;给每个用户设"每分钟 N 次""每天 M 次"的闸,超了就婉拒或排队。两者一个管"少花冤枉钱",一个管"别被人一次性搞破产"——都是 A06 成本与安全在工程上的落地。</p>
+      <p>这两个开关都装在第 8 节的后端关口上。<b>缓存</b>:很多请求是重复的(同样的问题、同样的文档),把"输入→输出"存进缓存,再来相同输入就直接给,既省 A06 说的 token 钱、又快;还有厂商提供的<b>提示词缓存</b>,能把重复的长前缀(如系统提示)算一次反复用。<b>限流</b>:没有它,一个脚本或恶意用户几分钟就能把我的预算刷光、或把服务打垮;给每个用户设"每分钟 N 次""每天 M 次"的闸,超了就婉拒或排队。两者一个管"少花冤枉钱",一个管"别被人一次性搞破产"——都是 A06 成本与安全在工程上的落地。</p>
 
       <p class="handoff">最后一步:把它推上线,并且——上线只是开始,得盯着它。</p>
       <h2 id="deploy"><span class="no">11</span><span>部署与监控</span></h2>
       <p class="one-liner"><b>部署</b>=把后端放到一台<b>一直开着的服务器</b>上(云平台/serverless/容器),让全世界能访问。<b>监控</b>=上线后持续盯<b>四块表:延迟、错误率、成本、质量</b>,坏了能第一时间发现——上线不是终点,是开始。</p>
-      <p><b>部署</b>入门有轻有重:最轻是 serverless / 平台托管(如各家云的函数或应用平台,推上去就有网址,不管服务器),适合起步;规模大了再上容器(Docker)和编排。选最省心的先上线,别一开始就搞复杂运维。<b>监控</b>才是长期的活,盯四块表:<b>延迟</b>(用户等多久,尤其首字时间)、<b>错误率</b>(调用失败/超时占比)、<b>成本</b>(每天烧多少、接 A06)、<b>质量</b>(把 A06 的评测闭环接到线上真实流量、抽检打分)。任何一块异常就告警、就排查。这四块表,正是把 AI 应用<b>纳入日常运营和治理</b>时要天天看的仪表盘——治理不是一次性审批,是持续看着这四个数。</p>
+      <p><b>部署</b>入门有轻有重:最轻是 serverless / 平台托管(如各家云的函数或应用平台,推上去就有网址,不管服务器),适合起步;规模大了再上容器(Docker)和编排。选最省心的先上线,别一开始就搞复杂运维。<b>监控</b>才是长期的活,盯四块表:<b>延迟</b>(用户等多久,尤其首字时间)、<b>错误率</b>(调用失败/超时占比)、<b>成本</b>(每天烧多少、接 A06)、<b>质量</b>(把 A06 的评测闭环接到线上真实流量、抽检打分)。任何一块异常就告警、就排查。这四块表,正是把 AI 应用<b>纳入日常运营和治理</b>时我要天天看的仪表盘——治理不是一次性审批,是持续看着这四个数。</p>
       <figure>
         <svg viewBox="0 0 600 190" role="img" aria-label="上线后监控四块表的闭环">
           <defs><marker id="m-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
@@ -384,7 +384,7 @@ body{
       <div class="challenge">
         <span class="label">进阶挑战 · 收官项目</span>
         <h3>把整条 A 系列跑成一个应用</h3>
-        <p>用这段后端做骨架,接上前几章的成果:①把 <a href="A03-RAG检索增强生成.html">A03 的 RAG</a> 作为回答来源(基于文档答);②按 <a href="A06-评估幻觉安全成本.html">A06</a> 加一条输出安全检查和一个最小评测集;③部署到一个 serverless 平台拿到网址;④给它接上延迟/成本两块最简监控。做完,就有了一个真正能用的 AI 应用——这正是<a href="../index.html">项目 P7</a>。想想:如果要给它<b>立治理规矩</b>,会在这段后端的哪几行加?(密钥管理 / 限流阈值 / 日志留痕 / 安全拦截)</p>
+        <p>用这段后端做骨架,接上我前几章的成果:①把 <a href="A03-RAG检索增强生成.html">A03 的 RAG</a> 作为回答来源(基于我的文档答);②按 <a href="A06-评估幻觉安全成本.html">A06</a> 加一条输出安全检查和一个最小评测集;③部署到一个 serverless 平台拿到网址;④给它接上延迟/成本两块最简监控。做完,我就有了一个真正能用的 AI 应用——这正是<a href="../index.html">项目 P7</a>。想想:如果要给它<b>立治理规矩</b>,我会在这段后端的哪几行加?(密钥管理 / 限流阈值 / 日志留痕 / 安全拦截)</p>
       </div>
 
       <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
@@ -400,7 +400,7 @@ body{
         <div class="res spine-card">
           <div class="rh"><span class="rt2"><a href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener">FastAPI 文档</a></span><span class="spine">主线 · 后端</span><span class="tags">框架官方 · 可切中文 · 2–3h · 免费</span></div>
           <div class="rrow"><span class="rk">是什么</span><span class="rv">Python 最主流的后端框架,文档本身就是极好的教程。</span></div>
-          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章的"后端唯一关口"就是用它写的;跟完 Tutorial 就能自己搭一个。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章的"后端唯一关口"就是用它写的;跟完 Tutorial 我就能自己搭一个。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Tutorial(前 6 节)+ Streaming(流式输出);可切中文。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「后端代理」「流式输出」节 + 项目 <a href="../项目/P7-完整AI应用.html">P7</a>。</span></div>
         </div>
@@ -423,7 +423,7 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 2 · 五个常见误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>demo 能跑,稍微改改就能上线</td><td>差的是稳、安全、可持续、体验一整套;功能只是其中最小的一块。</td></tr>
           <tr><td>前端直接调模型 API 更省事</td><td>密钥会被 F12 看光、被盗刷。必须走后端,密钥锁后端、永不进 git。</td></tr>
@@ -455,8 +455,8 @@ body{
         </ul>
       </div>
 
-      <h2 id="next"><span class="no">17</span><span>收官:已经走通了整条路</span></h2>
-      <p>从 A01 把话讲清,到 A07 把应用推上线,已经完整走过了"<b>从想法到能用的 AI 应用</b>"这条路:提示词 → 结构化输出 → RAG → Agent → harness → 评估安全成本 → 工程化部署。<b>剩下的是动手部分</b>: <a href="../index.html">项目 P4(命令行 AI 助手)、P6(一个小 Agent)、P7(完整 AI 应用)</a>,把这七章拼成真东西。对<b>治理体系</b>而言,这七章补齐了最要紧的底层拼图:现在能看懂 AI 应用是怎么搭起来的、harness 这一层在做什么、治理的技术抓手(密钥、权限、策略、日志、监控)各落在哪里。地基已经打好,新的东西再来,也能看懂、能接住。</p>
+      <h2 id="next"><span class="no">17</span><span>收官:我已经走通了整条路</span></h2>
+      <p>从 A01 把话讲清,到 A07 把应用推上线,我已经完整走过了"<b>从想法到能用的 AI 应用</b>"这条路:提示词 → 结构化输出 → RAG → Agent → harness → 评估安全成本 → 工程化部署。<b>接下来是动手部分</b>:去做 <a href="../index.html">项目 P4(命令行 AI 助手)、P6(一个小 Agent)、P7(完整 AI 应用)</a>,把这七章拼成真东西。对我的<b>治理体系</b>而言,这七章补齐了最要紧的底层拼图:我现在能看懂 AI 应用是怎么搭起来的、harness 这一层在做什么、治理的技术抓手(密钥、权限、策略、日志、监控)各落在哪里。地基已经打好,新的东西再来,我也能看懂、能接住。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="A06-评估幻觉安全成本.html"><span class="lb">上一章</span><span class="tt">A06 · 评估、幻觉、安全与成本</span></a>
         <a href="../index.html" class="next"><span class="lb">回到</span><span class="tt">课程首页 · 去做项目</span></a>

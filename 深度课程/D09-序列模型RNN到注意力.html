@@ -189,7 +189,7 @@ body{
       <p>图解骨架约 30 分钟,精读约 3~5 小时。这一章重"直觉和脉络"胜过"代码细节"——注意力的逐步手算留到 <a href="../index.html">Track C 的 D14</a>,这里先把"它解决了什么、凭什么赢"想透。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>序列数据——顺序本身就是信息,不能像图像那样随便处理</li>
           <li>RNN——带着一个"记忆"(隐状态)逐个读词,把前文信息一路带下去</li>
@@ -350,7 +350,7 @@ body{
           <tr><td>今天的地位</td><td>基本退居特定小场景</td><td>所有大语言模型的地基</td></tr>
         </tbody>
       </table>
-      <p>需要提醒的是:<b>注意力也不是没有代价。</b>"每个词都看所有词",计算量随序列长度<b>平方</b>增长——序列一长就很贵,这也是"上下文窗口有上限"的根源之一(<a href="../index.html">D17</a> 会讲省钱的办法)。但瑕不掩瑜:能并行、能连长依赖这两条,让它成了大模型时代的绝对主角。至于注意力内部 Q/K/V 到底怎么算、Transformer 一整块长什么样——那正是 <b>Track C</b> 的内容,现在已经站在它的门口了。下面给一段"RNN 长这样"的代码,让人对序列模型代码有个手感;真正的注意力代码留到 Track C。</p>
+      <p>需要提醒的是:<b>注意力也不是没有代价。</b>"每个词都看所有词",计算量随序列长度<b>平方</b>增长——序列一长就很贵,这也是"上下文窗口有上限"的根源之一(<a href="../index.html">D17</a> 会讲省钱的办法)。但瑕不掩瑜:能并行、能连长依赖这两条,让它成了大模型时代的绝对主角。至于注意力内部 Q/K/V 到底怎么算、Transformer 一整块长什么样——那正是 <b>Track C</b> 的内容,我现在已经站在它的门口了。下面给一段"RNN 长这样"的代码,让我对序列模型代码有个手感;真正的注意力代码留到 Track C。</p>
       <div class="code-block">
         <div class="chead"><span class="fn">rnn_glance.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
 <pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch</span></span>
@@ -376,7 +376,7 @@ body{
       <div class="challenge">
         <span class="label">进阶挑战 · 想清楚脉络</span>
         <h3>用一句话讲给别人听</h3>
-        <p>①不看本章,给朋友讲清"RNN 怎么读句子、为什么会忘、注意力怎么解决"。②找一句有长距离指代的话(如"我养的那只<u>猫</u>……<u>它</u>很黏人"),说说注意力处理"它"时该重点看哪个词。③想想:为什么"能并行"对训练<b>大</b>模型如此关键?(提示:GPU + 海量数据)④预习一下 <a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">图解 Transformer</a>,带着"Q/K/V 是怎么算相关度的"这个问题进 Track C。把这四点想透,就真正站在了大模型的门口。</p>
+        <p>①不看本章,给朋友讲清"RNN 怎么读句子、为什么会忘、注意力怎么解决"。②找一句有长距离指代的话(如"我养的那只<u>猫</u>……<u>它</u>很黏人"),说说注意力处理"它"时该重点看哪个词。③想想:为什么"能并行"对训练<b>大</b>模型如此关键?(提示:GPU + 海量数据)④预习一下 <a href="https://jalammar.github.io/illustrated-transformer/" target="_blank" rel="noopener">图解 Transformer</a>,带着"Q/K/V 是怎么算相关度的"这个问题进 Track C。把这四点想透,我就真正站在了大模型的门口。</p>
       </div>
 
       <h2 id="reflist"><span class="no">12</span><span>外部资源 · 骨架之上的血肉</span></h2>
@@ -415,7 +415,7 @@ body{
       <h2 id="myths"><span class="no">13</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 3 · 五个常见误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>RNN 已经没用、不必了解</td><td>它是理解"为什么会有注意力"的必要台阶;在小型/流式场景仍有用武之地。</td></tr>
           <tr><td>LSTM 彻底解决了长依赖</td><td>只是缓解,没根治;真正打穿这堵墙的是注意力的"任意距离直连"。</td></tr>
@@ -448,7 +448,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">16</span><span>本章与下一章的连接</span></h2>
-      <p>现在站在了一道门前。<b>Track B 深度学习到这里告一段落</b>:懂了训练循环(D07)、会看图的 CNN(D08)、处理顺序的 RNN 与注意力(D09)。而"注意力"这三个字,正是推门进入 <b>Track C 大模型内部</b>的钥匙——那里会把这一章一带而过的 Q/K/V <a href="../index.html">逐步手算(D14)</a>、把注意力堆成完整的 <a href="../index.html">Transformer(D15)</a>、再讲预训练与 RLHF 怎么把它变成 ChatGPT(D16)。<b>剩下 <a href="D10-优化器正则化与训练技巧.html">D10 训练技巧</a>和 <a href="D11-迁移学习与微调.html">D11 迁移学习</a></b>是把深度学习"训好、用好"的两块实战补丁,建议顺手学完,调模型和复用预训练模型的能力会立刻上一个台阶。</p>
+      <p>我现在站在了一道门前。<b>Track B 深度学习到这里告一段落</b>:我懂了训练循环(D07)、会看图的 CNN(D08)、处理顺序的 RNN 与注意力(D09)。而"注意力"这三个字,正是推门进入 <b>Track C 大模型内部</b>的钥匙——那里会把这一章一带而过的 Q/K/V <a href="../index.html">逐步手算(D14)</a>、把注意力堆成完整的 <a href="../index.html">Transformer(D15)</a>、再讲预训练与 RLHF 怎么把它变成 ChatGPT(D16)。<b>剩下 <a href="D10-优化器正则化与训练技巧.html">D10 训练技巧</a>和 <a href="D11-迁移学习与微调.html">D11 迁移学习</a></b>是把深度学习"训好、用好"的两块实战补丁,建议顺手学完,我调模型和白嫖预训练模型的能力会立刻上一个台阶。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="D08-卷积神经网络CNN.html"><span class="lb">上一章</span><span class="tt">D08 · 卷积神经网络 CNN</span></a>
         <a href="D10-优化器正则化与训练技巧.html" class="next"><span class="lb">下一章</span><span class="tt">D10 · 优化器、正则化与训练技巧</span></a>

@@ -185,13 +185,13 @@ body{
       <header class="chapter-opener">
         <p class="chapter-label">深度课程 · Track B · Chapter D08 · 让网络学会看图</p>
         <h1>卷积神经网络 CNN</h1>
-        <p class="recap"><a href="D07-PyTorch与完整训练循环.html">D07</a> 给出一台训练发动机——那个五步循环。这一章只做一件事:<b>把循环里的"模型"换成一个会"看"图像的网络</b>,训练循环一字不改。为什么图像要专门的网络?因为把图片摊平成一长串数字丢给全连接网络,既<b>参数爆炸</b>、又<b>丢掉了像素之间的空间关系</b>。<b>卷积神经网络(CNN)</b>用一个小窗口滑过整张图、共享同一套权重来提取局部特征,既省参数又保住了空间结构——它是 2012 年引爆深度学习的那类模型,也是做<a href="../index.html">手写数字识别(P3)</a>要用的网络。</p>
+        <p class="recap"><a href="D07-PyTorch与完整训练循环.html">D07</a> 给了我一台训练发动机——那个五步循环。这一章只做一件事:<b>把循环里的"模型"换成一个会"看"图像的网络</b>,训练循环一字不改。为什么图像要专门的网络?因为把图片摊平成一长串数字丢给全连接网络,既<b>参数爆炸</b>、又<b>丢掉了像素之间的空间关系</b>。<b>卷积神经网络(CNN)</b>用一个小窗口滑过整张图、共享同一套权重来提取局部特征,既省参数又保住了空间结构——它是 2012 年引爆深度学习的那类模型,也是我做<a href="../index.html">手写数字识别(P3)</a>要用的网络。</p>
       </header>
 
-      <p>图解骨架约 30 分钟,动手 + 精读约 4~6 小时。核心只有"卷积 + 池化"两个动作,配合 D07 的循环,就能训练出第一个图像识别网络。</p>
+      <p>图解骨架约 30 分钟,动手 + 精读约 4~6 小时。核心只有"卷积 + 池化"两个动作,配合 D07 的循环,我就能训练出第一个图像识别网络。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>为什么全连接不适合图像——参数爆炸 + 丢掉空间结构</li>
           <li>卷积 convolution——小窗口滑过图,同一套权重提取局部特征(参数共享)</li>
@@ -213,7 +213,7 @@ body{
         <li>老听到"卷积""池化""特征图",却说不清它们到底在图上干了什么的人。</li>
         <li>准备做手写数字识别、图片分类这类项目的人。</li>
       </ul>
-      <p><b>不适合</b>:还没搞懂"网络怎么训练"的人——请先过 <a href="D07-PyTorch与完整训练循环.html">D07</a>,这一章默认已经握住那个五步循环。</p>
+      <p><b>不适合</b>:还没搞懂"网络怎么训练"的人——请先过 <a href="D07-PyTorch与完整训练循环.html">D07</a>,这一章默认我已经握住那个五步循环。</p>
 
       <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
       <p>需要:<a href="D07-PyTorch与完整训练循环.html">D07</a>(训练循环、张量)、<a href="../基础课程/07-神经网络入门.html">第 7 章</a>(层、激活、前向)、<a href="../基础课程/03-NumPy数组与形状.html">第 3 章</a>(形状意识——图像是 <code>通道×高×宽</code> 的三维张量)。数学只需一个动作:<b>把小窗口里的数字和一套权重逐个相乘再加起来</b>(就是加权求和),其余交给 PyTorch。</p>
@@ -261,7 +261,7 @@ body{
       <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
       <div class="callout go">
         <span class="label">默认主线 · 边看图边理解</span>
-        <p><b>《动手学深度学习》(d2l)卷积神经网络两章 + PyTorch 官方 CNN 教程。</b>为什么:d2l 用大量图示把卷积/池化讲透、还带可运行代码;PyTorch 官方教程直接演示在图像数据集上训练一个 CNN,和本章第 12 节的落点一致。链接:<a href="https://zh.d2l.ai/chapter_convolutional-neural-networks/index.html" target="_blank" rel="noopener">d2l · 卷积神经网络</a>、<a href="https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html" target="_blank" rel="noopener">PyTorch · 训练一个图像分类器</a>。</p>
+        <p><b>《动手学深度学习》(d2l)卷积神经网络两章 + PyTorch 官方 CNN 教程。</b>为什么:d2l 用大量图示把卷积/池化讲透、还带可运行代码;PyTorch 官方教程直接教我在图像数据集上训练一个 CNN,和本章第 12 节的落点一致。链接:<a href="https://zh.d2l.ai/chapter_convolutional-neural-networks/index.html" target="_blank" rel="noopener">d2l · 卷积神经网络</a>、<a href="https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html" target="_blank" rel="noopener">PyTorch · 训练一个图像分类器</a>。</p>
       </div>
       <p><b>想看更深的直觉:</b></p>
       <ul>
@@ -272,7 +272,7 @@ body{
       <p class="handoff">先看清 CNN 的核心动作:卷积到底在图上做了什么。</p>
       <h2 id="conv"><span class="no">7</span><span>卷积 convolution</span></h2>
       <p class="one-liner">拿一个小窗口(<b>卷积核</b>,如 <code>3×3</code>),从图的左上角开始,一格一格滑过整张图;每滑到一处,就把窗口盖住的那 9 个像素和核里的 9 个权重<b>逐个相乘再加起来</b>,得到一个数——所有位置的结果拼成一张<b>特征图</b>。同一个核在每个位置用同一套权重,这就是<b>参数共享</b>。</p>
-      <p>直觉:一个卷积核就是一个"局部模式探测器"。比如某个 <code>3×3</code> 核的权重排成"左暗右亮",它滑过图时,在有"竖直边缘"的地方就会算出很大的值、在平坦处算出接近 0——于是它输出的特征图,高亮的正是图里所有竖直边缘的位置。一层里通常有很多个核(如 32 个),各自探测不同模式(横边、竖边、某种角、某种纹理),输出 32 张特征图。不用手工设计这些核里的权重,它们和普通网络的权重一样,是<b>训练时自动学出来的</b>——D07 的循环会把它们学出来。关键就记两点:<b>局部</b>(每次只看一小块)+ <b>共享</b>(同一套权重扫全图),前者保住空间结构,后者把参数压到极小。</p>
+      <p>直觉:一个卷积核就是一个"局部模式探测器"。比如某个 <code>3×3</code> 核的权重排成"左暗右亮",它滑过图时,在有"竖直边缘"的地方就会算出很大的值、在平坦处算出接近 0——于是它输出的特征图,高亮的正是图里所有竖直边缘的位置。一层里通常有很多个核(如 32 个),各自探测不同模式(横边、竖边、某种角、某种纹理),输出 32 张特征图。我不用手工设计这些核里的权重,它们和普通网络的权重一样,是<b>训练时自动学出来的</b>——D07 的循环会帮我学。关键就记两点:<b>局部</b>(每次只看一小块)+ <b>共享</b>(同一套权重扫全图),前者保住空间结构,后者把参数压到极小。</p>
       <figure>
         <svg viewBox="0 0 640 250" role="img" aria-label="卷积:小窗口滑过图像">
           <defs><marker id="m-cv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
@@ -376,11 +376,11 @@ body{
 <span class="line"><span style="color:#14181F">model </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> SmallCNN()</span></span>
 <span class="line"><span style="color:#8B95A8;font-style:italic"># 训练:把这个 model 放进 D07 的五步循环即可,损失用 nn.CrossEntropyLoss()(分类)</span></span></code></pre>
       </div>
-      <p>逐块对照第 10 节:<code>self.features</code> 就是"[卷积→ReLU→池化]×2",把 <code>1×28×28</code> 的图浓缩成 <code>32×7×7</code> 的高层特征;<code>self.classifier</code> 把它摊平、接全连接,输出 10 个类别分数。<code>nn.Module</code> 是 PyTorch 里"自定义模型"的标准写法:<code>__init__</code> 里定义有哪些层,<code>forward</code> 里写数据怎么流过它们。训练时,损失换成分类专用的 <code>nn.CrossEntropyLoss()</code>(<a href="D02-逻辑回归与分类边界.html">D02 的交叉熵</a>),其余 <a href="D07-PyTorch与完整训练循环.html">D07</a> 五步一字不改。<b>这就是项目 P3——现在有了它的全部零件。</b></p>
+      <p>逐块对照第 10 节:<code>self.features</code> 就是"[卷积→ReLU→池化]×2",把 <code>1×28×28</code> 的图浓缩成 <code>32×7×7</code> 的高层特征;<code>self.classifier</code> 把它摊平、接全连接,输出 10 个类别分数。<code>nn.Module</code> 是 PyTorch 里"自定义模型"的标准写法:<code>__init__</code> 里定义有哪些层,<code>forward</code> 里写数据怎么流过它们。训练时,损失换成分类专用的 <code>nn.CrossEntropyLoss()</code>(<a href="D02-逻辑回归与分类边界.html">D02 的交叉熵</a>),其余 <a href="D07-PyTorch与完整训练循环.html">D07</a> 五步一字不改。<b>这就是项目 P3——我现在有了它的全部零件。</b></p>
       <div class="challenge">
         <span class="label">进阶挑战 · 上手做 P3</span>
         <h3>训练一个真的手写数字识别器</h3>
-        <p>①用 <code>torchvision.datasets.MNIST</code> 下载手写数字数据集(一行代码),用 DataLoader 切批。②把上面的 <code>SmallCNN</code> 塞进 D07 的五步循环,损失用 <code>CrossEntropyLoss</code>,训练几个 epoch。③在测试集上算准确率(<a href="D05-评价指标与验证深挖.html">D05</a>),小 CNN 通常能到 98%+。④拿掉两个池化层看准确率和训练速度怎么变,体会池化的作用。跑通它,就完成了项目 <a href="../index.html">P3</a>、也真正"训练"出了一个能看图的网络。</p>
+        <p>①用 <code>torchvision.datasets.MNIST</code> 下载手写数字数据集(一行代码),用 DataLoader 切批。②把上面的 <code>SmallCNN</code> 塞进 D07 的五步循环,损失用 <code>CrossEntropyLoss</code>,训练几个 epoch。③在测试集上算准确率(<a href="D05-评价指标与验证深挖.html">D05</a>),小 CNN 通常能到 98%+。④拿掉两个池化层看准确率和训练速度怎么变,体会池化的作用。跑通它,我就完成了项目 <a href="../index.html">P3</a>、也真正"训练"出了一个能看图的网络。</p>
       </div>
 
       <h2 id="reflist"><span class="no">12</span><span>外部资源 · 骨架之上的血肉</span></h2>
@@ -419,9 +419,9 @@ body{
       <h2 id="myths"><span class="no">13</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 2 · 五个常见误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
-          <tr><td>卷积核里的权重要人工设计</td><td>不用。核的权重和普通权重一样,由训练自动学出;只定核的大小和数量。</td></tr>
+          <tr><td>卷积核里的权重要人工设计</td><td>不用。核的权重和普通权重一样,由训练自动学出;我只定核的大小和数量。</td></tr>
           <tr><td>图像也可以直接摊平喂全连接</td><td>能跑但很差:参数爆炸、丢空间结构。CNN 用参数共享+局部连接解决这两点。</td></tr>
           <tr><td>池化会丢掉重要信息</td><td>丢的是冗余的精确位置,保留的是"有没有这个特征"。还带来对小位移的稳健。</td></tr>
           <tr><td>CNN 是和普通网络完全不同的东西</td><td>它只是把前几层换成卷积/池化;训练照旧用同一个五步循环,后段还是全连接。</td></tr>

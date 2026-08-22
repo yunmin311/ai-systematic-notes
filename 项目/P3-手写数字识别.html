@@ -203,7 +203,7 @@ body{
       </header>
 
       <section class="schema-panel">
-        <p class="label">做完这个项目,会拥有</p>
+        <p class="label">做完这个项目,我会拥有</p>
         <ul>
           <li>一个训练好的手写数字识别模型(准确率 99% 左右)</li>
           <li>一份可复用的 PyTorch 训练脚本模板(数据 → 模型 → 五步循环 → 评估)</li>
@@ -226,7 +226,7 @@ body{
 真 9 → 猜 4 (17 次) | 真 7 → 猜 2 (12 次) | 真 5 → 猜 3 (9 次)
 <span class="c">→ 已保存 模型.pt / 训练曲线.png / 错例.png</span></pre>
       </div>
-      <p>三个产出:训练好的模型文件、训练曲线(损失下降 + 准确率上升)、以及<b>错例图</b>——把模型认错的数字画出来,会发现有些连人也看不清。</p>
+      <p>三个产出:训练好的模型文件、训练曲线(损失下降 + 准确率上升)、以及<b>错例图</b>——把模型认错的数字画出来,我会发现有些连人也看不清。</p>
 
       <h2 id="prep"><span class="no">2</span><span>准备</span></h2>
       <ol class="steps">
@@ -366,13 +366,13 @@ cd ~\ai-lab\p3-mnist</pre></div>
 <span class="line"><span style="color:#14181F">plt.tight_layout(); plt.savefig(</span><span style="color:#557089">"错例.png"</span><span style="color:#14181F">, dpi</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">120)</span></span>
 <span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"\n→ 已保存 模型.pt / 训练曲线.png / 错例.png"</span><span style="color:#14181F">)</span></span></code></pre>
       </div>
-      <div class="milestone"><span class="label">交付</span><p>打开 <code>错例.png</code>——<b>这是整个项目最值得看的一张图</b>。会发现很多错例连人也难辨认(写得潦草的 9 和 4)。这给了一个重要判断力:<b>剩下那 1% 的错误里,有相当一部分是数据本身的模糊,不是模型不够努力。</b></p></div>
+      <div class="milestone"><span class="label">交付</span><p>打开 <code>错例.png</code>——<b>这是整个项目最值得看的一张图</b>。我会发现很多错例连人也难辨认(写得潦草的 9 和 4)。这给了一个重要判断力:<b>剩下那 1% 的错误里,有相当一部分是数据本身的模糊,不是模型不够努力。</b></p></div>
 
       <h2 id="run"><span class="no">4</span><span>跑起来之后:该看什么</span></h2>
       <ol>
         <li><b>训练损失和测试准确率的关系</b>:损失一直降、准确率却不再涨,就是开始过拟合了(<a href="../深度课程/D10-优化器正则化与训练技巧.html">D10</a> 的曲线诊断)。这个项目里 Dropout 已经压住了大部分。</li>
         <li><b>和基线比</b>:随机猜是 10%;一个不带卷积的全连接网络约 97~98%;CNN 到 99%。<b>那 1~2 个百分点,正是"卷积保住了空间结构"带来的</b>(<a href="../深度课程/D08-卷积神经网络CNN.html">D08</a>)。</li>
-        <li><b>试试自己写的数字</b>:用画图软件写一个数字、存成 28×28 灰度图,喂进模型看它认不认得。<b>常常认不准</b>——因为笔迹和 MNIST 的分布不同,这就是真实世界里"分布偏移"的第一课。</li>
+        <li><b>试试自己写的数字</b>:用画图软件写一个数字、存成 28×28 灰度图,喂进模型看它认不认得。<b>常常认不准</b>——因为我的笔迹和 MNIST 的分布不同,这就是真实世界里"分布偏移"的第一课。</li>
       </ol>
 
       <h2 id="pit"><span class="no">5</span><span>常见坑</span></h2>

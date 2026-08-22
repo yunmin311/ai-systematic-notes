@@ -181,13 +181,13 @@ body{
       <header class="chapter-opener">
         <p class="chapter-label">应用工程 · Chapter A01</p>
         <h1>提示词工程与上下文窗口</h1>
-        <p class="recap">基础课程讲完了「AI 是什么、怎么学」。从这一章起进入<b>应用工程</b>:怎么把现成的大模型真正用起来、做成能用的东西。第一步也是最日常的一步——<b>提示词工程</b>:把任务讲清、把上下文管好,让模型稳定地做要的事。这不是玄学话术,是有章法的工程。</p>
+        <p class="recap">基础课程讲完了「AI 是什么、怎么学」。从这一章起进入<b>应用工程</b>:怎么把现成的大模型真正用起来、做成能用的东西。第一步也是最日常的一步——<b>提示词工程</b>:把任务讲清、把上下文管好,让模型稳定地做我要的事。这不是玄学话术,是有章法的工程。</p>
       </header>
 
       <p>图解骨架约 40 分钟,动手 + 精读约 3~5 小时。全程用「怎么把话讲清、怎么管好那扇窗」的直觉。有个 API 能调更好(OpenAI / Anthropic / 或任意兼容接口),没有也能靠聊天网页练。每出现一个新词,当场用白话解释。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>提示词骨架——角色 + 任务 + 上下文 + 输出格式,讲清楚胜过说客气</li>
           <li>上下文窗口——模型一次能「看」的 token 上限,超了要么贵、要么漏看</li>
@@ -199,7 +199,7 @@ body{
 
       <div class="callout">
         <span class="label">从哪来 · 到哪去</span>
-        <p><b>接基础课程:</b><a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>说清了大模型就是「按上下文预测下一个词」。既然如此,<b>给的上下文(提示词)就直接决定它接出什么</b>——这正是提示词工程的底层原理。<b>通向后面:</b>A02 结构化输出、A03 RAG、A04/A05 Agent,全都建立在「会写提示词、会管上下文」之上。</p>
+        <p><b>接基础课程:</b><a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>说清了大模型就是「按上下文预测下一个词」。既然如此,<b>我给的上下文(提示词)就直接决定它接出什么</b>——这正是提示词工程的底层原理。<b>通向后面:</b>A02 结构化输出、A03 RAG、A04/A05 Agent,全都建立在「会写提示词、会管上下文」之上。</p>
       </div>
 
       <!-- ========== 模块 A ========== -->
@@ -224,8 +224,8 @@ body{
       </ol>
 
       <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
-      <p class="one-liner">提示词工程:既然模型是「照着给的上下文接下一个词」,那么<b>把上下文设计好——讲清任务、给对例子、留够窗口——就能大幅提高它接出想要结果的概率</b>。</p>
-      <p>它不是找一句"魔法咒语"。模型没有读心术,说得越模糊,它猜得越离谱;说得越具体、结构越清楚、例子越到位,它输出越稳。同时,它一次只能"看"进一扇有限大小的窗(上下文窗口),窗里塞什么、塞多少、怎么排,都要算计。提示词工程 = <b>设计喂进这扇窗的东西</b>。这是所有 AI 应用最底层、最日常的手艺。</p>
+      <p class="one-liner">提示词工程:既然模型是「照着我给的上下文接下一个词」,那么<b>把上下文设计好——讲清任务、给对例子、留够窗口——就能大幅提高它接出我想要结果的概率</b>。</p>
+      <p>它不是找一句"魔法咒语"。模型没有读心术,我说得越模糊,它猜得越离谱;说得越具体、结构越清楚、例子越到位,它输出越稳。同时,它一次只能"看"进一扇有限大小的窗(上下文窗口),窗里塞什么、塞多少、怎么排,都要算计。提示词工程 = <b>设计喂进这扇窗的东西</b>。这是所有 AI 应用最底层、最日常的手艺。</p>
 
       <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
       <p>先记住「就这五块」。中间是本章目标,四周是达成它要用的五块地基,下面模块 C 逐块拆。</p>
@@ -239,7 +239,7 @@ body{
           <line x1="160" y1="168" x2="284" y2="198" class="d-soft" marker-end="url(#m-hub)"/>
           <rect x="286" y="182" width="188" height="66" rx="33" class="d-acc nf-acc" stroke-width="1.6"/>
           <text x="380" y="210" text-anchor="middle" class="nl-acc">让模型稳定</text>
-          <text x="380" y="230" text-anchor="middle" class="nl-acc">做要的事</text>
+          <text x="380" y="230" text-anchor="middle" class="nl-acc">做我要的事</text>
           <rect x="286" y="32" width="188" height="46" rx="8" class="d-ink nf"/>
           <text x="380" y="60" text-anchor="middle" class="nl">① 提示词骨架</text>
           <rect x="588" y="122" width="164" height="46" rx="8" class="d-ink nf"/>
@@ -284,7 +284,7 @@ body{
       <p class="handoff">先把最基本的一块立起来:一条靠谱的提示词由哪几部分组成。</p>
       <h2 id="skeleton"><span class="no">7</span><span>提示词骨架</span></h2>
       <p class="one-liner">一条靠谱的提示词,通常有四件:<b>角色</b>(让它以谁的身份)、<b>任务</b>(具体做什么)、<b>上下文</b>(给足背景和材料)、<b>输出格式</b>(要什么样的结果)。讲清楚,永远胜过说客气。</p>
-      <p>新手最常见的毛病是把提示词写成一句含糊的请求:"帮我写点关于 X 的东西"。模型只好瞎猜。把四件补齐——角色设定(它是谁)、要它干哪件具体的事、相关材料贴给它、结果要什么形态(几条?表格?JSON?多长?)——它就有了照着做的靶子。<b>「礼貌」不重要,「具体」才重要</b>:与其说"请尽量写好一点",不如说"分 3 条,每条一句话,面向零基础读者"。</p>
+      <p>新手最常见的毛病是把提示词写成一句含糊的请求:"帮我写点关于 X 的东西"。模型只好瞎猜。把四件补齐——我是谁的角色、要它干哪件具体的事、相关材料贴给它、结果要什么形态(几条?表格?JSON?多长?)——它就有了照着做的靶子。<b>「礼貌」不重要,「具体」才重要</b>:与其说"请尽量写好一点",不如说"分 3 条,每条一句话,面向零基础读者"。</p>
       <figure>
         <svg viewBox="0 0 480 250" role="img" aria-label="提示词的四部分骨架">
           <rect x="60" y="20" width="360" height="42" rx="7" class="slot-acc"/><text x="80" y="46" class="sv" fill="#2743c7" font-weight="700">角色</text><text x="150" y="46" class="sv">你是一位面向新手的技术编辑</text>
@@ -296,17 +296,17 @@ body{
         <figcaption><span class="fig-num">图 2</span>提示词骨架:角色 + 任务 + 上下文 + 格式。把这四格填满,含糊的请求就变成可执行的指令。</figcaption>
       </figure>
 
-      <p class="handoff">但能塞进去的东西不是无限的——它受一扇"窗"的限制。</p>
+      <p class="handoff">但我能塞进去的东西不是无限的——它受一扇"窗"的限制。</p>
       <h2 id="context"><span class="no">8</span><span>上下文窗口</span></h2>
-      <p class="one-liner">上下文窗口<span class="en">context window</span>:模型一次能同时"看"的 token 上限(含提示词 + 它的回答)。超出会被截断;塞得太满,还容易漏看中间的内容、而且更贵。</p>
-      <p>模型不是记得住整本书。它有一扇固定大小的窗(比如几万到几十万 token),系统指令、历史对话、检索来的资料、问题,全都挤在这一扇窗里,还要给回答留位置。两个后果要记牢:一是<b>成本</b>——按 token 计费,窗塞得越满越贵;二是<b>"中间被忽略"</b>(lost in the middle):放在一大堆内容正中间的关键信息,常被模型忽视,重要的东西要放在开头或结尾。所以不是"把能给的都给",而是<b>只给相关的、并摆在显眼处</b>。</p>
+      <p class="one-liner">上下文窗口<span class="en">context window</span>:模型一次能同时"看"的 token 上限(含我的提示词 + 它的回答)。超出会被截断;塞得太满,还容易漏看中间的内容、而且更贵。</p>
+      <p>模型不是记得住整本书。它有一扇固定大小的窗(比如几万到几十万 token),系统指令、历史对话、检索来的资料、我的问题,全都挤在这一扇窗里,还要给回答留位置。两个后果要记牢:一是<b>成本</b>——按 token 计费,窗塞得越满越贵;二是<b>"中间被忽略"</b>(lost in the middle):放在一大堆内容正中间的关键信息,常被模型忽视,重要的东西要放在开头或结尾。所以不是"把能给的都给",而是<b>只给相关的、并摆在显眼处</b>。</p>
       <figure>
         <svg viewBox="0 0 560 170" role="img" aria-label="上下文窗口里各部分抢占 token 预算">
           <rect x="30" y="34" width="500" height="56" rx="8" class="d-ink nf"/>
           <rect x="34" y="38" width="120" height="48" rx="4" class="slot-acc"/><text x="94" y="66" text-anchor="middle" class="sv" fill="#2743c7">系统指令</text>
           <rect x="156" y="38" width="150" height="48" rx="4" class="slot"/><text x="231" y="66" text-anchor="middle" class="sv">历史对话</text>
           <rect x="308" y="38" width="130" height="48" rx="4" class="slot"/><text x="373" y="66" text-anchor="middle" class="sv">检索资料</text>
-          <rect x="440" y="38" width="86" height="48" rx="4" class="slot-acc"/><text x="483" y="66" text-anchor="middle" class="sv" fill="#2743c7">问题</text>
+          <rect x="440" y="38" width="86" height="48" rx="4" class="slot-acc"/><text x="483" y="66" text-anchor="middle" class="sv" fill="#2743c7">我的问题</text>
           <text x="280" y="24" text-anchor="middle" class="el">一扇固定大小的窗:全都挤在这里,还要留位置给回答</text>
           <text x="231" y="112" text-anchor="middle" class="el">↑ 放正中间的关键信息最容易被忽略(lost in the middle)</text>
           <text x="280" y="140" text-anchor="middle" class="el-acc" font-weight="700">对策:只放相关的,重要的摆开头/结尾</text>
@@ -318,7 +318,7 @@ body{
       <p class="handoff">光讲要求有时还不够稳,给几个例子往往立竿见影。</p>
       <h2 id="fewshot"><span class="no">9</span><span>少样本示例 few-shot</span></h2>
       <p class="one-liner">few-shot:在提示词里<b>给几个"输入 → 期望输出"的示例</b>,再让模型照着做同类的。比只用文字描述要求,稳得多。</p>
-      <p>不给例子叫 zero-shot(只凭描述),给例子叫 few-shot。人也是这样:光听"把评论分成正面/负面"可能拿捏不准边界,但看两三个标好的例子立刻就懂。示例还能顺手固定<b>输出格式和风格</b>——示例里怎么写,它就怎么仿。要点:例子要<b>覆盖典型情况和边界情况</b>,别都给简单的;2~5 个通常就够。</p>
+      <p>不给例子叫 zero-shot(只凭描述),给例子叫 few-shot。人也是这样:光听"把评论分成正面/负面"可能拿捏不准边界,但看两三个标好的例子立刻就懂。示例还能顺手固定<b>输出格式和风格</b>——我示例里怎么写,它就怎么仿。要点:例子要<b>覆盖典型情况和边界情况</b>,别都给简单的;2~5 个通常就够。</p>
       <figure>
         <svg viewBox="0 0 620 150" role="img" aria-label="zero-shot 与 few-shot 对比">
           <rect x="20" y="26" width="270" height="100" rx="8" class="d-ink nf"/>
@@ -331,7 +331,7 @@ body{
           <text x="346" y="88" class="sv">「超出预期」→ 正面</text>
           <text x="346" y="112" class="el">→ 照着例子的边界判,稳</text>
         </svg>
-        <figcaption><span class="fig-num">图 4</span>zero-shot 只说要求,few-shot 给几个标好的例子。例子划清了边界和格式,输出立刻稳定。</figcaption>
+        <figcaption><span class="fig-num">图 4</span>zero-shot 只说要求,few-shot 给几个标好的例子。例子替我划清了边界和格式,输出立刻稳定。</figcaption>
       </figure>
 
       <p class="handoff">遇到复杂任务,别让它一口答完——让它先拆解。</p>
@@ -399,7 +399,7 @@ body{
 <span class="line"><span style="color:#14181F">)</span></span>
 <span class="line"><span style="color:#14181F">print(resp.choices[0].message.content)</span></span></code></pre>
       </div>
-      <p>读一遍:提示词里塞好了<b>角色 / 任务 / 格式 / 约束</b>(骨架);<code>temperature</code> 控制随机性——要稳就调低;这一整段就是发进<b>上下文窗口</b>的内容。把 <code>prompt</code> 换成自己的任务,再拿三五个真实例子跑几轮(<b>迭代</b>),就是应用里最日常的循环。</p>
+      <p>读一遍:提示词里塞好了<b>角色 / 任务 / 格式 / 约束</b>(骨架);<code>temperature</code> 控制随机性——要稳就调低;这一整段就是发进<b>上下文窗口</b>的内容。把 <code>prompt</code> 换成我自己的任务,再拿三五个真实例子跑几轮(<b>迭代</b>),就是应用里最日常的循环。</p>
       <div class="challenge">
         <span class="label">进阶挑战</span>
         <h3>改改看</h3>
@@ -419,7 +419,7 @@ body{
         <div class="res">
           <div class="rh"><span class="rt2"><a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener">Anthropic · 提示词工程指南</a></span><span class="tags">厂商官方 · 英文 · 1h · 免费</span></div>
           <div class="rrow"><span class="rk">是什么</span><span class="rv">Claude 厂商的一手提示词指南,每条技巧都能直接照做。</span></div>
-          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">日常就在用 Claude,厂商自己的建议最贴合、最不容易过时。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">我日常就在用 Claude,厂商自己的建议最贴合、最不容易过时。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Overview 里的各条技巧(清晰指令、给例子、让它先想…)。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「迭代」节——照它改一版、对比前后效果。</span></div>
         </div>
@@ -442,7 +442,7 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 3 · 五个常见误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>有一句万能"咒语"能让模型变聪明</td><td>没有。稳定来自结构清晰 + 上下文到位 + 迭代,不是某句话术。</td></tr>
           <tr><td>对模型客气点、说"请"会更好</td><td>礼貌无关紧要,<b>具体</b>才关键。把要求、格式、约束写死,比说"尽量好一点"有用得多。</td></tr>
@@ -456,7 +456,7 @@ body{
       <ol class="steps">
         <li><b>补齐骨架。</b>把"帮我总结这篇文章"补成含角色 / 任务 / 上下文 / 格式的完整提示词。<details><summary>参考答案</summary><p>如:"你是一位帮读者省时间的编辑(角色);把〈全文〉总结成 5 条要点(任务),每条一句、不超过 25 字、按重要性排序(格式);只依据原文,不添加信息(约束)。"</p></details></li>
         <li><b>估 token。</b>一段 2000 字的中文材料大约多少 token?为什么把它塞进每次请求会变贵?<details><summary>参考答案</summary><p>中文约 1 字 1~2 token,2000 字约 2000~4000 token。每次请求都带上它就每次都为这几千 token 付费,还挤占窗口。</p></details></li>
-        <li><b>选技法。</b>"把用户评论分成 5 类,类别边界很微妙"——会优先用哪一招?<details><summary>参考答案</summary><p>few-shot:给每一类几个标好的例子把边界划清,比纯文字描述稳得多。</p></details></li>
+        <li><b>选技法。</b>"把用户评论分成 5 类,类别边界很微妙"——我会优先用哪一招?<details><summary>参考答案</summary><p>few-shot:给每一类几个标好的例子把边界划清,比纯文字描述稳得多。</p></details></li>
         <li><b>诊断。</b>一个多步推理任务,模型总在最后一步算错,怎么改提示词?<details><summary>参考答案</summary><p>加"一步步来、先写出每步推理再给最终答案"(chain-of-thought),给它打草稿的空间。</p></details></li>
       </ol>
 

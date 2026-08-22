@@ -188,7 +188,7 @@ body{
       <p>图解骨架约 40 分钟,动手 + 精读约 4~6 小时。所有概念都用基础课 <a href="../基础课程/05-机器学习核心概念.html">第 5 章</a>(模型/训练)、<a href="../基础课程/06-训练的本质.html">第 6 章</a>(损失/梯度下降)作对照。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>什么是线性回归——找一条最贴数据的直线,用来预测</li>
           <li>损失——用均方误差量「这条线拟合得好不好」</li>
@@ -298,7 +298,7 @@ body{
       <p class="handoff">尺子有了,怎么真的找到让它最小的 w、b?有两条路。</p>
       <h2 id="solve"><span class="no">9</span><span>求最优:解析解 vs 梯度下降</span></h2>
       <p class="one-liner">两条路殊途同归:<b>解析解(最小二乘)</b>——用一个公式<b>一步算出</b>最优 w、b,精确但只对线性这种简单模型管用;<b>梯度下降</b>——从随便一组 w、b 出发,<b>顺着损失下降最快的方向一小步一小步挪</b>,通用到能训练神经网络。</p>
-      <p><b>解析解</b>:因为 MSE 是个碗形,数学上能直接解出碗底在哪(令导数为零,一个矩阵公式搞定)。优点是精确、一步到位;缺点是只有线性回归这类简单模型有这种「闭式公式」,复杂模型没有。<b>梯度下降</b>(第 6 章那套「下山」):站在碗壁上,看哪个方向最陡,朝反方向迈一小步,重复,直到滚到碗底。它慢一点、要调步长(学习率),但<b>什么模型都能用</b>——正因如此,它才是深度学习的通用引擎。学线性回归,两条都要懂:解析解让看清「最优确实存在且可求」,梯度下降让人拿到通向后面所有模型的钥匙。</p>
+      <p><b>解析解</b>:因为 MSE 是个碗形,数学上能直接解出碗底在哪(令导数为零,一个矩阵公式搞定)。优点是精确、一步到位;缺点是只有线性回归这类简单模型有这种「闭式公式」,复杂模型没有。<b>梯度下降</b>(第 6 章那套「下山」):站在碗壁上,看哪个方向最陡,朝反方向迈一小步,重复,直到滚到碗底。它慢一点、要调步长(学习率),但<b>什么模型都能用</b>——正因如此,它才是深度学习的通用引擎。学线性回归,两条都要懂:解析解让我看清「最优确实存在且可求」,梯度下降让我拿到通向后面所有模型的钥匙。</p>
       <figure>
         <svg viewBox="0 0 600 240" role="img" aria-label="解析解与梯度下降两条路">
           <defs><marker id="m-s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
@@ -325,14 +325,14 @@ body{
       <p>理解一个算法,最好的办法是看它在不同抽象层的样子。同一件事——拟合一条直线——有三种写法,从繁到简:</p>
       <table class="tbl">
         <caption>表 1 · 同一件事的三个抽象层</caption>
-        <thead><tr><th>版本</th><th>要亲手做的</th><th>价值</th></tr></thead>
+        <thead><tr><th>版本</th><th>我要亲手做的</th><th>价值</th></tr></thead>
         <tbody>
           <tr class="sel"><td>① 手算(纸笔)</td><td>代最小二乘公式,算出 w、b</td><td>看清「最优真的可求」,不再神秘</td></tr>
           <tr class="sel"><td>② 手写 Python</td><td>自己写梯度下降循环调 w、b</td><td>看清训练每一步在干嘛(第 12 节)</td></tr>
-          <tr class="sel"><td>③ scikit-learn 一行</td><td><code>LinearRegression().fit(X, y)</code></td><td>生产就这么用;但已知道它在算什么</td></tr>
+          <tr class="sel"><td>③ scikit-learn 一行</td><td><code>LinearRegression().fit(X, y)</code></td><td>生产就这么用;但我已知道它在算什么</td></tr>
         </tbody>
       </table>
-      <p>关键心法:<b>先懂②,再用③</b>。很多人跳过②直接调库,结果模型一出问题就抓瞎。自己写过梯度下降,才真正拥有这个算法,而不是租用它。</p>
+      <p>关键心法:<b>先懂②,再用③</b>。很多人跳过②直接调库,结果模型一出问题就抓瞎。我自己写过梯度下降,才真正拥有这个算法,而不是租用它。</p>
 
       <!-- ===== 模块 D ===== -->
       <p class="handoff">下面把版本②写出来——十几行,拟合一条直线的完整训练循环。</p>
@@ -366,7 +366,7 @@ body{
 <span class="line"></span>
 <span class="line"><span style="color:#14181F">print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"学到:y ≈ </span><span style="color:#557089">{</span><span style="color:#14181F">w</span><span style="color:#14181F;font-weight:bold">:.2f</span><span style="color:#557089">}</span><span style="color:#557089">x + </span><span style="color:#557089">{</span><span style="color:#14181F">b</span><span style="color:#14181F;font-weight:bold">:.2f</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)     </span><span style="color:#8B95A8;font-style:italic"># 应接近 2x + 1</span></span></code></pre>
       </div>
-      <p>逐块对照:<code>y_hat = w*X + b</code> 是<b>模型</b>(⑦);<code>np.mean(error**2)</code> 是<b>损失 MSE</b>(⑧);<code>grad_w/grad_b</code> 加 <code>w -= lr*grad_w</code> 是<b>梯度下降</b>(⑨)——顺着让损失变小的方向挪一小步,重复一千次,<code>w、b</code> 就慢慢滑到碗底。跑起来会看到 <code>loss</code> 一路下降、<code>w</code> 趋近 2、<code>b</code> 趋近 1。<b>这十几行,就是后面所有深度学习训练循环的胚胎。</b>而生产里只需版本③:</p>
+      <p>逐块对照:<code>y_hat = w*X + b</code> 是<b>模型</b>(⑦);<code>np.mean(error**2)</code> 是<b>损失 MSE</b>(⑧);<code>grad_w/grad_b</code> 加 <code>w -= lr*grad_w</code> 是<b>梯度下降</b>(⑨)——顺着让损失变小的方向挪一小步,重复一千次,<code>w、b</code> 就慢慢滑到碗底。跑起来会看到 <code>loss</code> 一路下降、<code>w</code> 趋近 2、<code>b</code> 趋近 1。<b>这十几行,就是后面所有深度学习训练循环的胚胎。</b>而生产里我只需版本③:</p>
       <div class="code-block">
         <div class="chead"><span class="fn">linreg_sklearn.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
 <pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">from</span><span style="color:#14181F"> sklearn.linear_model </span><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> LinearRegression</span></span>
@@ -374,7 +374,7 @@ body{
 <span class="line"><span style="color:#14181F">model </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> LinearRegression().fit(X.reshape(</span><span style="color:#14181F;font-weight:bold">-</span><span style="color:#14181F">1, 1), y)   </span><span style="color:#8B95A8;font-style:italic"># ③ 一行搞定(内部用解析解)</span></span>
 <span class="line"><span style="color:#14181F">print(model.coef_, model.intercept_)                  </span><span style="color:#8B95A8;font-style:italic"># w, b —— 和手写版结果一致</span></span></code></pre>
       </div>
-      <p>两版结果一致,但现在<b>知道那一行背后发生了什么</b>——这就是自己写过一遍的价值。</p>
+      <p>两版结果一致,但我现在<b>知道那一行背后发生了什么</b>——这就是自己写过一遍的价值。</p>
       <div class="challenge">
         <span class="label">进阶挑战</span>
         <h3>改改看</h3>
@@ -417,7 +417,7 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 3 · 五个常见误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>线性回归太简单,没必要深究</td><td>它是「模型-损失-训练」最干净的模板,吃透它=拿到理解一切模型的钥匙。</td></tr>
           <tr><td>损失用差值直接相加就行</td><td>会正负抵消。要平方:消除符号 + 放大大误差,且损失光滑好优化。</td></tr>
@@ -450,7 +450,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
-      <p>现在有了「模型-损失-训练」的完整模板。<a href="D02-逻辑回归与分类边界.html">D02 · 逻辑回归与分类边界</a>只改一个地方:把线性回归的输出用一个 S 形函数(sigmoid)挤到 0~1 之间,当作「属于某一类的概率」——直线就从「预测数值」变成了「划分类别的边界」。损失也从平方误差换成更适合分类的交叉熵。骨架完全一样,会发现分类不过是回归的一次小改造。这也是通向神经网络的第一步。</p>
+      <p>我现在有了「模型-损失-训练」的完整模板。<a href="D02-逻辑回归与分类边界.html">D02 · 逻辑回归与分类边界</a>只改一个地方:把线性回归的输出用一个 S 形函数(sigmoid)挤到 0~1 之间,当作「属于某一类的概率」——直线就从「预测数值」变成了「划分类别的边界」。损失也从平方误差换成更适合分类的交叉熵。骨架完全一样,我会发现分类不过是回归的一次小改造。这也是通向神经网络的第一步。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="../index.html"><span class="lb">返回</span><span class="tt">课程首页 · 深度课程</span></a>
         <a href="D02-逻辑回归与分类边界.html" class="next"><span class="lb">下一章</span><span class="tt">D02 · 逻辑回归与分类边界</span></a>

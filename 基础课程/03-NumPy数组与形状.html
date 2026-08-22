@@ -203,7 +203,7 @@ body{
       <p>图解骨架约 40 分钟,外部精读 + 动手约 3~5 小时。全程只用到加减乘除和「求平均」,概念都用第 2 章的列表作对照。每出现一个新词,当场用白话解释。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>ndarray——一块规整、同类型、带形状的数据,比列表快得多</li>
           <li>shape 与维度——(行 × 列),reshape 换形状不改数据</li>
@@ -353,7 +353,7 @@ body{
       <p class="handoff">数组有了,下一步得会说它「几行几列」——这就是 shape。</p>
       <h2 id="shape"><span class="no">8</span><span>shape 与维度</span></h2>
       <p class="one-liner">shape:数组的<b>形状</b>,一个元组,像 <code>(2, 3)</code> 表示「2 行 3 列」。<code>reshape</code> 换形状但<b>不改数据本身</b>。</p>
-      <p>一维数组只有长度;二维数组有行有列;再往上是三维、更高维(图片就是「高 × 宽 × 颜色通道」的三维数组)。<code>.shape</code> 给出每个维度多大,<code>.ndim</code> 给出有几个维度。同样一批数,可以 <code>reshape</code> 成不同形状——数字没变,只是排布变了。</p>
+      <p>一维数组只有长度;二维数组有行有列;再往上是三维、更高维(图片就是「高 × 宽 × 颜色通道」的三维数组)。<code>.shape</code> 告诉我每个维度多大,<code>.ndim</code> 告诉我有几个维度。同样一批数,可以 <code>reshape</code> 成不同形状——数字没变,只是排布变了。</p>
       <figure>
         <div class="fig-code">b = np.arange(6)  →  b.reshape(2, 3)</div>
         <svg viewBox="0 0 640 190" role="img" aria-label="同样六个数 reshape 成 2 行 3 列">
@@ -450,7 +450,7 @@ body{
 
       <p class="handoff">最后一块,也是最容易懵的一块:两个形状不一样的数组,凭什么能相加。</p>
       <h2 id="broadcast"><span class="no">11</span><span>广播 broadcasting</span></h2>
-      <p class="one-liner">广播<span class="en">broadcasting</span>:形状不同的数组做运算时,NumPy 按规则把小的那个<b>自动「铺开」</b>到大的形状,再逐元素算——省得手动复制。</p>
+      <p class="one-liner">广播<span class="en">broadcasting</span>:形状不同的数组做运算时,NumPy 按规则把小的那个<b>自动「铺开」</b>到大的形状,再逐元素算——省得我手动复制。</p>
       <p>最简单的广播:数组 <code>+ 单个数</code>,那个数被铺到每个元素上(<code>a + 10</code>)。进阶:一个 <code>(3,)</code> 的行,和一个 <code>(3,1)</code> 的列相加,NumPy 把行按列数铺、把列按行数铺,得到一个 <code>(3,3)</code> 的方阵。规则一句话:<b>从右往左对齐每一维,某一维要么相等、要么其中一个是 1(1 的那个被铺开)</b>。</p>
       <figure>
         <div class="fig-code">行 (1,3) + 列 (3,1) → (3,3)</div>
@@ -534,7 +534,7 @@ body{
         <div class="res">
           <div class="rh"><span class="rt2"><a href="https://betterprogramming.pub/3b1d4976de1d?sk=57b908a77aa44075a49293fa1631dd9b" target="_blank" rel="noopener">NumPy Illustrated(图解)</a></span><span class="tags">图解博客 · 英文 · 40min · 免费</span></div>
           <div class="rrow"><span class="rk">是什么</span><span class="rv">用大量图把 NumPy 的形状/运算画出来的图解文。</span></div>
-          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">对设计背景的人,图解比文字更快建立"形状"直觉。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">我是设计师,图解比文字更快建立"形状"直觉。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Vectors + Matrices 两部分。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「形状」「广播」两节。</span></div>
         </div>
@@ -557,13 +557,13 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 3 · 五个新手误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>数组和列表差不多,能混用</td><td>数组同类型、连续内存、能向量化;列表松散、能混类型、只能循环。AI 数据一律用数组。</td></tr>
           <tr><td><code>reshape</code> 会改变数据</td><td>只改「形状」,数字和顺序都没动;元素总数必须对得上,否则报错。</td></tr>
           <tr><td><code>a[:, 0]</code> 是「第 0 个」</td><td>逗号前是行、后是列;<code>a[:, 0]</code> 是「所有行的第 0 列」,即整个第 0 列。</td></tr>
           <tr><td><code>axis=0</code> 是「按行算」</td><td><code>axis</code> 是<b>被压掉</b>的维度。<code>axis=0</code> 压掉行,得到每列的结果。</td></tr>
-          <tr><td>广播是我要手动复制数据</td><td>NumPy 自动按规则铺开,不真的占那么多内存;只要保证每一维「相等或有一个是 1」。</td></tr>
+          <tr><td>广播是我要手动复制数据</td><td>NumPy 自动按规则铺开,不真的占那么多内存;我只要保证每一维「相等或有一个是 1」。</td></tr>
         </tbody>
       </table>
 
@@ -617,7 +617,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">18</span><span>本章与下一章的连接</span></h2>
-      <p>数组解决了「一堆纯数字怎么高速算」。但真实数据往往带<b>标签</b>——哪一列是「姓名」、哪一列是「分数」,还有缺失值要清洗。<a href="04-Pandas表格数据.html">第 4 章 Pandas</a>在数组之上加了行列标签,把 NumPy 的能力包装成好用的「表格」。本章练熟的 shape、索引、向量化、广播,到 Pandas 里全都还在用——NumPy 是它的地基。</p>
+      <p>数组解决了「一堆纯数字怎么高速算」。但真实数据往往带<b>标签</b>——哪一列是「姓名」、哪一列是「分数」,还有缺失值要清洗。<a href="04-Pandas表格数据.html">第 4 章 Pandas</a>在数组之上加了行列标签,把 NumPy 的能力包装成好用的「表格」。我在本章练熟的 shape、索引、向量化、广播,到 Pandas 里全都还在用——NumPy 是它的地基。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="02-Python基础.html"><span class="lb">上一章</span><span class="tt">02 · Python 基础</span></a>
         <a href="04-Pandas表格数据.html" class="next"><span class="lb">下一章</span><span class="tt">04 · Pandas</span></a>

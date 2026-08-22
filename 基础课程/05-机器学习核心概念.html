@@ -187,7 +187,7 @@ body{
       <p>图解骨架约 40 分钟,外部精读 + 动手约 4~6 小时。这一章是纯概念,不要求编程;但结尾有一个十行的 scikit-learn 例子,把概念落到能跑的代码上。每出现一个新词,当场用白话解释。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>监督 vs 无监督——有标准答案地学,还是没答案自己找结构</li>
           <li>三大任务——分类(判类别)、回归(算数值)、聚类(自动分堆)</li>
@@ -278,7 +278,7 @@ body{
       <p class="handoff">先分清最大的一个岔路:学的时候,数据到底有没有「标准答案」。</p>
       <h2 id="sup"><span class="no">7</span><span>监督 vs 无监督</span></h2>
       <p class="one-liner">监督学习:每个例子都带<b>标准答案(标签)</b>,让模型学「输入 → 答案」的对应。无监督学习:数据<b>没有答案</b>,让模型自己在数据里找结构、分堆。</p>
-      <p>绝大多数常听到的 AI 是<b>监督学习</b>:给一万张标了「猫/狗」的图,学会认猫狗;给标了房价的房子数据,学会估价。答案是人先标好的,模型对照答案纠正自己。<b>无监督学习</b>没有答案:给一堆客户数据,让模型自己把相似的分成几群(聚类),事先并不知道该分几群、每群是什么。一句话:监督=有答案的题海,无监督=没答案的归类。</p>
+      <p>绝大多数我听过的 AI 是<b>监督学习</b>:给一万张标了「猫/狗」的图,学会认猫狗;给标了房价的房子数据,学会估价。答案是人先标好的,模型对照答案纠正自己。<b>无监督学习</b>没有答案:给一堆客户数据,让模型自己把相似的分成几群(聚类),我事先并不知道该分几群、每群是什么。一句话:监督=有答案的题海,无监督=没答案的归类。</p>
 
       <p class="handoff">监督学习按「答案是什么样」又分两种,加上无监督的分堆,一共三大任务。</p>
       <h2 id="tasks"><span class="no">8</span><span>三大任务:分类 / 回归 / 聚类</span></h2>
@@ -360,7 +360,7 @@ body{
       <h2 id="metric"><span class="no">11</span><span>评价指标:准确率的陷阱</span></h2>
       <p class="one-liner">准确率<span class="en">accuracy</span>=猜对的比例,但在<b>类别不均衡</b>时会骗人。要补上<b>精确率</b>(说是的里有多少真是)和<b>召回率</b>(真是的里抓回来多少)。</p>
       <p>经典陷阱:一种病 1000 人里只有 10 个真患者,一个模型无脑判「全都没病」,准确率高达 99%——却一个病人都没查出来,毫无用处。所以分类问题不能只看准确率。<b>精确率</b>问:模型报警的里面,有多少是真的?<b>召回率</b>问:真正的病人里,被抓出来多少?查病要高召回(宁可错报也别漏),垃圾邮件要高精确(宁可漏也别把正常邮件误杀)。把这四种情况摆成一张 2×2 表,就是<b>混淆矩阵</b>。</p>
-      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:Google 速成课「Classification: Accuracy, Precision, Recall」。StatQuest 的「Confusion Matrix」「ROC and AUC」两集把这块讲得最直观。<b>往后连:</b>项目 P2 训练第一个模型时,就得用这些指标判断它好不好。</p></div>
+      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:Google 速成课「Classification: Accuracy, Precision, Recall」。StatQuest 的「Confusion Matrix」「ROC and AUC」两集把这块讲得最直观。<b>往后连:</b>项目 P2 训练第一个模型时,我就得用这些指标判断它好不好。</p></div>
 
       <!-- ========== 模块 D ========== -->
       <p class="handoff">五块地基到齐了。下面用十行 scikit-learn,把「划分—训练—评估」跑一遍。</p>
@@ -397,7 +397,7 @@ body{
         <div class="res spine-card">
           <div class="rh"><span class="rt2"><a href="https://developers.google.com/machine-learning/crash-course" target="_blank" rel="noopener">Google · 机器学习速成课</a></span><span class="spine">默认主线</span><span class="tags">官方课程 · 可切中文 · 3–4h · 免费</span></div>
           <div class="rrow"><span class="rk">是什么</span><span class="rv">Google 出的交互式机器学习入门课,概念 + 可玩的演示。</span></div>
-          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章讲清核心概念的脉络;它让亲手拖参数把这些概念坐实。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章讲清核心概念的脉络;它让我亲手拖参数把这些概念坐实。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Framing / Regression / Classification / Overfitting 几章。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「监督/无监督」「过拟合」「评价指标」几节。</span></div>
         </div>
@@ -427,7 +427,7 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 2 · 五个新手误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>机器学习就是很高级的 if-else</td><td>规则不是人写的,是模型从数据里自己找的;连人没想到的线索也能用上。</td></tr>
           <tr><td>数据越多、模型越复杂就越好</td><td>模型太复杂会过拟合(背噪声)。「刚好」比「最复杂」好,泛化才是目标。</td></tr>
@@ -460,7 +460,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
-      <p>这一章讲了机器学习「是什么、有哪些类、怎么算学好」,但一直没碰「模型到底怎么学出来」。<a href="06-训练的本质.html">第 6 章 训练的本质</a>钻进这个黑箱:什么是损失函数(用一个数衡量模型错多少)、什么是梯度下降(顺着坡往下挪、一步步把错降到最小)。到那时,「训练」就不再是黑话,而是一个能画出来的过程。</p>
+      <p>这一章讲了机器学习「是什么、有哪些类、怎么算学好」,但一直没碰「模型到底怎么学出来」。<a href="06-训练的本质.html">第 6 章 训练的本质</a>钻进这个黑箱:什么是损失函数(用一个数衡量模型错多少)、什么是梯度下降(顺着坡往下挪、一步步把错降到最小)。到那时,「训练」就不再是黑话,而是一个我能画出来的过程。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="04-Pandas表格数据.html"><span class="lb">上一章</span><span class="tt">04 · Pandas</span></a>
         <a href="06-训练的本质.html" class="next"><span class="lb">下一章</span><span class="tt">06 · 训练的本质</span></a>

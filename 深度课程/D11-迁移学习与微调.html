@@ -184,18 +184,18 @@ body{
       <header class="chapter-opener">
         <p class="chapter-label">深度课程 · Track B · Chapter D11 · 深度学习收官</p>
         <h1>迁移学习与微调</h1>
-        <p class="recap">前四章学会了<b>从零训练并调好</b>一个深度模型。但现实很骨感:好模型往往要<b>几百万张标注数据 + 一堆 GPU 训好几天</b>,而手头常常只有几百张图、一块普通显卡。这一章讲破局之道——<b>不从零训,站在别人训好的大模型肩膀上</b>:拿一个在海量数据上预训练好的模型,借用它已经学会的通用特征,只用一点点数据"微调"出自己的模型。这是今天绝大多数深度学习项目的真实做法,<b>也正是"拿开源大模型微调出专用助手"(Track C)背后同一个思想</b>。学完它,Track B 深度学习就全通了。</p>
+        <p class="recap">前四章我学会了<b>从零训练并调好</b>一个深度模型。但现实很骨感:好模型往往要<b>几百万张标注数据 + 一堆 GPU 训好几天</b>,而我手头常常只有几百张图、一块普通显卡。这一章讲破局之道——<b>不从零训,站在别人训好的大模型肩膀上</b>:拿一个在海量数据上预训练好的模型,借用它已经学会的通用特征,只用我的一点点数据"微调"出自己的模型。这是今天绝大多数深度学习项目的真实做法,<b>也正是"拿开源大模型微调出专用助手"(Track C)背后同一个思想</b>。学完它,Track B 深度学习就全通了。</p>
       </header>
 
-      <p>图解骨架约 25 分钟,动手约 3~4 小时。核心就一句话:<b>别人训好的特征,拿来直接用</b>。这一章讲怎么用、以及"冻多少、调多少"怎么定。</p>
+      <p>图解骨架约 25 分钟,动手约 3~4 小时。核心就一句话:<b>别人训好的特征,拿来直接用</b>。这一章教我怎么用、以及"冻多少、调多少"怎么定。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>为什么不从零训——数据不够、算力不够、也没必要</li>
           <li>预训练模型——别人在海量数据上训好、学到了通用特征</li>
           <li>特征复用(冻结)——把预训练模型当"现成的特征提取器"</li>
-          <li>微调 fine-tuning——解冻部分层,用小学习率在数据上继续训</li>
+          <li>微调 fine-tuning——解冻部分层,用小学习率在我的数据上继续训</li>
           <li>怎么选策略——数据量 × 相似度,决定"冻多少、调多少"</li>
         </ul>
       </section>
@@ -227,8 +227,8 @@ body{
       </ol>
 
       <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
-      <p class="one-liner">迁移学习:<b>把一个在海量数据上训好的模型,当作该任务的起点,而不是从随机权重从头学。</b>因为它前面那些层学到的"边缘、纹理、形状"等特征是通用的——只需在这个坚实的地基上,用自己的一点点数据,把最后判断的部分改造成自己要的。省数据、省算力、效果还常常更好。</p>
-      <p>为什么行得通:<a href="D08-卷积神经网络CNN.html">D08</a> 讲过 CNN 是"浅层看边缘、深层看整体"。一个在 ImageNet(上百万张图、一千个类别)上训好的模型,它<b>浅层学到的边缘/纹理/颜色探测器,对任何图像任务都通用</b>——不管要认的是猫狗、皮肤病还是零件缺陷,第一步都得先看边缘和纹理。既然别人已经用海量数据把这些通用特征学得又好又稳,何必用自己那几百张图从零重学一遍(还多半学不好、极易过拟合)?聪明的做法是<b>借用</b>:保留它学好的特征层,只把最后"做最终判断"的那一小块换成任务专属、用数据训。这就是迁移学习省数据、省算力还效果好的根源。文本领域完全同理——大语言模型就是在海量文本上"预训练"出通用语言能力,再微调到具体任务(Track C)。</p>
+      <p class="one-liner">迁移学习:<b>把一个在海量数据上训好的模型,当作我任务的起点,而不是从随机权重从头学。</b>因为它前面那些层学到的"边缘、纹理、形状"等特征是通用的——我只需在这个坚实的地基上,用自己的一点点数据,把最后判断的部分改造成我要的。省数据、省算力、效果还常常更好。</p>
+      <p>为什么行得通:<a href="D08-卷积神经网络CNN.html">D08</a> 讲过 CNN 是"浅层看边缘、深层看整体"。一个在 ImageNet(上百万张图、一千个类别)上训好的模型,它<b>浅层学到的边缘/纹理/颜色探测器,对任何图像任务都通用</b>——不管我要认的是猫狗、皮肤病还是零件缺陷,第一步都得先看边缘和纹理。既然别人已经用海量数据把这些通用特征学得又好又稳,我何必用自己那几百张图从零重学一遍(还多半学不好、极易过拟合)?聪明的做法是<b>借用</b>:保留它学好的特征层,只把最后"做最终判断"的那一小块换成我的任务专属、用我的数据训。这就是迁移学习省数据、省算力还效果好的根源。文本领域完全同理——大语言模型就是在海量文本上"预训练"出通用语言能力,再微调到具体任务(Track C)。</p>
 
       <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
       <figure>
@@ -260,28 +260,28 @@ body{
       <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
       <div class="callout go">
         <span class="label">默认主线 · 官方手把手</span>
-        <p><b>PyTorch 官方《迁移学习》教程 + Hugging Face 课程的微调章。</b>为什么:PyTorch 教程直接演示加载预训练模型、冻结、换头、微调,和本章第 11 节落点一致;HF 课程把同一套思想搬到文本/大模型上,正好衔接 Track C。链接:<a href="https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html" target="_blank" rel="noopener">PyTorch · Transfer Learning</a>、<a href="https://huggingface.co/learn/nlp-course/chapter3/1" target="_blank" rel="noopener">HF · Fine-tuning</a>。</p>
+        <p><b>PyTorch 官方《迁移学习》教程 + Hugging Face 课程的微调章。</b>为什么:PyTorch 教程直接教我加载预训练模型、冻结、换头、微调,和本章第 11 节落点一致;HF 课程把同一套思想搬到文本/大模型上,正好衔接 Track C。链接:<a href="https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html" target="_blank" rel="noopener">PyTorch · Transfer Learning</a>、<a href="https://huggingface.co/learn/nlp-course/chapter3/1" target="_blank" rel="noopener">HF · Fine-tuning</a>。</p>
       </div>
       <p><b>找现成模型:</b></p>
       <ul>
-        <li><b>模型仓库</b> — 图像看 <a href="https://pytorch.org/vision/stable/models.html" target="_blank" rel="noopener">torchvision.models</a>(ResNet 等一行加载);文本/多模态看 <a href="https://huggingface.co/models" target="_blank" rel="noopener">Hugging Face Models</a>——几十万个预训练模型任选。</li>
+        <li><b>模型仓库</b> — 图像看 <a href="https://pytorch.org/vision/stable/models.html" target="_blank" rel="noopener">torchvision.models</a>(ResNet 等一行加载);文本/多模态看 <a href="https://huggingface.co/models" target="_blank" rel="noopener">Hugging Face Models</a>——几十万个预训练模型任我挑。</li>
       </ul>
 
       <!-- ===== 模块 C ===== -->
       <p class="handoff">先把"为什么从零训是下策"这件事说透。</p>
       <h2 id="why"><span class="no">7</span><span>为什么不从零训</span></h2>
-      <p class="one-liner">从零训练一个好模型有三道坎:<b>要海量标注数据</b>(几十万起,多半没有)、<b>要大量算力</b>(训好几天的 GPU,多半租不起)、<b>还极易过拟合</b>(数据少、参数多,模型直接背答案)。迁移学习一次绕过这三坎:通用特征别人已经学好了,只补最后一小步。</p>
-      <p>算笔账就懂了:一个像样的图像模型有几千万参数,要把它们从随机值学到位,需要的数据量和算力都是天文数字——这是大公司才玩得起的游戏。而真实任务(认某种零件缺陷、分某类医学影像)往往只有几百到几千张标注图。用这么点数据从零训一个大模型,结果必然是灾难性过拟合:训练集背得滚瓜烂熟、新数据一塌糊涂(<a href="D10-优化器正则化与训练技巧.html">D10</a>)。迁移学习把问题重新框定:要学的不是"从像素到答案的一切",而只是"在别人已经提炼好的高层特征之上,做这个任务的最后判断"——这一步需要的数据和算力,就小得多、也现实得多。</p>
+      <p class="one-liner">从零训练一个好模型有三道坎:<b>要海量标注数据</b>(几十万起,我多半没有)、<b>要大量算力</b>(训好几天的 GPU,我多半租不起)、<b>还极易过拟合</b>(数据少、参数多,模型直接背答案)。迁移学习一次绕过这三坎:通用特征别人已经替我学好了,我只补最后一小步。</p>
+      <p>算笔账就懂了:一个像样的图像模型有几千万参数,要把它们从随机值学到位,需要的数据量和算力都是天文数字——这是大公司才玩得起的游戏。而我的真实任务(认某种零件缺陷、分某类医学影像)往往只有几百到几千张标注图。用这么点数据从零训一个大模型,结果必然是灾难性过拟合:训练集背得滚瓜烂熟、新数据一塌糊涂(<a href="D10-优化器正则化与训练技巧.html">D10</a>)。迁移学习把问题重新框定:我要学的不是"从像素到答案的一切",而只是"在别人已经提炼好的高层特征之上,做我这个任务的最后判断"——这一步需要的数据和算力,就小得多、也现实得多。</p>
 
       <p class="handoff">巨人是谁:预训练模型到底是什么。</p>
       <h2 id="pretrain"><span class="no">8</span><span>预训练模型</span></h2>
       <p class="one-liner">预训练模型 = 别人已经在<b>某个大数据集上训练好、并公开权重</b>的模型。图像界的经典是在 <b>ImageNet</b>(128 万张图、1000 类)上训好的 ResNet 等;文本界就是在海量网页文本上训好的大语言模型。它们的<b>前面几层学到了通用的低/中层特征</b>,这些特征换个任务照样有用——这正是能"迁移"的原因。</p>
-      <p>关键要理解"它带来的是什么":一个 ImageNet 预训练模型,浅层是一堆训练好的边缘/纹理/颜色探测器,中层是形状/部件探测器,深层才是"这是不是某个 ImageNet 类别"的判断。前两部分(通用特征)对几乎任何图像任务都直接可用;只有最深那部分(专为 ImageNet 的 1000 类做判断)和任务无关,需要替换。所以迁移的标准动作是:<b>保留前面的特征层、换掉最后的"分类头"</b>——换成一个匹配目标类别数的新层(比如只分 3 类,就换一个输出 3 的层)。用 <code>torchvision.models.resnet18(weights=...)</code> 一行就能把这样一个巨人搬进来。文本同理:预训练大模型带来的是通用语言理解,只需在它之上微调出具体任务。</p>
+      <p>关键要理解"它带来的是什么":一个 ImageNet 预训练模型,浅层是一堆训练好的边缘/纹理/颜色探测器,中层是形状/部件探测器,深层才是"这是不是某个 ImageNet 类别"的判断。前两部分(通用特征)对我几乎任何图像任务都直接可用;只有最深那部分(专为 ImageNet 的 1000 类做判断)和我的任务无关,需要替换。所以迁移的标准动作是:<b>保留前面的特征层、换掉最后的"分类头"</b>——换成一个匹配我类别数的新层(比如我只分 3 类,就换一个输出 3 的层)。用 <code>torchvision.models.resnet18(weights=...)</code> 一行就能把这样一个巨人搬进来。文本同理:预训练大模型带来的是通用语言理解,我只需在它之上微调出具体任务。</p>
 
       <p class="handoff">借用有两种深浅:只借不改(冻结),还是借了再改(微调)。</p>
       <h2 id="freeze"><span class="no">9</span><span>特征复用(冻结)与微调</span></h2>
-      <p class="one-liner">两种用法,深浅不同。<b>特征复用(冻结)</b>:把预训练模型的特征层<b>冻住</b>(训练时不更新它们),只把它当一个"现成的特征提取器",单独训练新换的头——快、省、数据少时最稳。<b>微调(fine-tuning)</b>:<b>解冻</b>部分(或全部)层,用一个<b>很小的学习率</b>在数据上继续训——让通用特征也朝任务微调一点,数据够时效果更好。</p>
-      <p>怎么理解"冻结":把某些层的参数标记为"不参与梯度更新"(<code>requires_grad=False</code>),训练时它们保持预训练学到的值不变,只有新加的头在学。这样需要学的参数极少,几百张图也能训得稳、还快。<b>微调</b>则更进一步:允许预训练层也被更新,但必须用<b>很小的学习率</b>(如 <code>1e-4</code> 甚至更小)——因为那些权重已经很好了,大步一走就会把学好的特征"抖坏"(灾难性遗忘)。常见的稳妥流程是<b>两段式</b>:先冻结、只训新头几轮让它站稳,再解冻、用小学习率整体微调几轮精修。到底冻多少、要不要微调,取决于下一节的两个因素。</p>
+      <p class="one-liner">两种用法,深浅不同。<b>特征复用(冻结)</b>:把预训练模型的特征层<b>冻住</b>(训练时不更新它们),只把它当一个"现成的特征提取器",单独训练我新换的头——快、省、数据少时最稳。<b>微调(fine-tuning)</b>:<b>解冻</b>部分(或全部)层,用一个<b>很小的学习率</b>在我的数据上继续训——让通用特征也朝我的任务微调一点,数据够时效果更好。</p>
+      <p>怎么理解"冻结":把某些层的参数标记为"不参与梯度更新"(<code>requires_grad=False</code>),训练时它们保持预训练学到的值不变,只有我新加的头在学。这样需要学的参数极少,几百张图也能训得稳、还快。<b>微调</b>则更进一步:允许预训练层也被更新,但必须用<b>很小的学习率</b>(如 <code>1e-4</code> 甚至更小)——因为那些权重已经很好了,大步一走就会把学好的特征"抖坏"(灾难性遗忘)。常见的稳妥流程是<b>两段式</b>:先冻结、只训新头几轮让它站稳,再解冻、用小学习率整体微调几轮精修。到底冻多少、要不要微调,取决于下一节的两个因素。</p>
       <figure>
         <svg viewBox="0 0 640 220" role="img" aria-label="迁移学习:冻结特征层、换掉新头">
           <defs><marker id="m-tf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
@@ -293,21 +293,21 @@ body{
           <text x="150" y="140" text-anchor="middle" class="el">原分类头(ImageNet 1000 类)✗ 丢弃</text>
           <line x1="272" y1="118" x2="332" y2="118" class="d-acc" marker-end="url(#m-tf)"/>
           <text x="302" y="108" text-anchor="middle" class="el-acc">换头</text>
-          <text x="490" y="28" text-anchor="middle" class="el">模型</text>
+          <text x="490" y="28" text-anchor="middle" class="el">我的模型</text>
           <rect x="380" y="44" width="220" height="52" rx="8" class="frozen"/>
           <text x="490" y="66" text-anchor="middle" class="nl">同一批特征层(借来)</text>
           <text x="490" y="85" text-anchor="middle" class="el">🔒 冻结 或 小学习率微调</text>
           <rect x="380" y="112" width="220" height="46" rx="8" class="box-acc"/>
-          <text x="490" y="134" text-anchor="middle" class="nl-acc">新分类头( N 类)</text>
-          <text x="490" y="151" text-anchor="middle" class="el-acc">用数据训</text>
-          <text x="320" y="196" text-anchor="middle" class="el">借用特征层(灰=冻结),只换/训最后的头(蓝=训)</text>
+          <text x="490" y="134" text-anchor="middle" class="nl-acc">新分类头(我的 N 类)</text>
+          <text x="490" y="151" text-anchor="middle" class="el-acc">用我的数据训</text>
+          <text x="320" y="196" text-anchor="middle" class="el">借用特征层(灰=冻结),只换/训最后的头(蓝=我训)</text>
         </svg>
-        <figcaption><span class="fig-num">图 2</span>迁移学习的标准动作:保留预训练的特征层(灰=冻结/小学习率),丢掉原来的分类头,换上匹配该任务类别数的新头(蓝),用数据训这个头。</figcaption>
+        <figcaption><span class="fig-num">图 2</span>迁移学习的标准动作:保留预训练的特征层(灰=冻结/小学习率),丢掉原来的分类头,换上匹配我任务类别数的新头(蓝),用我的数据训这个头。</figcaption>
       </figure>
 
       <p class="handoff">冻多少、要不要微调,由两个因素定,一张表说清。</p>
       <h2 id="strategy"><span class="no">10</span><span>怎么选策略:数据量 × 相似度</span></h2>
-      <p class="one-liner">两个问题定策略:<b>数据有多少?任务和预训练数据像不像?</b> 数据少 + 很像 → 只训新头(冻结全部特征层);数据多 + 不太像 → 微调更多层甚至全部。核心权衡:<b>数据越少越要多冻</b>(防过拟合),<b>任务越不像越要多调</b>(通用特征不够用)。</p>
+      <p class="one-liner">两个问题定策略:<b>我的数据有多少?我的任务和预训练数据像不像?</b> 数据少 + 很像 → 只训新头(冻结全部特征层);数据多 + 不太像 → 微调更多层甚至全部。核心权衡:<b>数据越少越要多冻</b>(防过拟合),<b>任务越不像越要多调</b>(通用特征不够用)。</p>
       <p>四种情形:<b>数据少 + 相似</b>(如少量猫狗图,ImageNet 里就有猫狗)——最省心:冻结全部特征层,只训一个新头。<b>数据少 + 不相似</b>(如少量医学影像)——两难:数据少不敢大改,但特征又不太对口;折中办法是冻住浅层(通用边缘纹理仍有用)、只微调靠后几层 + 新头。<b>数据多 + 相似</b>——可以微调整个网络,用小学习率,效果通常最好。<b>数据多 + 不相似</b>——微调全部、甚至考虑训练更久;数据够多时迁移带来的主要是"更好的起点、更快收敛"。<b>一个万能起手式:先全冻、只训头看个基线,再逐步解冻靠后的层观察验证集有没有变好</b>——简单、安全、可控。</p>
       <table class="tbl">
         <caption>表 1 · 迁移策略速查(行=数据量,列=与预训练的相似度)</caption>
@@ -321,7 +321,7 @@ body{
       <!-- ===== 模块 D ===== -->
       <p class="handoff">把"加载预训练 → 换头 → 冻结 → 训练"写成代码。</p>
       <h2 id="assemble"><span class="no">11</span><span>组装:加载 ResNet、换头、微调</span></h2>
-      <p>下面用 torchvision 的预训练 ResNet18 做迁移:冻住特征层、换掉最后的分类头成 N 类,只训这个头。训练?还是 <a href="D07-PyTorch与完整训练循环.html">D07</a> 那五步:</p>
+      <p>下面用 torchvision 的预训练 ResNet18 做迁移:冻住特征层、换掉最后的分类头成我的 N 类,只训这个头。训练?还是 <a href="D07-PyTorch与完整训练循环.html">D07</a> 那五步:</p>
       <div class="code-block">
         <div class="chead"><span class="fn">transfer_resnet.py</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
 <pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">import</span><span style="color:#14181F"> torch</span></span>
@@ -335,8 +335,8 @@ body{
 <span class="line"><span style="color:#14181F;font-weight:bold">for</span><span style="color:#14181F"> p </span><span style="color:#14181F;font-weight:bold">in</span><span style="color:#14181F"> model.parameters():</span></span>
 <span class="line"><span style="color:#14181F">    p.requires_grad </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> False</span></span>
 <span class="line"></span>
-<span class="line"><span style="color:#8B95A8;font-style:italic"># 3. 换掉最后的分类头:原来输出 1000 类 → 换成你的 N 类</span></span>
-<span class="line"><span style="color:#14181F">num_classes </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 3                      </span><span style="color:#8B95A8;font-style:italic"># 假设你只分 3 类</span></span>
+<span class="line"><span style="color:#8B95A8;font-style:italic"># 3. 换掉最后的分类头:原来输出 1000 类 → 换成我的 N 类</span></span>
+<span class="line"><span style="color:#14181F">num_classes </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> 3                      </span><span style="color:#8B95A8;font-style:italic"># 假设我只分 3 类</span></span>
 <span class="line"><span style="color:#14181F">model.fc </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> nn.Linear(model.fc.in_features, num_classes)</span></span>
 <span class="line"><span style="color:#8B95A8;font-style:italic"># 新换的 fc 层默认 requires_grad=True,所以只有它会被训练</span></span>
 <span class="line"></span>
@@ -348,11 +348,11 @@ body{
 <span class="line"><span style="color:#8B95A8;font-style:italic"># 5. 训练:还是 D07 的五步循环(此处略),只训新头,几百张图也能训得又快又好</span></span>
 <span class="line"><span style="color:#8B95A8;font-style:italic"># 想进一步微调?把第 2 步部分层改回 requires_grad=True、再用更小的 lr=1e-4 续训</span></span></code></pre>
       </div>
-      <p>逐块对照本章:第 1 步 <code>resnet18(weights=...)</code> 把"巨人"搬来(第 8 节);第 2 步 <code>requires_grad=False</code> 就是"冻结"(第 9 节),让特征层保持预训练的值;第 3 步换 <code>model.fc</code> 就是"换头"(图 2),输出改成类别数;第 4 步优化器只收 <code>requires_grad=True</code> 的参数——也就是只训新头,又快又稳。要从"特征复用"升级成"微调",只需把靠后几层解冻、再用更小的学习率续训(第 9 节的两段式)。<b>就这么几行,就用几百张图和一块普通显卡,站上了别人几百万张图训出来的肩膀。</b></p>
+      <p>逐块对照本章:第 1 步 <code>resnet18(weights=...)</code> 把"巨人"搬来(第 8 节);第 2 步 <code>requires_grad=False</code> 就是"冻结"(第 9 节),让特征层保持预训练的值;第 3 步换 <code>model.fc</code> 就是"换头"(图 2),输出改成我的类别数;第 4 步优化器只收 <code>requires_grad=True</code> 的参数——也就是只训新头,又快又稳。要从"特征复用"升级成"微调",只需把靠后几层解冻、再用更小的学习率续训(第 9 节的两段式)。<b>就这么几行,我就用几百张图和一块普通显卡,站上了别人几百万张图训出来的肩膀。</b></p>
       <div class="challenge">
         <span class="label">进阶挑战 · 迁移一把</span>
         <h3>用几百张图训一个像样的分类器</h3>
-        <p>①找一个小图像数据集(如 torchvision 的 Hymenoptera 蜜蜂/蚂蚁,或自己拍几百张分两三类),按上面的代码做"冻结 + 换头 + 只训头",记下验证准确率。②对比:同样的数据,<b>从零训</b>一个同样结构的模型,看准确率差多远、过拟合多严重——会直观感到迁移学习的威力。③再做"两段式微调"(先训头、再解冻靠后层用 <code>lr=1e-4</code> 续训),看能不能再提几个点。④想想:这套"预训练 + 微调"的思想,搬到文本上会是什么样?(带着这个问题进 Track C。)</p>
+        <p>①找一个小图像数据集(如 torchvision 的 Hymenoptera 蜜蜂/蚂蚁,或我自己拍几百张分两三类),按上面的代码做"冻结 + 换头 + 只训头",记下验证准确率。②对比:同样的数据,<b>从零训</b>一个同样结构的模型,看准确率差多远、过拟合多严重——我会直观感到迁移学习的威力。③再做"两段式微调"(先训头、再解冻靠后层用 <code>lr=1e-4</code> 续训),看能不能再提几个点。④想想:这套"预训练 + 微调"的思想,搬到文本上会是什么样?(带着这个问题进 Track C。)</p>
       </div>
 
       <h2 id="reflist"><span class="no">12</span><span>外部资源 · 骨架之上的血肉</span></h2>
@@ -391,12 +391,12 @@ body{
       <h2 id="myths"><span class="no">13</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 3 · 五个常见误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>做深度学习都得从零训模型</td><td>正相反:现实中绝大多数是拿预训练模型微调。从零训是少数大机构的事。</td></tr>
           <tr><td>微调时用正常学习率就行</td><td>要用很小的学习率(如 1e-4)。预训练权重已很好,大步会把学好的特征抖坏。</td></tr>
           <tr><td>数据越少越要微调更多层</td><td>反了。数据越少越要多冻(只训头),防过拟合;数据多才敢多调。</td></tr>
-          <tr><td>换头就是随便加一层</td><td>头的输出维度要匹配类别数;通常先只训头拿基线,再决定要不要解冻。</td></tr>
+          <tr><td>换头就是随便加一层</td><td>头的输出维度要匹配我的类别数;通常先只训头拿基线,再决定要不要解冻。</td></tr>
           <tr><td>迁移学习只用于图像</td><td>文本(大模型微调)、语音、蛋白质都在用。"预训练+微调"是通用范式,也是 Track C 的核心。</td></tr>
         </tbody>
       </table>
@@ -424,8 +424,8 @@ body{
       </div>
 
       <h2 id="next"><span class="no">16</span><span>Track B 收官 · 通向 Track C</span></h2>
-      <p>恭喜——<b>Track B 深度学习全通了</b>:训练循环(D07)、会看图的 CNN(D08)、处理顺序的 RNN 与注意力(D09)、把模型训好的手艺(D10)、站在巨人肩上的迁移学习(D11)。现在能读懂、训练、调好、并复用一个深度模型了。</p>
-      <p>更重要的是,已经攒齐了推开<b>大模型内部(Track C)</b>那扇门的所有钥匙:<a href="D09-序列模型RNN到注意力.html">D09</a> 的<b>注意力</b>、<a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>的 <b>Token/Transformer 印象</b>、还有这一章的<b>"预训练 + 微调"</b>范式——它们正是 Track C 要逐一拆到底的东西:<a href="../index.html">Tokenizer(D12)</a>、<a href="../index.html">Embedding(D13)</a>、<a href="../index.html">注意力手算(D14)</a>、<a href="../index.html">Transformer 完整结构(D15)</a>、<a href="../index.html">预训练/RLHF(D16)</a>、<a href="../index.html">推理与部署成本(D17)</a>。这也正是学这门课最想抵达的地方——AI 的底层。地基已经全部打好,推门吧。</p>
+      <p>恭喜——<b>Track B 深度学习全通了</b>:训练循环(D07)、会看图的 CNN(D08)、处理顺序的 RNN 与注意力(D09)、把模型训好的手艺(D10)、站在巨人肩上的迁移学习(D11)。我现在能读懂、训练、调好、并复用一个深度模型了。</p>
+      <p>更重要的是,我已经攒齐了推开<b>大模型内部(Track C)</b>那扇门的所有钥匙:<a href="D09-序列模型RNN到注意力.html">D09</a> 的<b>注意力</b>、<a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a>的 <b>Token/Transformer 印象</b>、还有这一章的<b>"预训练 + 微调"</b>范式——它们正是 Track C 要逐一拆到底的东西:<a href="../index.html">Tokenizer(D12)</a>、<a href="../index.html">Embedding(D13)</a>、<a href="../index.html">注意力手算(D14)</a>、<a href="../index.html">Transformer 完整结构(D15)</a>、<a href="../index.html">预训练/RLHF(D16)</a>、<a href="../index.html">推理与部署成本(D17)</a>。这也正是我学这门课最想抵达的地方——AI 的底层。地基已经全部打好,推门吧。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="D10-优化器正则化与训练技巧.html"><span class="lb">上一章</span><span class="tt">D10 · 优化器、正则化与训练技巧</span></a>
         <a href="D12-Tokenizer与词表.html" class="next"><span class="lb">下一 Track</span><span class="tt">Track C · 大模型内部(D12 起)</span></a>

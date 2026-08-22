@@ -183,13 +183,13 @@ body{
       <header class="chapter-opener">
         <p class="chapter-label">基础课程 · Chapter 08</p>
         <h1>大语言模型鸟瞰</h1>
-        <p class="recap">这是基础课程的收官。已经知道神经网络怎么算、怎么学;这一章把镜头拉到最热的应用:ChatGPT 这类<b>大语言模型</b>。它其实只做一件极简单的事——<b>预测下一个词</b>,一个接一个地接龙。让它显得「懂」的关键零件,是一个叫<b>注意力</b>的机制。本章只做鸟瞰,把骨架看清,细节留给深度课程。</p>
+        <p class="recap">这是基础课程的收官。我已经知道神经网络怎么算、怎么学;这一章把镜头拉到最热的应用:ChatGPT 这类<b>大语言模型</b>。它其实只做一件极简单的事——<b>预测下一个词</b>,一个接一个地接龙。让它显得「懂」的关键零件,是一个叫<b>注意力</b>的机制。本章只做鸟瞰,把骨架看清,细节留给深度课程。</p>
       </header>
 
       <p>图解骨架约 40 分钟,外部精读约 3~5 小时。全程用「切词、变数、看上下文、接龙」的直觉,不推公式。这一章的主线还是 3Blue1Brown 的动画。每出现一个新词,当场用白话解释。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>Token——把文字切成一个个小块,每块给个编号</li>
           <li>Embedding——每个 token 变成一串数(向量),意思近则向量近</li>
@@ -227,7 +227,7 @@ body{
 
       <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
       <p class="one-liner">大语言模型只做一件事:给定前面的文字,<b>预测下一个最可能的词(token)</b>,吐出来后接到末尾,再预测下一个——一个字一个字地接龙,直到成篇。</p>
-      <p>它不是在数据库里查答案,也没有「想法」。它在海量文本上训练,练成了一个超强的「下一个词概率预测器」。问一个问题,它其实是在算「顺着这段话,接下来最像样的词是什么」,一个个接出来。之所以显得连贯、像懂,是因为为了把下一个词预测准,它在训练中不得不学会语法、常识、推理的模式。让它能「顾及上下文」来预测的核心零件,就是下面要讲的注意力。</p>
+      <p>它不是在数据库里查答案,也没有「想法」。它在海量文本上训练,练成了一个超强的「下一个词概率预测器」。我问一个问题,它其实是在算「顺着这段话,接下来最像样的词是什么」,一个个接出来。之所以显得连贯、像懂,是因为为了把下一个词预测准,它在训练中不得不学会语法、常识、推理的模式。让它能「顾及上下文」来预测的核心零件,就是下面要讲的注意力。</p>
 
       <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
       <p>先记住「就这五块」。中间是本章目标,四周是达成它要用的五块地基,下面模块 C 逐块拆。</p>
@@ -262,7 +262,7 @@ body{
 
       <div class="callout go">
         <span class="label">默认主线 · 视频</span>
-        <p><b>3Blue1Brown「深度学习」第 5 章:But what is a GPT?(免费)。</b>为什么是它:承接前面的神经网络系列,把 token、embedding、注意力、预测下一词讲成会动的图,是大模型入门最好的一集。<b>先看第 5 章(约 27 分钟)</b>;想把注意力抠细,接着看第 6 章「Attention in transformers」。链接:<a href="https://www.youtube.com/watch?v=yMQPQuz5WpA" target="_blank" rel="noopener">youtube.com/watch?v=yMQPQuz5WpA</a>;第 6 章在 <a href="https://www.3blue1brown.com/lessons/attention" target="_blank" rel="noopener">3blue1brown.com/lessons/attention</a>。</p>
+        <p><b>3Blue1Brown「深度学习」第 5 章:But what is a GPT?(免费)。</b>为什么是它:承接我已看过的神经网络系列,把 token、embedding、注意力、预测下一词讲成会动的图,是大模型入门最好的一集。<b>先看第 5 章(约 27 分钟)</b>;想把注意力抠细,接着看第 6 章「Attention in transformers」。链接:<a href="https://www.youtube.com/watch?v=yMQPQuz5WpA" target="_blank" rel="noopener">youtube.com/watch?v=yMQPQuz5WpA</a>;第 6 章在 <a href="https://www.3blue1brown.com/lessons/attention" target="_blank" rel="noopener">3blue1brown.com/lessons/attention</a>。</p>
       </div>
 
       <p><b>看图学更顺?图解经典 + 想读原论文:</b></p>
@@ -275,7 +275,7 @@ body{
       <p class="handoff">先看第一步:一句话进模型前,怎么被切开、编号。</p>
       <h2 id="token"><span class="no">7</span><span>Token:把文字切成块</span></h2>
       <p class="one-liner">Token<span class="en">词元</span>:模型处理文字的最小单位。不是按字也不是按词,而是按<b>常见子词</b>切;每个 token 对应词表里的一个编号。</p>
-      <p>模型不认字,只认数。第一步就是把输入切成 token,再查词表换成编号。英文里常见词是一个 token、生僻词被拆成几块;中文常一两个字一个 token。为什么不直接按字或按词:按字太碎、按词词表爆炸,子词是折中。用 API 时按 token 计费,一段中文大约每字 1~2 个 token——这就是那个 token。</p>
+      <p>模型不认字,只认数。第一步就是把输入切成 token,再查词表换成编号。英文里常见词是一个 token、生僻词被拆成几块;中文常一两个字一个 token。为什么不直接按字或按词:按字太碎、按词词表爆炸,子词是折中。我用 API 时按 token 计费,一段中文大约每字 1~2 个 token——这就是那个 token。</p>
       <figure>
         <div class="fig-code">"机器学习真有意思" → 切成 token</div>
         <svg viewBox="0 0 620 90" role="img" aria-label="一句话被切成若干 token 块">
@@ -357,24 +357,24 @@ body{
         </svg>
         <figcaption><span class="fig-num">图 5</span>生成的循环:文字 → Transformer → 下一词概率 → 挑一个接上 → 再送回。一圈一个词,回答就这样接龙出来。</figcaption>
       </figure>
-      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:3B1B 第 5 章把这条链讲成动画。<b>往后连:</b>深度课程会把 Tokenizer、Embedding、Attention、预训练/微调各拆一章;应用与项目阶段则动手调用 API、做 Prompt、搭 RAG 和 Agent——在这里建立的骨架,后面全用得上。</p></div>
+      <div class="callout go"><span class="label">去精读 · 往后连</span><p>精读:3B1B 第 5 章把这条链讲成动画。<b>往后连:</b>深度课程会把 Tokenizer、Embedding、Attention、预训练/微调各拆一章;应用与项目阶段则动手调用 API、做 Prompt、搭 RAG 和 Agent——我在这里建立的骨架,后面全用得上。</p></div>
 
       <!-- ========== 模块 D ========== -->
       <p class="handoff">五块地基到齐了。下面把它们串成「一次对话内部发生了什么」的完整链条。</p>
       <h2 id="assemble"><span class="no">12</span><span>组装:一次对话内部发生了什么</span></h2>
-      <p>在 ChatGPT 里打一句话、按下回车到它开始回答,内部大致这样走完全程——每一步都对应本章一块地基:</p>
+      <p>我在 ChatGPT 里打一句话、按下回车到它开始回答,内部大致这样走完全程——每一步都对应本章一块地基:</p>
       <ol class="steps">
-        <li><b>切成 token。</b>问题被切成子词块、查词表换成编号。(第 7 节)</li>
+        <li><b>切成 token。</b>我的问题被切成子词块、查词表换成编号。(第 7 节)</li>
         <li><b>变成向量。</b>每个 token 换成词向量,再加位置编码,得到一串带含义、带位置的向量。(第 8 节)</li>
         <li><b>穿过很多层 Transformer。</b>每层用注意力让词互相看、用神经网络加工;层层之后,每个词都「读懂」了全句上下文。(第 9、10 节)</li>
         <li><b>预测下一个词。</b>输出层给出「下一个 token 的概率」,挑一个接到末尾。(第 11 节)</li>
         <li><b>循环。</b>把加长后的文字重新送回第 3 步,再预测下一个词——回答就一个字一个字冒出来,直到模型输出「结束」。</li>
       </ol>
-      <p>整场对话,没有查数据库、没有「思考」,只有「切词 → 变向量 → 层层注意 → 预测下一个词 → 接龙」这一条链在飞快地转。看懂这条链,对大模型的能力和边界(为什么强、为什么会胡说)就有了地基。</p>
+      <p>整场对话,没有查数据库、没有「思考」,只有「切词 → 变向量 → 层层注意 → 预测下一个词 → 接龙」这一条链在飞快地转。看懂这条链,我对大模型的能力和边界(为什么强、为什么会胡说)就有了地基。</p>
       <div class="challenge">
         <span class="label">进阶挑战</span>
         <h3>动手玩</h3>
-        <p>①打开 <a href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener">在线 Tokenizer 工具</a>,输入几句中英文,看它们被切成几个 token、编号是多少——亲手感受「按子词切」。②想一想:同样长度的中文和英文,谁的 token 更多?为什么用中文调 API 常更贵。③回看第 4 节:既然 LLM 只是「预测下一个词」,就能解释它为什么会「一本正经地胡说」吗?</p>
+        <p>①打开 <a href="https://tiktokenizer.vercel.app/" target="_blank" rel="noopener">在线 Tokenizer 工具</a>,输入几句中英文,看它们被切成几个 token、编号是多少——亲手感受「按子词切」。②想一想:同样长度的中文和英文,谁的 token 更多?为什么用中文调 API 常更贵。③回看第 4 节:既然 LLM 只是「预测下一个词」,我能解释它为什么会「一本正经地胡说」吗?</p>
       </div>
 
       <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
@@ -383,7 +383,7 @@ body{
         <div class="res spine-card">
           <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=yMQPQuz5WpA" target="_blank" rel="noopener">3Blue1Brown · But what is a GPT?</a></span><span class="spine">默认主线</span><span class="tags">视频 · 有中文字幕 · 27min · 免费</span></div>
           <div class="rrow"><span class="rk">是什么</span><span class="rv">用顶级动画把 GPT/Transformer 鸟瞰讲清的一集。</span></div>
-          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章是大模型的"地图";它把 Token→向量→注意力→预测下一词的画面摆出来。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章是大模型的"地图";它把 Token→向量→注意力→预测下一词的画面给我。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">第 5 章;想深入看第 6 章(注意力)。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「注意力」「Transformer」「预测下一词」节;是 Track C 的最佳预习。</span></div>
         </div>
@@ -413,7 +413,7 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 2 · 五个常见误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>大模型是在数据库里查答案</td><td>它不查库,是一个词一个词地预测「接下来最像样的词」,现算出来的。</td></tr>
           <tr><td>它真的「理解」并「思考」</td><td>它学的是海量文本里的统计模式;强,但没有意图和常识保证,会自信地胡说(幻觉)。</td></tr>
@@ -446,7 +446,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">17</span><span>基础课程收官 · 通向深度课程</span></h2>
-      <p>到这里,基础课程八章走完了:从<b>数据</b>(NumPy、Pandas)、到<b>学习</b>(机器学习、训练)、再到<b>模型</b>(神经网络、大模型),已经有了一张能把 AI 领域所有名词都放进去的地图。接下来的<b>深度课程</b>会把这张地图上的每个关键机制拆到底——线性回归全手推、PyTorch 完整训练循环、Attention 逐步手算、Transformer 完整结构、直到 RAG 和 Agent。基础打的是骨架,深度填的是血肉。已经不再是那个「只会复制粘贴 AI 代码」的人了。</p>
+      <p>到这里,基础课程八章走完了:从<b>数据</b>(NumPy、Pandas)、到<b>学习</b>(机器学习、训练)、再到<b>模型</b>(神经网络、大模型),我已经有了一张能把 AI 领域所有名词都放进去的地图。接下来的<b>深度课程</b>会把这张地图上的每个关键机制拆到底——线性回归全手推、PyTorch 完整训练循环、Attention 逐步手算、Transformer 完整结构、直到 RAG 和 Agent。基础打的是骨架,深度填的是血肉。我已经不再是那个「只会复制粘贴 AI 代码」的人了。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="07-神经网络入门.html"><span class="lb">上一章</span><span class="tt">07 · 神经网络</span></a>
         <a href="../index.html" class="next"><span class="lb">回到</span><span class="tt">课程首页 · 深度课程</span></a>

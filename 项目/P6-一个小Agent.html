@@ -193,7 +193,7 @@ body{
       <header class="chapter-opener">
         <p class="chapter-label">项目 · Project P6</p>
         <h1>一个小 Agent</h1>
-        <p class="recap">前面的程序,路径都是写死的。这个项目造一个真正的 <b>Agent</b>:给模型几个<b>工具</b>(算数、查时间、查知识库),让它<b>自己在循环里决定该调哪个</b>、看到结果再决定下一步,直到把任务办完——这就是 <a href="../应用工程/A04-Agent基础.html">A04 的 ReAct 循环</a> + <a href="../应用工程/A05-Agent的harness底层框架.html">A05 的 harness</a> 落成代码。会亲手写出那个"想 → 做 → 看 → 再想"的引擎,还会给它装上防跑飞的 <code>max_steps</code> 闸。</p>
+        <p class="recap">前面的程序,路径都是我写死的。这个项目造一个真正的 <b>Agent</b>:给模型几个<b>工具</b>(算数、查时间、查我的知识库),让它<b>自己在循环里决定该调哪个</b>、看到结果再决定下一步,直到把任务办完——这就是 <a href="../应用工程/A04-Agent基础.html">A04 的 ReAct 循环</a> + <a href="../应用工程/A05-Agent的harness底层框架.html">A05 的 harness</a> 落成代码。我会亲手写出那个"想 → 做 → 看 → 再想"的引擎,还会给它装上防跑飞的 <code>max_steps</code> 闸。</p>
         <div class="badges">
           <span class="badge">难度 <b>中级</b></span>
           <span class="badge">语言 <b>Python</b></span>
@@ -204,7 +204,7 @@ body{
       </header>
 
       <section class="schema-panel">
-        <p class="label">做完这个项目,会有 / 会做</p>
+        <p class="label">做完这个项目,我会有 / 会做</p>
         <ul>
           <li>一个能自己调工具、多步完成任务的命令行 agent</li>
           <li>亲手写出 agent loop:模型选工具 → 执行 → 结果喂回 → 再想</li>
@@ -221,7 +221,7 @@ body{
 
       <!-- ===== 模块 A ===== -->
       <h2 id="target"><span class="no">1</span><span>成品长什么样</span></h2>
-      <p>跑起来后,给它一个<b>需要动手才能答</b>的任务,它会自己一步步调工具——中间的"想/做/看"我们打印出来,让看清它在循环里怎么推进:</p>
+      <p>跑起来后,给它一个<b>需要动手才能答</b>的任务,它会自己一步步调工具——中间的"想/做/看"我们打印出来,让我看清它在循环里怎么推进:</p>
       <div class="term">
         <div class="thead"><span class="dots"><i></i><i></i><i></i></span><span>终端 · python agent.py</span></div>
 <pre><span class="p">小 Agent 就绪(工具:calculator、get_time)。输入任务:</span>
@@ -233,7 +233,7 @@ body{
 <span class="c">  · 想:两个都拿到了,可以答了</span>
 <span class="u">答 ›</span> <span class="a">现在是 15:40;1200 除以 100 等于 12,也就是 12 小时。</span></pre>
       </div>
-      <p class="one-liner">Agent 的本质:一个 <b>循环</b>。每轮把整段历史发给模型,模型要么<b>说"调某个工具"</b>(程序就去执行、把结果塞回历史)、要么<b>直接给最终答案</b>(循环结束)。模型是决策的脑子,代码是让它能行动的手脚和轨道。</p>
+      <p class="one-liner">Agent 的本质:一个 <b>循环</b>。每轮把整段历史发给模型,模型要么<b>说"调某个工具"</b>(程序就去执行、把结果塞回历史)、要么<b>直接给最终答案</b>(循环结束)。模型是决策的脑子,我的代码是让它能行动的手脚和轨道。</p>
       <figure>
         <svg viewBox="0 0 600 260" role="img" aria-label="agent loop:模型决定工具、执行、结果喂回、循环">
           <defs><marker id="m-p6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
@@ -257,7 +257,7 @@ body{
       <h2 id="prep"><span class="no">2</span><span>动手前的准备</span></h2>
       <p>接着 P4 的环境即可,只需 <code>openai</code> 库(工具调用是它内置的能力):</p>
       <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span></span></div><pre>pip install openai</pre></div>
-      <p>确认密钥已在环境变量(<a href="P4-命令行AI助手.html">P4 第 2 节</a>)。这个项目不需要新库——agent 的"自主"不来自什么魔法框架,就来自下面要写的那个循环(A05:自主来自 harness,不是模型)。</p>
+      <p>确认密钥已在环境变量(<a href="P4-命令行AI助手.html">P4 第 2 节</a>)。这个项目不需要新库——agent 的"自主"不来自什么魔法框架,就来自我下面要写的那个循环(A05:自主来自 harness,不是模型)。</p>
 
       <!-- ===== 模块 C ===== -->
       <p class="handoff" id="build">分四步:先备好工具,再写循环,接上执行,最后兜底。对着图 1 看。</p>
@@ -292,7 +292,7 @@ body{
 <span class="line"><span style="color:#8B95A8;font-style:italic"># 名字 → 函数 的对照表,执行时按名字找(第 3 步用)</span></span>
 <span class="line"><span style="color:#14181F">REGISTRY </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> {</span><span style="color:#557089">"calculator"</span><span style="color:#14181F">: calculator, </span><span style="color:#557089">"get_time"</span><span style="color:#14181F">: get_time}</span></span></code></pre>
       </div>
-      <p><code>description</code> 写得好不好,直接决定模型选得对不对(A02/A01)。<code>REGISTRY</code> 是"工具注册表"(A05 harness 的一部分):模型只会说"我要调 calculator",真正去跑函数的是代码,靠这张表按名字找。</p>
+      <p><code>description</code> 写得好不好,直接决定模型选得对不对(A02/A01)。<code>REGISTRY</code> 是"工具注册表"(A05 harness 的一部分):模型只会说"我要调 calculator",真正去跑函数的是我的代码,靠这张表按名字找。</p>
       <div class="milestone"><span class="label">✓ 里程碑</span><p>单独调 <code>calculator("1200/100")</code> 返回 <code>"12.0"</code>、<code>get_time()</code> 返回当前时间,两个函数本身没问题,就可以进循环了。</p></div>
 
       <h2 id="s2"><span class="no">4</span><span>第 2 步 · 写 agent loop</span></h2>
@@ -326,7 +326,7 @@ body{
       <div class="milestone"><span class="label">✓ 里程碑</span><p>这一步还跑不完整(<code>run_tool_calls</code> 下一步才写),但代码能读懂:循环、发消息、判断要不要调工具、兜底,四件事齐了。</p></div>
 
       <h2 id="s3"><span class="no">5</span><span>第 3 步 · 执行工具,把结果喂回</span></h2>
-      <p>模型说"调 calculator,参数 expr=1200/100",现在轮到代码<b>真正去跑</b>它,再把结果作为一条 <code>tool</code> 消息塞回历史,模型下一轮才能"看"到:</p>
+      <p>模型说"调 calculator,参数 expr=1200/100",现在轮到我的代码<b>真正去跑</b>它,再把结果作为一条 <code>tool</code> 消息塞回历史,模型下一轮才能"看"到:</p>
       <div class="code-block">
         <div class="chead"><span class="fn">agent.py · 执行工具</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
 <pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F;font-weight:bold">def</span><span style="color:#14181F"> run_tool_calls(tool_calls, messages):</span></span>
@@ -351,7 +351,7 @@ body{
       <div class="milestone"><span class="label">✓ 里程碑</span><p>把三步拼起来跑本章开头那个任务,终端里能看到"做/看"一步步打印、最后给出综合答案,agent 就活了。</p></div>
 
       <h2 id="s4"><span class="no">6</span><span>第 4 步 · 接上对话、收尾</span></h2>
-      <p>最后套上 P4 的对话循环,让人能连续给它派活:</p>
+      <p>最后套上 P4 的对话循环,让我能连续给它派活:</p>
       <div class="code-block">
         <div class="chead"><span class="fn">agent.py · 主程序</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
 <pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#14181F">print(</span><span style="color:#557089">"小 Agent 就绪(工具:calculator、get_time)。输入任务:"</span><span style="color:#14181F">)</span></span>
@@ -364,14 +364,14 @@ body{
 <span class="line"><span style="color:#14181F;font-weight:bold">    except</span><span style="color:#14181F"> Exception </span><span style="color:#14181F;font-weight:bold">as</span><span style="color:#14181F"> e:</span></span>
 <span class="line"><span style="color:#14181F">        print(</span><span style="color:#557089">"[出错了,再试一次]"</span><span style="color:#14181F">, e)</span></span></code></pre>
       </div>
-      <p>到这,一个能自己规划、调工具、多步完成任务的小 agent 就做完了。它虽小,但结构和真正的 agent 系统(包括正在用的 Claude Code)完全一致:<b>循环 + 工具注册 + 结果喂回 + 步数兜底</b>(A05)。</p>
+      <p>到这,一个能自己规划、调工具、多步完成任务的小 agent 就做完了。它虽小,但结构和真正的 agent 系统(包括我正在用的 Claude Code)完全一致:<b>循环 + 工具注册 + 结果喂回 + 步数兜底</b>(A05)。</p>
       <div class="milestone"><span class="label">✓ 里程碑 · 完成</span><p>给一个要两步的任务(先查时间、再算数),它能自己拆成两次工具调用、最后综合作答——本章开头那段效果达成。</p></div>
 
       <!-- ===== 模块 D ===== -->
       <h2 id="run"><span class="no">7</span><span>跑起来</span></h2>
       <p>把四步代码按序放进一个 <code>agent.py</code>,然后:</p>
       <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span></span></div><pre>python agent.py</pre></div>
-      <p>试试这些任务,感受它自己选工具:「现在几点」(只调 get_time)、「算 (23+19)*7」(只调 calculator)、「现在几点,再算 1200/100 是几小时」(两个都调)。会看到它<b>按需</b>决定调几次、调哪个——这就是 agent 和写死流程的本质区别。</p>
+      <p>试试这些任务,感受它自己选工具:「现在几点」(只调 get_time)、「算 (23+19)*7」(只调 calculator)、「现在几点,再算 1200/100 是几小时」(两个都调)。我会看到它<b>按需</b>决定调几次、调哪个——这就是 agent 和写死流程的本质区别。</p>
 
       <h2 id="pitfalls"><span class="no">8</span><span>常见坑</span></h2>
       <table class="tbl">
@@ -390,10 +390,10 @@ body{
       <div class="challenge">
         <span class="label">再往上加(选做)</span>
         <h3>把它变强</h3>
-        <p>①<b>接上 P5 的知识库</b>:把 <a href="P5-个人知识库问答.html">P5 的 <code>retrieve()</code></a> 包成一个 <code>search_notes</code> 工具加进 <code>tools</code> 和 <code>REGISTRY</code>——agent 就能<b>需要时自己去查笔记</b>(A03 检索成了 agent 的一件工具)。②<b>加记忆</b>:把每轮任务的 <code>messages</code> 存盘,做成能续聊的 agent。③<b>加危险动作确认</b>:给"写文件/发消息"这类工具加一步人工确认(A06 幻觉第三道防线)。④<b>限制权限</b>:只把该给的工具放进 <code>REGISTRY</code>(A05 工具白名单=治理抓手)。</p>
+        <p>①<b>接上 P5 的知识库</b>:把 <a href="P5-个人知识库问答.html">P5 的 <code>retrieve()</code></a> 包成一个 <code>search_notes</code> 工具加进 <code>tools</code> 和 <code>REGISTRY</code>——agent 就能<b>需要时自己去查我的笔记</b>(A03 检索成了 agent 的一件工具)。②<b>加记忆</b>:把每轮任务的 <code>messages</code> 存盘,做成能续聊的 agent。③<b>加危险动作确认</b>:给"写文件/发消息"这类工具加一步人工确认(A06 幻觉第三道防线)。④<b>限制权限</b>:只把该给的工具放进 <code>REGISTRY</code>(A05 工具白名单=治理抓手)。</p>
       </div>
 
-      <h2 id="learned"><span class="no">10</span><span>到底学到了什么</span></h2>
+      <h2 id="learned"><span class="no">10</span><span>我到底学到了什么</span></h2>
       <table class="tbl">
         <caption>表 2 · 概念 → 代码</caption>
         <thead><tr><th>哪一章的概念</th><th>在这个项目里变成了</th></tr></thead>
@@ -407,11 +407,11 @@ body{
       </table>
 
       <h2 id="reflist"><span class="no">11</span><span>外部资源 · 骨架之上的血肉</span></h2>
-      <p>本项目页只给搭建的骨架;真正的参数细节在下面这些一手文档里。每条注明:是什么、为什么选它、精确看哪段、对应哪一步。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;均于 2026-08-16 核实在线。</p>
+      <p>本项目页只给我搭建的骨架;真正的参数细节在下面这些一手文档里。每条注明:是什么、为什么选它、精确看哪段、对应哪一步。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;均于 2026-08-16 核实在线。</p>
       <div class="reslist">
         <div class="res spine-card">
           <div class="rh"><span class="rt2"><a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" rel="noopener">OpenAI · 函数调用指南</a></span><span class="spine">本项目主文档</span><span class="tags">官方 · 当字典查 · 免费</span></div>
-          <div class="rrow"><span class="rk">是什么</span><span class="rv">让模型请求调用已定义的工具的一手文档。</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">让模型请求调用我定义的工具的一手文档。</span></div>
           <div class="rrow"><span class="rk">为什么选它</span><span class="rv">这项目的 agent 靠函数调用驱动;工具定义格式和返回怎么接都在这。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">工具定义 + tool_call 返回的处理。</span></div>
           <div class="rrow"><span class="rk">对应步骤</span><span class="rv">配"工具注册表 REGISTRY""ReAct 循环"两步。</span></div>
@@ -445,7 +445,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">13</span><span>下一个项目</span></h2>
-      <p>现在手里有了三块能跑的东西:会对话的助手(P4)、会查资料的 RAG(P5)、会用工具的 agent(P6)。最后一个项目 <a href="P7-完整AI应用.html">P7 · 完整 AI 应用</a>把它们<b>拼成一个能上线给别人用的产品</b>:前端页面 + 后端(密钥、限流、缓存、流式)+ 部署 + 监控(<a href="../应用工程/A07-工程化与部署.html">A07</a>)。从"能在本机上跑"到"别人能用",最后一跳。</p>
+      <p>我现在手里有了三块能跑的东西:会对话的助手(P4)、会查资料的 RAG(P5)、会用工具的 agent(P6)。最后一个项目 <a href="P7-完整AI应用.html">P7 · 完整 AI 应用</a>把它们<b>拼成一个能上线给别人用的产品</b>:前端页面 + 后端(密钥、限流、缓存、流式)+ 部署 + 监控(<a href="../应用工程/A07-工程化与部署.html">A07</a>)。从"能在我电脑上跑"到"别人能用",最后一跳。</p>
       <nav class="chapter-nav" aria-label="项目导航">
         <a href="P5-个人知识库问答.html"><span class="lb">上一个项目</span><span class="tt">P5 · 个人知识库问答</span></a>
         <a href="P7-完整AI应用.html" class="next"><span class="lb">下一个项目</span><span class="tt">P7 · 完整 AI 应用</span></a>

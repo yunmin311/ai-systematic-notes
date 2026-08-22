@@ -187,7 +187,7 @@ body{
       <p>图解骨架约 45 分钟,动手 + 精读约 5~7 小时。所有零件都用前三章作对照:工具=A02 函数调用、检索工具=A03 RAG、上下文=A01。每个新词当场白话解释。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>Agent 是什么——模型 + 一个循环 + 一批工具,能自己多步做事</li>
           <li>工具——agent 的手脚:把「只会说」变成「能动手」</li>
@@ -212,7 +212,7 @@ body{
       <p><b>不适合</b>:已经写过 agent loop、在调多 agent 编排的人——直接看 A05。</p>
 
       <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
-      <p>三样,全在前三章:<a href="A02-结构化输出与函数调用.html">函数调用</a>(模型让人的程序去执行动作)、<a href="A03-RAG检索增强生成.html">RAG</a>(一种典型工具)、<a href="A01-提示词工程与上下文.html">上下文窗口</a>(agent 靠它记事)。有这三样,agent 就是把它们装进一个循环。</p>
+      <p>三样,全在前三章:<a href="A02-结构化输出与函数调用.html">函数调用</a>(模型让我的程序去执行动作)、<a href="A03-RAG检索增强生成.html">RAG</a>(一种典型工具)、<a href="A01-提示词工程与上下文.html">上下文窗口</a>(agent 靠它记事)。有这三样,agent 就是把它们装进一个循环。</p>
 
       <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
       <ol>
@@ -225,7 +225,7 @@ body{
 
       <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
       <p class="one-liner">Agent:把模型放进一个<b>循环</b>,让它<b>自己决定下一步调哪个工具</b>、看到结果后<b>再决定下一步</b>,如此往复,直到任务完成——从"回答问题"变成"完成任务"。</p>
-      <p>普通问答是一锤子买卖:问,它答,结束。但很多真实任务不是一句话能答完的——"帮我查这周三个城市的天气再订最便宜的酒店",需要多次查、比、算。Agent 的办法:给模型一批<b>工具</b>(它能调用的动作),再套一个<b>循环</b>——模型每轮输出"我要调哪个工具、传什么参数",程序执行、把结果喂回去,模型据此决定下一步,直到它说"办完了"。模型成了循环里的<b>决策大脑</b>,工具是它的手脚,循环给它多步行动的机会。这就是从 A02 的"单次调用"到"自主系统"的跃迁。</p>
+      <p>普通问答是一锤子买卖:我问,它答,结束。但很多真实任务不是一句话能答完的——"帮我查这周三个城市的天气再订最便宜的酒店",需要多次查、比、算。Agent 的办法:给模型一批<b>工具</b>(它能调用的动作),再套一个<b>循环</b>——模型每轮输出"我要调哪个工具、传什么参数",程序执行、把结果喂回去,模型据此决定下一步,直到它说"办完了"。模型成了循环里的<b>决策大脑</b>,工具是它的手脚,循环给它多步行动的机会。这就是从 A02 的"单次调用"到"自主系统"的跃迁。</p>
 
       <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
       <figure>
@@ -258,7 +258,7 @@ body{
       <p>agent 概念多、噪音也多(全网充斥夸大宣传)。选一条冷静、权威的主线,别被"全自动 AI 员工"带偏。</p>
       <div class="callout go">
         <span class="label">默认主线 · 必读</span>
-        <p><b>Anthropic《Building Effective Agents》。</b>为什么是它:它把"什么是 agent、什么只是工作流、什么时候该用哪个"讲得最清醒,并明确主张<b>能简单就别复杂</b>——这正是本章第 11 节的态度。读它,会免疫掉九成 agent 炒作。链接:<a href="https://www.anthropic.com/research/building-effective-agents" target="_blank" rel="noopener">anthropic.com/research/building-effective-agents</a>。</p>
+        <p><b>Anthropic《Building Effective Agents》。</b>为什么是它:它把"什么是 agent、什么只是工作流、什么时候该用哪个"讲得最清醒,并明确主张<b>能简单就别复杂</b>——这正是本章第 11 节的态度。读它,我会免疫掉九成 agent 炒作。链接:<a href="https://www.anthropic.com/research/building-effective-agents" target="_blank" rel="noopener">anthropic.com/research/building-effective-agents</a>。</p>
       </div>
       <p><b>再配三件:</b></p>
       <ul>
@@ -271,12 +271,12 @@ body{
       <p class="handoff">先看清楚:同一个问题,普通问答和 agent 的处理方式差在哪。</p>
       <h2 id="what"><span class="no">7</span><span>Agent 是什么:从一次问答到一个循环</span></h2>
       <p class="one-liner">普通问答=<b>一次</b>输入到输出;agent=模型 + <b>一个循环</b> + <b>一批工具</b>,能<b>多轮自主行动</b>。差别不在模型多聪明,在外面套没套那个循环。</p>
-      <p>关键要认清:agent 的"自主"不是模型自己长出来的,而是<b>用代码给它搭的循环</b>给的。模型每一轮只做一件事——根据当前情况输出"下一步调哪个工具"。是外面的程序真正去执行工具、把结果拼回上下文、再让模型跑下一轮。所以 agent = <b>会决策的模型 + 会执行的循环</b>。理解这一点,A05 讲 harness 就顺理成章:harness 就是这个循环 + 上下文管理 + 工具接线的总和。</p>
+      <p>关键要认清:agent 的"自主"不是模型自己长出来的,而是<b>我用代码给它搭的循环</b>给的。模型每一轮只做一件事——根据当前情况输出"下一步调哪个工具"。是外面的程序真正去执行工具、把结果拼回上下文、再让模型跑下一轮。所以 agent = <b>会决策的模型 + 会执行的循环</b>。理解这一点,A05 讲 harness 就顺理成章:harness 就是这个循环 + 上下文管理 + 工具接线的总和。</p>
       <figure>
         <svg viewBox="0 0 680 220" role="img" aria-label="普通问答与 agent 循环对比">
           <defs><marker id="m-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker><marker id="m-ca" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
           <text x="150" y="28" text-anchor="middle" class="nl">普通问答</text>
-          <rect x="60" y="46" width="80" height="38" rx="8" class="box"/><text x="100" y="70" text-anchor="middle" class="el">问</text>
+          <rect x="60" y="46" width="80" height="38" rx="8" class="box"/><text x="100" y="70" text-anchor="middle" class="el">我问</text>
           <line x1="140" y1="65" x2="176" y2="65" class="d-ink" marker-end="url(#m-c)"/>
           <rect x="180" y="46" width="80" height="38" rx="8" class="box"/><text x="220" y="70" text-anchor="middle" class="el">模型</text>
           <line x1="260" y1="65" x2="296" y2="65" class="d-ink" marker-end="url(#m-c)"/>
@@ -331,7 +331,7 @@ body{
       <p class="handoff">最后是最重要的判断:很多任务,其实不该上 agent。</p>
       <h2 id="when"><span class="no">11</span><span>何时该用 agent、何时别用</span></h2>
       <p class="one-liner">Agent 强,但<b>贵、慢、不稳</b>(每轮都调一次模型,还可能绕远、卡循环)。<b>能用固定工作流(workflow)解决的,就别上 agent。</b>这是 Anthropic 反复强调的克制。</p>
-      <p>区分两个词:<b>工作流 workflow</b>=预先把步骤写死的固定管线(第一步做 A、第二步做 B),路径可预测、便宜、稳;<b>agent</b>=让模型自己决定路径,灵活但不可预测。判据很简单:<b>任务步骤固定、可预先编排 → 用工作流</b>(比如 A03 那条 RAG 链就是工作流);<b>步骤因情况而变、需要临场决策 → 才用 agent</b>。现实里最好的系统常是"工作流为主,只在真需要判断的那一环嵌一小段 agent"。别因为 agent 时髦就到处用——它每多转一轮,就多一份成本、延迟和出错机会。</p>
+      <p>区分两个词:<b>工作流 workflow</b>=我预先把步骤写死的固定管线(第一步做 A、第二步做 B),路径可预测、便宜、稳;<b>agent</b>=让模型自己决定路径,灵活但不可预测。判据很简单:<b>任务步骤固定、可预先编排 → 用工作流</b>(比如 A03 那条 RAG 链就是工作流);<b>步骤因情况而变、需要临场决策 → 才用 agent</b>。现实里最好的系统常是"工作流为主,只在真需要判断的那一环嵌一小段 agent"。别因为 agent 时髦就到处用——它每多转一轮,就多一份成本、延迟和出错机会。</p>
       <figure>
         <svg viewBox="0 0 620 180" role="img" aria-label="工作流与 agent 对比">
           <defs><marker id="m-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b95a8"/></marker></defs>
@@ -381,7 +381,7 @@ body{
       <div class="challenge">
         <span class="label">进阶挑战</span>
         <h3>想清楚三件事</h3>
-        <p>①如果去掉 <code>max_steps</code> 这道闸,会发生什么坏情况?(提示:工具老是失败或模型判断不了"办完")②如果 <code>messages</code> 越滚越长、撑爆上下文窗口,该怎么办?(这正是 A05 的上下文管理)③一个"查天气→订酒店"的任务,用这个循环走一遍,列出它每一轮的想/做/看分别是什么。</p>
+        <p>①如果去掉 <code>max_steps</code> 这道闸,会发生什么坏情况?(提示:工具老是失败或模型判断不了"办完")②如果 <code>messages</code> 越滚越长、撑爆上下文窗口,我会怎么办?(这正是 A05 的上下文管理)③一个"查天气→订酒店"的任务,用这个循环走一遍,列出它每一轮的想/做/看分别是什么。</p>
       </div>
 
       <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
@@ -390,14 +390,14 @@ body{
         <div class="res spine-card">
           <div class="rh"><span class="rt2"><a href="https://www.anthropic.com/research/building-effective-agents" target="_blank" rel="noopener">Anthropic · Building Effective Agents</a></span><span class="spine">默认主线 · 必读</span><span class="tags">工程博客 · 英文 · 1h · 免费</span></div>
           <div class="rrow"><span class="rk">是什么</span><span class="rv">一线厂商总结"什么时候用固定工作流、什么时候才真需要 agent"的经典文章。</span></div>
-          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">它把本章最重要的判断——"别动不动上 agent"——讲得最透,直接对治理目标。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">它把本章最重要的判断——"别动不动上 agent"——讲得最透,直接对我的治理目标。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全篇;尤其 workflow vs agent 的取舍和几个常见模式。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「什么时候用 Agent / 什么时候用工作流」节;续到 <a href="A05-Agent的harness底层框架.html">A05</a>。</span></div>
         </div>
         <div class="res">
           <div class="rh"><span class="rt2"><a href="https://huggingface.co/learn/agents-course" target="_blank" rel="noopener">Hugging Face · Agents 课</a></span><span class="tags">课程 · 可切中文 · 3h · 免费</span></div>
-          <div class="rrow"><span class="rk">是什么</span><span class="rv">手把手演示搭一个能调工具的 agent 的免费课程。</span></div>
-          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章讲清了 ReAct 循环的道理,这门课让人真把它跑起来。</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">手把手带我搭一个能调工具的 agent 的免费课程。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章讲清了 ReAct 循环的道理,这门课让我真把它跑起来。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Unit 1 起,跟着搭第一个 agent。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「模型-工具-状态循环(ReAct)」节 + 项目 <a href="../项目/P6-一个小Agent.html">P6</a>。</span></div>
         </div>
@@ -420,11 +420,11 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 2 · 五个常见误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
-          <tr><td>Agent 是一种更聪明的模型</td><td>不是。它是"普通模型 + 搭的循环 + 一批工具";自主来自循环,不是模型本身。</td></tr>
+          <tr><td>Agent 是一种更聪明的模型</td><td>不是。它是"普通模型 + 我搭的循环 + 一批工具";自主来自循环,不是模型本身。</td></tr>
           <tr><td>什么任务都该做成 agent</td><td>步骤固定的任务用工作流更好——便宜、稳、可预测。能不用 agent 就不用。</td></tr>
-          <tr><td>Agent 会自己上网、自己算</td><td>只有给它接了对应工具才行;不给工具,它还是只会生成文字。</td></tr>
+          <tr><td>Agent 会自己上网、自己算</td><td>只有我给它接了对应工具才行;不给工具,它还是只会生成文字。</td></tr>
           <tr><td>给它目标它就能一路办到底</td><td>它会绕远、卡死循环、记乱状态;必须有步数闸、错误处理、观测(A06)。</td></tr>
           <tr><td>Agent 和 RAG 是两回事</td><td>RAG 常常就是 agent 手里的一个"查资料"工具;长期记忆本质也是 RAG。</td></tr>
         </tbody>
@@ -453,7 +453,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
-      <p>这一章从外面看清了 agent 的样子:循环、工具、记忆、判断。下一章 <a href="A05-Agent的harness底层框架.html">A05 · AI Agent 的 harness / 底层框架</a>会<b>掀开盖子</b>看里面:那个循环(agent loop)工程上怎么搭、上下文长了怎么管、工具用什么协议接进来(<b>MCP</b>)、多个 agent 怎么协作。这一章正是推进治理体系时反复要打交道的"AI 底层框架"——A04 给出词汇,A05 给出机制。</p>
+      <p>这一章我从外面看清了 agent 的样子:循环、工具、记忆、判断。下一章 <a href="A05-Agent的harness底层框架.html">A05 · AI Agent 的 harness / 底层框架</a>会<b>掀开盖子</b>看里面:那个循环(agent loop)工程上怎么搭、上下文长了怎么管、工具用什么协议接进来(<b>MCP</b>)、多个 agent 怎么协作。这一章正是我推进治理体系时反复要打交道的"AI 底层框架"——A04 给了我词汇,A05 给我机制。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="A03-RAG检索增强生成.html"><span class="lb">上一章</span><span class="tt">A03 · RAG</span></a>
         <a href="A05-Agent的harness底层框架.html" class="next"><span class="lb">下一章</span><span class="tt">A05 · harness / 底层框架</span></a>

@@ -181,17 +181,17 @@ body{
       <header class="chapter-opener">
         <p class="chapter-label">应用工程 · Chapter A02</p>
         <h1>结构化输出与函数调用</h1>
-        <p class="recap">上一章让模型稳定地"说人话"。但应用不吃自然语言——它要能<b>解析、能执行</b>的东西:每次都合法的 JSON、一次准确的工具调用。这一章讲怎么把模型的输出从"一段话"变成"程序能直接用的结构",以及怎么让模型<b>调用函数</b>。这是把"和模型聊天"升级成"让模型驱动程序"的关键一步,也是后面 Agent 的地基。</p>
+        <p class="recap">上一章让模型稳定地"说人话"。但应用不吃自然语言——它要能<b>解析、能执行</b>的东西:每次都合法的 JSON、一次准确的工具调用。这一章讲怎么把模型的输出从"一段话"变成"程序能直接用的结构",以及怎么让模型<b>调用我的函数</b>。这是把"和模型聊天"升级成"让模型驱动程序"的关键一步,也是后面 Agent 的地基。</p>
       </header>
 
       <p>图解骨架约 40 分钟,动手 + 精读约 3~5 小时。有个能调的模型接口最好(能试结构化输出和函数调用);概念都用第 4 章的 JSON / 字典直觉。每出现一个新词,当场用白话解释。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>为什么要结构化——应用要能解析的输出,不是一段话</li>
-          <li>结构化输出——让模型只吐合法 JSON,还符合定的结构</li>
-          <li>函数调用——由程序描述有哪些工具,模型决定何时调、给出参数</li>
+          <li>结构化输出——让模型只吐合法 JSON,还符合我定的结构</li>
+          <li>函数调用——我描述有哪些工具,模型决定何时调、给出参数</li>
           <li>Schema 设计——用 JSON Schema 定字段、类型、必填、给例子</li>
           <li>校验与兜底——模型偶尔出错,程序要校验、重试、降级</li>
         </ul>
@@ -218,14 +218,14 @@ body{
       <ol>
         <li>说清为什么应用需要结构化输出,而不是自然语言。</li>
         <li>用"结构化输出 / JSON 模式"让模型每次都吐出合法、符合结构的 JSON。</li>
-        <li>用函数调用让模型触发函数,并给出正确参数。</li>
-        <li>用 JSON Schema 定义想要的输出/工具的形状。</li>
+        <li>用函数调用让模型触发我的函数,并给出正确参数。</li>
+        <li>用 JSON Schema 定义我想要的输出/工具的形状。</li>
         <li>给输出加校验和兜底,处理模型偶尔的出错。</li>
       </ol>
 
       <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
       <p class="one-liner">结构化输出 = <b>给模型一张"表格模板(schema)",逼它把答案填进格子里</b>,而不是随意写一段话;函数调用 = 把"有哪些工具、每个工具要什么参数"也做成 schema,让模型决定<b>填哪张表(调哪个函数)、怎么填(参数)</b>。</p>
-      <p>本质上都是"用 schema 约束模型的输出形状"。自然语言对人友好、对程序灾难:同一个意思模型能有一百种写法,没法稳定解析。给它一个明确的结构(JSON Schema),让它只能按格子填,程序就能可靠地取到 <code>result["city"]</code>。函数调用只是更进一步:模型填的不是最终答案,而是"我要调 <code>get_weather</code>,参数是 <code>{city: 北京}</code>"——程序执行后把结果喂回,它再继续。这一步把语言模型接到了真实世界。</p>
+      <p>本质上都是"用 schema 约束模型的输出形状"。自然语言对人友好、对程序灾难:同一个意思模型能有一百种写法,我没法稳定解析。给它一个明确的结构(JSON Schema),让它只能按格子填,程序就能可靠地取到 <code>result["city"]</code>。函数调用只是更进一步:模型填的不是最终答案,而是"我要调 <code>get_weather</code>,参数是 <code>{city: 北京}</code>"——我的程序执行后把结果喂回,它再继续。这一步把语言模型接到了真实世界。</p>
 
       <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
       <figure>
@@ -270,7 +270,7 @@ body{
       <p class="handoff">先想清楚:为什么应用宁可要 JSON,也不要一段更"自然"的话。</p>
       <h2 id="why"><span class="no">7</span><span>为什么要结构化</span></h2>
       <p class="one-liner">应用程序要的是<b>能可靠解析的数据</b>,不是自然语言。同一个意思,模型能用一百种句式写;而 <code>{"城市":"北京","温度":28}</code> 只有一种解析法。</p>
-      <p>假设要从用户输入里抽出"城市、日期、人数"。让模型用自然语言回,它可能写"你要去北京,3 个人,下周五"——就得再写一堆字符串处理去抠,还抠不稳。让它直接吐 <code>{"city":"北京","date":"...","people":3}</code>,程序一行 <code>data["people"]</code> 就拿到了。<b>结构化是把不确定的语言,收进确定的格子</b>——这是所有 AI 应用能"接得住"模型输出的前提。</p>
+      <p>假设我要从用户输入里抽出"城市、日期、人数"。让模型用自然语言回,它可能写"你要去北京,3 个人,下周五"——我得再写一堆字符串处理去抠,还抠不稳。让它直接吐 <code>{"city":"北京","date":"...","people":3}</code>,程序一行 <code>data["people"]</code> 就拿到了。<b>结构化是把不确定的语言,收进确定的格子</b>——这是所有 AI 应用能"接得住"模型输出的前提。</p>
       <figure>
         <svg viewBox="0 0 620 160" role="img" aria-label="自然语言输出难解析,JSON 输出程序直接用">
           <rect x="20" y="30" width="270" height="100" rx="8" class="box"/>
@@ -287,15 +287,15 @@ body{
         <figcaption><span class="fig-num">图 2</span>同一件事:自然语言对程序是灾难,结构化 JSON 一取即得。应用要的是后者。</figcaption>
       </figure>
 
-      <p class="handoff">那怎么逼模型每次都吐合法、且符合要求的 JSON?</p>
+      <p class="handoff">那怎么逼模型每次都吐合法、且符合我要求的 JSON?</p>
       <h2 id="structured"><span class="no">8</span><span>结构化输出</span></h2>
       <p class="one-liner">结构化输出:调用时附上一个 <b>JSON Schema</b>(想要的结构),开启严格模式,模型就<b>保证</b>吐出既合法、又符合该结构的 JSON——不用再靠提示词祈祷。</p>
-      <p>早期只能在提示词里写"请只返回 JSON",模型有时还是会多说两句、或漏个字段。现在主流接口支持传一个 schema、开 <code>strict</code>,由系统<b>保证</b>输出符合结构(该有的字段都在、类型对)。这比"JSON 模式"(只保证是合法 JSON、不保证符合结构)更进一步,是数据抽取、表单填充这类任务的生产默认。</p>
+      <p>早期只能在提示词里写"请只返回 JSON",模型有时还是会多说两句、或漏个字段。现在主流接口支持传一个 schema、开 <code>strict</code>,由系统<b>保证</b>输出符合结构(该有的字段都在、类型对)。这比"JSON 模式"(只保证是合法 JSON、不保证符合我的结构)更进一步,是数据抽取、表单填充这类任务的生产默认。</p>
 
       <p class="handoff">如果模型不该"回答",而该"去做一件事"呢?那就是函数调用。</p>
       <h2 id="func"><span class="no">9</span><span>函数调用 / 工具使用</span></h2>
-      <p class="one-liner">函数调用<span class="en">function calling / tool use</span>:把"有哪些函数、每个要什么参数"用 schema 描述给模型;它<b>不直接执行</b>,而是决定"该调哪个、参数是什么",<b>程序去执行</b>,再把结果喂回让它继续。</p>
-      <p>这是把语言模型接到真实世界的关键。模型自己不能查天气、不能读数据库、不能下单;但可以告诉它"你有一个 <code>get_weather(city)</code> 工具"。它判断需要时,就返回一个结构化的"调用请求":<code>get_weather</code>、参数 <code>{"city":"北京"}</code>。程序真正去调 API 拿到结果,再把结果喂回,它据此给出最终回答。<b>模型负责"决定做什么",代码负责"真的去做"</b>——这条循环就是 Agent 的雏形。</p>
+      <p class="one-liner">函数调用<span class="en">function calling / tool use</span>:我把"有哪些函数、每个要什么参数"用 schema 描述给模型;它<b>不直接执行</b>,而是决定"该调哪个、参数是什么",<b>我的程序去执行</b>,再把结果喂回让它继续。</p>
+      <p>这是把语言模型接到真实世界的关键。模型自己不能查天气、不能读数据库、不能下单;但我可以告诉它"我有一个 <code>get_weather(city)</code> 工具"。它判断需要时,就返回一个结构化的"调用请求":<code>get_weather</code>、参数 <code>{"city":"北京"}</code>。我的程序真正去调 API 拿到结果,再把结果喂回,它据此给出最终回答。<b>模型负责"决定做什么",我的代码负责"真的去做"</b>——这条循环就是 Agent 的雏形。</p>
       <figure>
         <svg viewBox="0 0 640 200" role="img" aria-label="函数调用的循环">
           <defs><marker id="m-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
@@ -303,20 +303,20 @@ body{
           <line x1="150" y1="103" x2="196" y2="103" class="d-acc" marker-end="url(#m-f)"/>
           <rect x="200" y="80" width="130" height="46" rx="8" class="box-acc"/><text x="265" y="102" text-anchor="middle" class="nl-acc">模型</text><text x="265" y="119" text-anchor="middle" class="el">决定调哪个工具</text>
           <line x1="330" y1="103" x2="376" y2="103" class="d-acc" marker-end="url(#m-f)"/>
-          <rect x="380" y="80" width="140" height="46" rx="8" class="box"/><text x="450" y="102" text-anchor="middle" class="nl">程序</text><text x="450" y="119" text-anchor="middle" class="el">真的执行 get_weather</text>
+          <rect x="380" y="80" width="140" height="46" rx="8" class="box"/><text x="450" y="102" text-anchor="middle" class="nl">我的程序</text><text x="450" y="119" text-anchor="middle" class="el">真的执行 get_weather</text>
           <line x1="520" y1="103" x2="566" y2="103" class="d-acc" marker-end="url(#m-f)"/>
           <text x="595" y="99" text-anchor="middle" class="el">结果</text><text x="595" y="115" text-anchor="middle" class="el">28°C</text>
           <path d="M595,126 L595,168 L265,168 L265,128" class="d-soft" marker-end="url(#m-f)"/>
           <text x="360" y="188" text-anchor="middle" class="el">把工具结果喂回模型 → 它给出最终回答(可多轮)</text>
         </svg>
-        <figcaption><span class="fig-num">图 3</span>函数调用循环:模型决定调哪个工具、给参数 → 程序执行 → 结果喂回 → 模型作答。这条循环就是 Agent 的核心。</figcaption>
+        <figcaption><span class="fig-num">图 3</span>函数调用循环:模型决定调哪个工具、给参数 → 我的程序执行 → 结果喂回 → 模型作答。这条循环就是 Agent 的核心。</figcaption>
       </figure>
-      <div class="callout warn"><span class="label">模型不会自己执行</span><p>模型只<b>产生调用请求</b>,真正跑代码、访问数据、花钱的是<b>程序</b>。所以工具的权限、校验、安全全在调用方这边把关——这点到 A05/A06 会反复强调。</p></div>
+      <div class="callout warn"><span class="label">模型不会自己执行</span><p>模型只<b>产生调用请求</b>,真正跑代码、访问数据、花钱的是<b>我的程序</b>。所以工具的权限、校验、安全全在我这边把关——这点到 A05/A06 会反复强调。</p></div>
 
       <p class="handoff">不管结构化输出还是函数调用,核心都是描述好那张"表格模板"——schema。</p>
       <h2 id="schema"><span class="no">10</span><span>Schema 设计</span></h2>
-      <p class="one-liner">用 <b>JSON Schema</b> 描述要的结构:每个字段的<b>名字、类型、是否必填、可选值</b>,必要时给例子。schema 写得越清楚,模型填得越准。</p>
-      <p>schema 就是那张"表格模板"。设计要点:字段名要见名知意(<code>people_count</code> 比 <code>n</code> 好);类型写死(数字就 <code>integer</code>,别让它填 "三个");有固定取值的用枚举(<code>"enum": ["正面","负面","中性"]</code>);必填字段列进 <code>required</code>;复杂字段配一两个例子。这些既约束模型,也是程序侧的"数据契约"——双方照它对齐。函数的参数,用的也是同一套 schema。</p>
+      <p class="one-liner">用 <b>JSON Schema</b> 描述我要的结构:每个字段的<b>名字、类型、是否必填、可选值</b>,必要时给例子。schema 写得越清楚,模型填得越准。</p>
+      <p>schema 就是那张"表格模板"。设计要点:字段名要见名知意(<code>people_count</code> 比 <code>n</code> 好);类型写死(数字就 <code>integer</code>,别让它填 "三个");有固定取值的用枚举(<code>"enum": ["正面","负面","中性"]</code>);必填字段列进 <code>required</code>;复杂字段配一两个例子。这些既约束模型,也是我程序的"数据契约"——双方照它对齐。函数的参数,用的也是同一套 schema。</p>
 
       <p class="handoff">最后一块:模型不是 100% 可靠,程序得兜得住。</p>
       <h2 id="validate"><span class="no">11</span><span>校验与兜底</span></h2>
@@ -395,7 +395,7 @@ body{
         </div>
         <div class="res">
           <div class="rh"><span class="rt2"><a href="https://developers.openai.com/api/docs/guides/function-calling" target="_blank" rel="noopener">OpenAI · Function Calling</a></span><span class="tags">官方文档 · 英文 · 1h · 免费</span></div>
-          <div class="rrow"><span class="rk">是什么</span><span class="rv">官方讲"让模型请求调用定义的函数/工具"。</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">官方讲"让模型请求调用我定义的函数/工具"。</span></div>
           <div class="rrow"><span class="rk">为什么选它</span><span class="rv">函数调用是把"聊天"升级成"驱动程序"、也是 Agent 的地基,必须吃透。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">整页;重点看工具定义格式 + 模型返回的 tool_call 怎么接。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「函数调用 / 工具调用」节,直通 <a href="A04-Agent基础.html">A04 Agent</a>。</span></div>
@@ -403,13 +403,13 @@ body{
         <div class="res">
           <div class="rh"><span class="rt2"><a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview" target="_blank" rel="noopener">Anthropic · Tool use</a></span><span class="tags">厂商官方 · 英文 · 30min · 免费</span></div>
           <div class="rrow"><span class="rk">是什么</span><span class="rv">Claude 这边"工具调用"的等价实现文档。</span></div>
-          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">对比着看两家写法,会发现是同一套思想——不被某一家绑定。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">对比着看两家写法,我会发现是同一套思想——不被某一家绑定。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Overview。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「函数调用」节做横向对照。</span></div>
         </div>
         <div class="res">
           <div class="rh"><span class="rt2"><a href="https://json-schema.org/learn/getting-started-step-by-step" target="_blank" rel="noopener">JSON Schema 入门</a></span><span class="tags">规范站 · 英文 · 30min · 免费</span></div>
-          <div class="rrow"><span class="rk">是什么</span><span class="rv">JSON Schema——用来给模型下"表格模板"的那套标准的官方入门。</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">JSON Schema——我用来给模型下"表格模板"的那套标准的官方入门。</span></div>
           <div class="rrow"><span class="rk">为什么选它</span><span class="rv">结构化输出和函数调用都靠它描述"我要什么形状";会写 schema 是前提。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">Getting Started(type / properties / required 几个关键字)。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">动手写第 12 节代码里的 schema 前先扫一眼。</span></div>
@@ -419,11 +419,11 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 2 · 五个常见误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>在提示词里写"只返回 JSON"就够了</td><td>不稳。用 schema + strict 由系统保证结构,别靠祈祷。</td></tr>
-          <tr><td>JSON 模式 = 结构化输出</td><td>JSON 模式只保证"是合法 JSON",不保证符合字段结构;结构化输出(带 schema)才保证。</td></tr>
-          <tr><td>函数调用时模型会自己执行函数</td><td>模型只产生"调用请求";真正执行的是程序。权限和安全在调用方这边。</td></tr>
+          <tr><td>JSON 模式 = 结构化输出</td><td>JSON 模式只保证"是合法 JSON",不保证符合我的字段结构;结构化输出(带 schema)才保证。</td></tr>
+          <tr><td>函数调用时模型会自己执行函数</td><td>模型只产生"调用请求";真正执行的是我的程序。权限和安全在我这边。</td></tr>
           <tr><td>开了严格模式就不用校验了</td><td>严格模式保证格式对,不保证内容对。业务校验、参数校验仍要做。</td></tr>
           <tr><td>schema 越复杂越好</td><td>字段清晰、类型准、必填明确最重要;过度嵌套反而降准确率、增 token。</td></tr>
         </tbody>
@@ -432,8 +432,8 @@ body{
       <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
       <ol class="steps">
         <li><b>为什么结构化。</b>一句话说清:应用为什么宁要 JSON 不要自然语言?<details><summary>参考答案</summary><p>自然语言写法千变万化、难可靠解析;JSON 有确定结构,程序能稳定取字段。</p></details></li>
-        <li><b>区分。</b>"JSON 模式"和"结构化输出(带 schema)"差在哪?<details><summary>参考答案</summary><p>前者只保证是合法 JSON;后者还保证符合定义的字段结构(该有的都在、类型对)。</p></details></li>
-        <li><b>函数调用。</b>模型返回一个 <code>get_weather({city:北京})</code> 的调用请求后,接下来发生什么?<details><summary>参考答案</summary><p>程序校验参数、真正执行 get_weather、拿到结果,再把结果喂回模型,模型据此给最终回答。</p></details></li>
+        <li><b>区分。</b>"JSON 模式"和"结构化输出(带 schema)"差在哪?<details><summary>参考答案</summary><p>前者只保证是合法 JSON;后者还保证符合我定义的字段结构(该有的都在、类型对)。</p></details></li>
+        <li><b>函数调用。</b>模型返回一个 <code>get_weather({city:北京})</code> 的调用请求后,接下来发生什么?<details><summary>参考答案</summary><p>我的程序校验参数、真正执行 get_weather、拿到结果,再把结果喂回模型,模型据此给最终回答。</p></details></li>
         <li><b>兜底。</b>严格模式已开,为什么还要校验?举一个它保证不了的例子。<details><summary>参考答案</summary><p>它保证格式对、保证不了内容对——比如 people 填了负数、city 填了不存在的地名。业务规则要程序再校验。</p></details></li>
       </ol>
 
@@ -452,7 +452,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
-      <p>会让模型稳定输出结构、会调用函数之后,一个大问题浮现:模型只知道它训练时见过的东西,<b>不知道私有资料、也不知道最新信息</b>。<a href="A03-RAG检索增强生成.html">A03 · RAG(检索增强生成)</a>解决这个:先从文档里检索出相关内容,拼进上下文,再让模型基于它作答。它会用到 A01 的上下文管理和本章的结构化思路。</p>
+      <p>会让模型稳定输出结构、会调用函数之后,一个大问题浮现:模型只知道它训练时见过的东西,<b>不知道我的私有资料、也不知道最新信息</b>。<a href="A03-RAG检索增强生成.html">A03 · RAG(检索增强生成)</a>解决这个:先从我的文档里检索出相关内容,拼进上下文,再让模型基于它作答。它会用到 A01 的上下文管理和本章的结构化思路。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="A01-提示词工程与上下文.html"><span class="lb">上一章</span><span class="tt">A01 · 提示词工程</span></a>
         <a href="A03-RAG检索增强生成.html" class="next"><span class="lb">下一章</span><span class="tt">A03 · RAG</span></a>

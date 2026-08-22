@@ -193,7 +193,7 @@ body{
       <header class="chapter-opener">
         <p class="chapter-label">项目 · Project P5</p>
         <h1>个人知识库问答(RAG)</h1>
-        <p class="recap">P4 的助手只会用模型脑子里的知识,不知道<b>自己的资料</b>。这个项目给它接上一个"随身资料库":把一堆笔记(<code>.md</code>/<code>.txt</code>)做成能<b>基于文档、带出处回答</b>的问答机——这就是 <a href="../应用工程/A03-RAG检索增强生成.html">A03 的 RAG</a> 落地。我们<b>从零手写</b>整条链(切块 → 算向量 → 检索 → 拼接 → 生成),不用现成框架,好让人亲眼看清"语义检索"到底怎么工作。</p>
+        <p class="recap">P4 的助手只会用模型脑子里的知识,不知道<b>我自己的资料</b>。这个项目给它接上一个"随身资料库":把我的一堆笔记(<code>.md</code>/<code>.txt</code>)做成能<b>基于我的文档、带出处回答</b>的问答机——这就是 <a href="../应用工程/A03-RAG检索增强生成.html">A03 的 RAG</a> 落地。我们<b>从零手写</b>整条链(切块 → 算向量 → 检索 → 拼接 → 生成),不用现成框架,好让我亲眼看清"语义检索"到底怎么工作。</p>
         <div class="badges">
           <span class="badge">难度 <b>入门+</b></span>
           <span class="badge">语言 <b>Python</b></span>
@@ -204,7 +204,7 @@ body{
       </header>
 
       <section class="schema-panel">
-        <p class="label">做完这个项目,会有 / 会做</p>
+        <p class="label">做完这个项目,我会有 / 会做</p>
         <ul>
           <li>一个能回答"我自己文档里问题"的命令行问答机,还给出处</li>
           <li>亲手写出一条完整 RAG 链,不再是黑箱调库</li>
@@ -221,12 +221,12 @@ body{
 
       <!-- ===== 模块 A ===== -->
       <h2 id="target"><span class="no">1</span><span>成品长什么样</span></h2>
-      <p>把笔记放进一个 <code>docs/</code> 文件夹,跑起来后就能这样问——它会<b>基于文档</b>回答,并标出答案来自哪一块:</p>
+      <p>把我的笔记放进一个 <code>docs/</code> 文件夹,跑起来后就能这样问——它会<b>基于我的文档</b>回答,并标出答案来自哪一块:</p>
       <div class="term">
         <div class="thead"><span class="dots"><i></i><i></i><i></i></span><span>终端 · python rag.py</span></div>
 <pre><span class="p">已索引 docs/ 下 12 个片段。开始提问(exit 退出)</span>
 <span class="u">问 ›</span> <span class="a">我上次记的关于「上下文管理」的三种做法是什么?</span>
-<span class="u">答 ›</span> <span class="a">笔记里写了三种:①裁剪旧轮次 ②压缩成要点 ③检索回相关片段。</span>
+<span class="u">答 ›</span> <span class="a">我的笔记里写了三种:①裁剪旧轮次 ②压缩成要点 ③检索回相关片段。</span>
       <span class="s">[来源 1] A05-harness.md</span>  <span class="s">[来源 2] 学习心得.md</span>
 <span class="c"># ↑ 答案来自你的文档,还标了出处——可核对,不怕它编</span>
 <span class="u">问 ›</span> <span class="a">量子计算机怎么造?</span>
@@ -247,7 +247,7 @@ body{
           <rect x="416" y="30" width="150" height="52" rx="8" class="box-acc"/><text x="491" y="52" text-anchor="middle" class="nl-acc">向量索引</text><text x="491" y="70" text-anchor="middle" class="el">块文字 + 向量</text>
           <line x1="491" y1="120" x2="491" y2="86" class="d-soft" marker-end="url(#m-p5)"/>
           <text x="40" y="150" class="el-acc" font-weight="700">问答(每次)</text>
-          <rect x="20" y="162" width="92" height="40" rx="6" class="box"/><text x="66" y="186" text-anchor="middle" class="el">问题</text>
+          <rect x="20" y="162" width="92" height="40" rx="6" class="box"/><text x="66" y="186" text-anchor="middle" class="el">我的问题</text>
           <line x1="112" y1="182" x2="146" y2="182" class="d-acc" marker-end="url(#m-p5)"/>
           <rect x="150" y="162" width="92" height="40" rx="6" class="box"/><text x="196" y="186" text-anchor="middle" class="el">问题算向量</text>
           <line x1="242" y1="182" x2="276" y2="182" class="d-acc" marker-end="url(#m-p5)"/>
@@ -268,7 +268,7 @@ body{
         <li><b>装两个库</b>:调模型的 <code>openai</code> + 算向量距离的 <code>numpy</code>。我们故意不装 RAG 框架,自己写好看清机制:<br>
           <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span></span></div><pre>pip install openai numpy</pre></div>
         </li>
-        <li><b>准备资料</b>:新建一个 <code>docs/</code> 文件夹,丢几篇笔记进去(<code>.md</code> 或 <code>.txt</code> 都行)。哪怕先放两三篇也能跑。</li>
+        <li><b>准备资料</b>:新建一个 <code>docs/</code> 文件夹,丢几篇我的笔记进去(<code>.md</code> 或 <code>.txt</code> 都行)。哪怕先放两三篇也能跑。</li>
       </ol>
       <div class="callout warn"><span class="label">生产做法(A03)</span><p>这里用 numpy 手算相似度,是为了<b>看清原理</b>——文档几千块以内够快。真做产品会把向量存进专门的<b>向量数据库</b>、或直接用 LlamaIndex/LangChain(几行搞定),原理还是这一套。先懂再用框架,不亏。</p></div>
 
@@ -379,7 +379,7 @@ body{
       <h2 id="run"><span class="no">7</span><span>跑起来</span></h2>
       <p>把四步的代码按顺序放进一个 <code>rag.py</code>(建库两段在前、问答两段在后),放好 <code>docs/</code>,然后:</p>
       <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span></span></div><pre>python rag.py</pre></div>
-      <p>第一次启动会花几秒算所有块的向量(建库),之后每次提问都很快。就有了一个"能回答自己笔记"的问答机——把 <code>docs/</code> 换成任何资料(产品手册、课程讲义、会议记录),它立刻就懂那些内容。</p>
+      <p>第一次启动会花几秒算所有块的向量(建库),之后每次提问都很快。我就有了一个"能回答自己笔记"的问答机——把 <code>docs/</code> 换成任何资料(产品手册、课程讲义、会议记录),它立刻就懂那些内容。</p>
 
       <h2 id="pitfalls"><span class="no">8</span><span>常见坑</span></h2>
       <table class="tbl">
@@ -401,7 +401,7 @@ body{
         <p>①<b>索引存盘</b>:把 <code>chunks</code>(含向量)用 <code>numpy.save</code>/<code>pickle</code> 存下来,启动直接读,不用每次重算。②<b>显示相似度分数</b>:回答时把命中块的分数打出来,直观感受"检索准不准"。③<b>换成真向量库</b>:文档上万时,把 numpy 检索换成 Chroma/FAISS,快很多。④<b>加重排</b>(A03):先粗召回 10 块,再让模型从中挑最相关的 3 块喂进去。⑤<b>接回 P4</b>:把它做成流式输出的多轮对话版。</p>
       </div>
 
-      <h2 id="learned"><span class="no">10</span><span>到底学到了什么</span></h2>
+      <h2 id="learned"><span class="no">10</span><span>我到底学到了什么</span></h2>
       <table class="tbl">
         <caption>表 2 · 概念 → 代码</caption>
         <thead><tr><th>A03 的概念</th><th>在这个项目里变成了</th></tr></thead>
@@ -415,7 +415,7 @@ body{
       </table>
 
       <h2 id="reflist"><span class="no">11</span><span>外部资源 · 骨架之上的血肉</span></h2>
-      <p>本项目页只给搭建的骨架;真正的参数细节在下面这些一手文档里。每条注明:是什么、为什么选它、精确看哪段、对应哪一步。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;均于 2026-08-16 核实在线。</p>
+      <p>本项目页只给我搭建的骨架;真正的参数细节在下面这些一手文档里。每条注明:是什么、为什么选它、精确看哪段、对应哪一步。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;均于 2026-08-16 核实在线。</p>
       <div class="reslist">
         <div class="res spine-card">
           <div class="rh"><span class="rt2"><a href="https://platform.openai.com/docs/guides/embeddings" target="_blank" rel="noopener">OpenAI · Embeddings 指南</a></span><span class="spine">本项目主文档</span><span class="tags">官方 · 当字典查 · 免费</span></div>
@@ -434,7 +434,7 @@ body{
         <div class="res">
           <div class="rh"><span class="rt2"><a href="https://arxiv.org/abs/2407.01219" target="_blank" rel="noopener">RAG 最佳实践(论文)</a></span><span class="tags">论文·桥 · 按需 · 免费</span></div>
           <div class="rrow"><span class="rk">是什么</span><span class="rv">对比 RAG 各环节怎么设更好的实证论文。</span></div>
-          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">问答不准时,来查"切块多大、要不要重排"的有据结论。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">我的问答不准时,来查"切块多大、要不要重排"的有据结论。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">各环节对比表,看结论即可。</span></div>
           <div class="rrow"><span class="rk">对应步骤</span><span class="rv">配"调检索质量"这一步。</span></div>
         </div>
@@ -453,7 +453,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">13</span><span>下一个项目</span></h2>
-      <p>现在会"让模型调一个能力"了——刚写的 <code>retrieve()</code> 其实就是一个"查资料工具"。下一个项目 <a href="P6-一个小Agent.html">P6 · 一个小 Agent</a>更进一步:给模型<b>好几个工具</b>(检索、算数、查时间……),让它<b>自己在循环里决定该调哪个</b>、看结果再决定下一步(<a href="../应用工程/A04-Agent基础.html">A04</a> 的 ReAct 循环)。这个 RAG 就会变成它手里的一件工具。</p>
+      <p>现在我会"让模型调一个能力"了——刚写的 <code>retrieve()</code> 其实就是一个"查资料工具"。下一个项目 <a href="P6-一个小Agent.html">P6 · 一个小 Agent</a>更进一步:给模型<b>好几个工具</b>(检索、算数、查时间……),让它<b>自己在循环里决定该调哪个</b>、看结果再决定下一步(<a href="../应用工程/A04-Agent基础.html">A04</a> 的 ReAct 循环)。我这个 RAG,就会变成它手里的一件工具。</p>
       <nav class="chapter-nav" aria-label="项目导航">
         <a href="P4-命令行AI助手.html"><span class="lb">上一个项目</span><span class="tt">P4 · 命令行 AI 助手</span></a>
         <a href="P6-一个小Agent.html" class="next"><span class="lb">下一个项目</span><span class="tt">P6 · 一个小 Agent</span></a>

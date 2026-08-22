@@ -199,11 +199,11 @@ body{
           <span class="badge">约 3–4 小时</span>
           <span class="badge">无需 GPU / 无需付费 API</span>
         </div>
-        <p class="recap">学完 <a href="../基础课程/04-Pandas表格数据.html">第 4 章 Pandas</a>,手上有了处理表格的工具。这个项目把它用起来:<b>拿一份真实的、脏的数据集,像医生体检一样把它查一遍,输出一份带图和结论的报告。</b>这是所有数据工作的第一步——<a href="../深度课程/D06-特征工程与数据预处理.html">D06</a> 说的"垃圾进垃圾出",防的就是跳过这一步。做完会得到一份能直接给别人看的 HTML 报告,也会真正体会到:<b>真实数据有多脏。</b></p>
+        <p class="recap">学完 <a href="../基础课程/04-Pandas表格数据.html">第 4 章 Pandas</a>,手上有了处理表格的工具。这个项目把它用起来:<b>拿一份真实的、脏的数据集,像医生体检一样把它查一遍,输出一份带图和结论的报告。</b>这是所有数据工作的第一步——<a href="../深度课程/D06-特征工程与数据预处理.html">D06</a> 说的"垃圾进垃圾出",防的就是跳过这一步。做完我会得到一份能直接给别人看的 HTML 报告,也会真正体会到:<b>真实数据有多脏。</b></p>
       </header>
 
       <section class="schema-panel">
-        <p class="label">做完这个项目,会拥有</p>
+        <p class="label">做完这个项目,我会拥有</p>
         <ul>
           <li>一份完整的数据体检报告(HTML,可直接发给别人)</li>
           <li>一套可复用的体检流程:规模 → 缺失 → 类型 → 分布 → 异常 → 关系</li>
@@ -233,7 +233,7 @@ body{
         <li><p><b>确认环境。</b>激活 <a href="../基础课程/01-人工智能全景与学习环境.html">第 1 章</a>建的虚拟环境,装两个库:</p>
           <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span><button class="copy" type="button">复制</button></span></div><pre>pip install pandas matplotlib</pre></div>
         </li>
-        <li><p><b>挑一份数据。</b>推荐用泰坦尼克号乘客数据(经典、脏得恰到好处、每列都好理解)。也可以用<b>自己的数据</b>——记账表、运动记录、导出的观影列表都行,<b>用自己的数据做,体感会强得多</b>。</p>
+        <li><p><b>挑一份数据。</b>推荐用泰坦尼克号乘客数据(经典、脏得恰到好处、每列都好理解)。也可以用<b>我自己的数据</b>——记账表、运动记录、导出的观影列表都行,<b>用自己的数据做,体感会强得多</b>。</p>
           <p>获取方式二选一:①在线 CSV 直读(下面代码里写了 URL,联网即可);②去 <a href="https://www.kaggle.com/c/titanic/data" target="_blank" rel="noopener">Kaggle Titanic</a> 下载 <code>train.csv</code> 放到项目目录。</p>
         </li>
         <li><p><b>建项目目录。</b></p>
@@ -386,9 +386,9 @@ cd ~\ai-lab\p1-data-checkup</pre></div>
 
       <h2 id="more"><span class="no">6</span><span>进阶</span></h2>
       <ul>
-        <li><b>换成自己的数据再做一遍</b>——记账、运动、观影记录都行。用自己的数据,才会真的关心结论对不对。</li>
+        <li><b>换成自己的数据再做一遍</b>——记账、运动、观影记录都行。用自己的数据,我才会真的关心结论对不对。</li>
         <li><b>加一个自动化开关</b>:把六步包成 <code>checkup(df)</code> 函数,任何表格丢进去都能出报告。这就是一个能反复用的小工具。</li>
-        <li><b>试试现成库</b>:<code>pip install ydata-profiling</code> 一行生成超详细报告。<b>先自己写一遍再用它</b>——否则不知道它算的是什么。</li>
+        <li><b>试试现成库</b>:<code>pip install ydata-profiling</code> 一行生成超详细报告。<b>先自己写一遍再用它</b>——否则我不知道它算的是什么。</li>
         <li><b>接着做 <a href="P2-第一个预测模型.html">P2</a></b>:本项目第 6 步找到的强相关特征,正是 P2 要喂给模型的东西。</li>
       </ul>
 
@@ -419,7 +419,7 @@ cd ~\ai-lab\p1-data-checkup</pre></div>
       </div>
 
       <h2 id="next"><span class="no">9</span><span>下一个项目</span></h2>
-      <p>体检完了,下一步就是<b>用这份数据训一个真的模型</b>。<a href="P2-第一个预测模型.html">P2 · 第一个预测模型</a>会接着用这份泰坦尼克数据:把第 6 步找到的强特征喂进模型,预测乘客是否生还,再用 <a href="../深度课程/D05-评价指标与验证深挖.html">D05</a> 的指标科学地评估它——<b>P1 做的清洗判断,会直接决定 P2 的成绩。</b></p>
+      <p>体检完了,下一步就是<b>用这份数据训一个真的模型</b>。<a href="P2-第一个预测模型.html">P2 · 第一个预测模型</a>会接着用这份泰坦尼克数据:把第 6 步找到的强特征喂进模型,预测乘客是否生还,再用 <a href="../深度课程/D05-评价指标与验证深挖.html">D05</a> 的指标科学地评估它——<b>我在 P1 做的清洗判断,会直接决定 P2 的成绩。</b></p>
       <nav class="chapter-nav" aria-label="导航">
         <a href="../基础课程/04-Pandas表格数据.html"><span class="lb">前置章节</span><span class="tt">第 4 章 · Pandas 表格数据</span></a>
         <a href="P2-第一个预测模型.html" class="next"><span class="lb">下一个项目</span><span class="tt">P2 · 第一个预测模型</span></a>

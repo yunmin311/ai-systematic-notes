@@ -193,7 +193,7 @@ body{
       <header class="chapter-opener">
         <p class="chapter-label">项目 · Project P7 · 收官</p>
         <h1>完整 AI 应用</h1>
-        <p class="recap">前三个项目做出了三块能跑的东西:会对话(P4)、会查资料(P5)、会用工具(P6)——但都只在终端里。这最后一个项目把它们<b>拼成一个能上线、别人打开网页就能用的产品</b>:<b>前端页面 + 后端服务(密钥/限流/缓存/日志)+ 答案引擎 + 部署 + 监控</b>。这就是 <a href="../应用工程/A07-工程化与部署.html">A07</a> 和 <a href="../应用工程/A06-评估幻觉安全成本.html">A06</a> 的全面落地,也是"从想法到能用的 AI 应用"这条路的<b>最后一跳</b>。</p>
+        <p class="recap">前三个项目做出了三块能跑的东西:会对话(P4)、会查资料(P5)、会用工具(P6)——但都只在我的终端里。这最后一个项目把它们<b>拼成一个能上线、别人打开网页就能用的产品</b>:<b>前端页面 + 后端服务(密钥/限流/缓存/日志)+ 答案引擎 + 部署 + 监控</b>。这就是 <a href="../应用工程/A07-工程化与部署.html">A07</a> 和 <a href="../应用工程/A06-评估幻觉安全成本.html">A06</a> 的全面落地,也是"从想法到能用的 AI 应用"这条路的<b>最后一跳</b>。</p>
         <div class="badges">
           <span class="badge">难度 <b>进阶</b></span>
           <span class="badge">语言 <b>Python + HTML</b></span>
@@ -204,7 +204,7 @@ body{
       </header>
 
       <section class="schema-panel">
-        <p class="label">做完这个项目,会有 / 会做</p>
+        <p class="label">做完这个项目,我会有 / 会做</p>
         <ul>
           <li>一个部署在公网、别人打开网址就能用的 AI 网页应用</li>
           <li>会用 FastAPI 写后端,把密钥、限流、缓存、日志都收在这一层</li>
@@ -221,7 +221,7 @@ body{
 
       <!-- ===== 模块 A ===== -->
       <h2 id="target"><span class="no">1</span><span>成品长什么样</span></h2>
-      <p>一个网页:访客在浏览器里输入问题,后端(拿着密钥、做着限流缓存)去调引擎和模型,把答案返回页面。部署后,它有一个公网网址,谁都能打开用。本地跑起来时,后端终端长这样:</p>
+      <p>一个网页:访客在浏览器里输入问题,我的后端(拿着密钥、做着限流缓存)去调引擎和模型,把答案返回页面。部署后,它有一个公网网址,谁都能打开用。本地跑起来时,后端终端长这样:</p>
       <div class="term">
         <div class="thead"><span class="dots"><i></i><i></i><i></i></span><span>终端 · uvicorn backend:app</span></div>
 <pre><span class="p">INFO:     Uvicorn running on http://127.0.0.1:8000</span>
@@ -230,13 +230,13 @@ body{
 <span class="t">POST /ask</span>  <span class="a">"问答:怎么申请退款?"</span>  <span class="p">200 OK</span>  <span class="c">(0.01s, cached=True) ← 缓存命中</span>
 <span class="t">POST /ask</span>  <span class="a">"问答:(第 51 次)"</span>       <span class="a">429</span>  <span class="c">今日次数已用完 ← 限流生效</span></pre>
       </div>
-      <p class="one-liner">全栈应用的骨架就一条线:<b>前端</b>(浏览器页面)→ <b>后端</b>(密钥、限流、缓存、日志都在这)→ <b>答案引擎</b>(P5/P6)→ <b>模型 API</b>。前端只跟后端说话,后端是唯一的关口——密钥永远锁在这里(A07 红线)。</p>
+      <p class="one-liner">全栈应用的骨架就一条线:<b>前端</b>(浏览器页面)→ <b>我的后端</b>(密钥、限流、缓存、日志都在这)→ <b>答案引擎</b>(P5/P6)→ <b>模型 API</b>。前端只跟后端说话,后端是唯一的关口——密钥永远锁在这里(A07 红线)。</p>
       <figure>
         <svg viewBox="0 0 620 220" role="img" aria-label="全栈应用架构:前端 后端 引擎 模型">
           <defs><marker id="m-p7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
           <rect x="18" y="82" width="110" height="52" rx="8" class="box"/><text x="73" y="104" text-anchor="middle" class="nl">前端页面</text><text x="73" y="122" text-anchor="middle" class="el">浏览器</text>
           <line x1="128" y1="108" x2="176" y2="108" class="d-acc" marker-end="url(#m-p7)"/>
-          <rect x="180" y="72" width="150" height="72" rx="8" class="box-acc"/><text x="255" y="96" text-anchor="middle" class="nl-acc">后端</text><text x="255" y="114" text-anchor="middle" class="el">🔑密钥 · 限流</text><text x="255" y="131" text-anchor="middle" class="el">缓存 · 日志</text>
+          <rect x="180" y="72" width="150" height="72" rx="8" class="box-acc"/><text x="255" y="96" text-anchor="middle" class="nl-acc">我的后端</text><text x="255" y="114" text-anchor="middle" class="el">🔑密钥 · 限流</text><text x="255" y="131" text-anchor="middle" class="el">缓存 · 日志</text>
           <line x1="330" y1="108" x2="378" y2="108" class="d-acc" marker-end="url(#m-p7)"/>
           <rect x="382" y="82" width="120" height="52" rx="8" class="box"/><text x="442" y="104" text-anchor="middle" class="nl">答案引擎</text><text x="442" y="122" text-anchor="middle" class="el">P5 RAG / P6 agent</text>
           <line x1="502" y1="108" x2="550" y2="108" class="d-acc" marker-end="url(#m-p7)"/>
@@ -298,7 +298,7 @@ body{
       <div class="milestone"><span class="label">✓ 里程碑</span><p>先用假引擎(<code>def answer(q): return "收到:"+q</code>)跑起来,能通就说明后端骨架成立,下一步换真引擎。</p></div>
 
       <h2 id="s2"><span class="no">4</span><span>第 2 步 · 接上答案引擎</span></h2>
-      <p>后端的"大脑"就是前面做的东西。最省事:把 <a href="P5-个人知识库问答.html">P5 的 <code>rag.py</code></a> 放到同目录,它已经有 <code>answer(question)</code> 函数——第 1 步开头那句 <code>from rag import answer</code> 就直接用上了。想让应用更聪明,换成 <a href="P6-一个小Agent.html">P6 的 agent</a>:</p>
+      <p>后端的"大脑"就是我前面做的东西。最省事:把 <a href="P5-个人知识库问答.html">P5 的 <code>rag.py</code></a> 放到同目录,它已经有 <code>answer(question)</code> 函数——第 1 步开头那句 <code>from rag import answer</code> 就直接用上了。想让应用更聪明,换成 <a href="P6-一个小Agent.html">P6 的 agent</a>:</p>
       <div class="code-block">
         <div class="chead"><span class="fn">backend.py · 换引擎(可选)</span><span class="rt"><span class="lang">python</span><button class="copy" type="button">复制</button></span></div>
 <pre class="shiki mono" style="background-color:transparent;color:#14181f" tabindex="0"><code><span class="line"><span style="color:#8B95A8;font-style:italic"># 方案 A(默认):用 P5 的知识库问答,基于你的文档答、带出处</span></span>
@@ -309,8 +309,8 @@ body{
 <span class="line"></span>
 <span class="line"><span style="color:#8B95A8;font-style:italic"># 两者接口一样,都是 answer(question) -> str,后端代码一行都不用改</span></span></code></pre>
       </div>
-      <p>这就是"模块化"的好处:后端只认 <code>answer(question) -&gt; str</code> 这个约定,底下换 RAG 还是 agent,关口代码一动不动。前三个项目在这里合流了。</p>
-      <div class="milestone"><span class="label">✓ 里程碑</span><p>放好 <code>rag.py</code> + <code>docs/</code>,重启后端,用工具发一个真实问题到 <code>/ask</code>,能返回基于自有文档的答案,大脑就接通了。</p></div>
+      <p>这就是"模块化"的好处:后端只认 <code>answer(question) -&gt; str</code> 这个约定,底下换 RAG 还是 agent,关口代码一动不动。我前三个项目在这里合流了。</p>
+      <div class="milestone"><span class="label">✓ 里程碑</span><p>放好 <code>rag.py</code> + <code>docs/</code>,重启后端,用工具发一个真实问题到 <code>/ask</code>,能返回基于我文档的答案,大脑就接通了。</p></div>
 
       <h2 id="s3"><span class="no">5</span><span>第 3 步 · 前端页面</span></h2>
       <p>一个最简单的网页:一个输入框、一个按钮、一块显示区。点按钮就 <code>fetch</code> 到后端的 <code>/ask</code>,拿回答案显示出来。存成 <code>static/index.html</code>:</p>
@@ -352,7 +352,7 @@ body{
       <div class="milestone"><span class="label">✓ 里程碑</span><p>本地跑起来(下一节),浏览器打开能看到页面、输入问题能显示答案,前后端就打通了。</p></div>
 
       <h2 id="s4"><span class="no">6</span><span>第 4 步 · 上线 + 监控四块表</span></h2>
-      <p>本地能跑后,推上云就有了公网网址。入门最省心的是 <b>serverless / 平台托管</b>(如 Render、Railway、Fly.io,或各家云的应用平台):把代码推上去、在平台后台设好环境变量 <code>OPENAI_API_KEY</code>,平台给出一个网址,别人就能访问。上线只是开始,盯住 <b>A06 的四块表</b>:</p>
+      <p>本地能跑后,推上云就有了公网网址。入门最省心的是 <b>serverless / 平台托管</b>(如 Render、Railway、Fly.io,或各家云的应用平台):把代码推上去、在平台后台设好环境变量 <code>OPENAI_API_KEY</code>,平台给我一个网址,别人就能访问。上线只是开始,盯住 <b>A06 的四块表</b>:</p>
       <table class="tbl">
         <caption>表 1 · 监控四块表(接 A06)</caption>
         <thead><tr><th>盯什么</th><th>怎么看(最简做法)</th><th>异常了怎么办</th></tr></thead>
@@ -363,14 +363,14 @@ body{
           <tr class="sel"><td>质量</td><td>抽查线上问答,用 <a href="../应用工程/A06-评估幻觉安全成本.html">A06 的评测</a>打分</td><td>改提示词、调 RAG、扩评测集</td></tr>
         </tbody>
       </table>
-      <div class="milestone"><span class="label">✓ 里程碑 · 全线完成</span><p>拿到公网网址、发给朋友能打开用、后台能看到四块表的数——就交付了一个真正的 AI 产品。整条"从想法到上线"的路走通了。</p></div>
+      <div class="milestone"><span class="label">✓ 里程碑 · 全线完成</span><p>拿到公网网址、发给朋友能打开用、后台能看到四块表的数——我就交付了一个真正的 AI 产品。整条"从想法到上线"的路走通了。</p></div>
 
       <!-- ===== 模块 D ===== -->
       <h2 id="run"><span class="no">7</span><span>跑起来(本地)</span></h2>
       <p>目录里放好 <code>backend.py</code>、<code>rag.py</code>、<code>docs/</code>、<code>static/index.html</code>,然后:</p>
       <div class="code-block"><div class="chead"><span class="fn">终端</span><span class="rt"><span class="lang">bash</span></span></div><pre>uvicorn backend:app --reload
 # 浏览器打开 http://127.0.0.1:8000</pre></div>
-      <p>就有了一个跑在本地的完整 AI 网页应用。确认无误,再按第 4 步推上云——公网网址到手,收官。</p>
+      <p>我就有了一个跑在本地的完整 AI 网页应用。确认无误,再按第 4 步推上云——公网网址到手,收官。</p>
 
       <h2 id="pitfalls"><span class="no">8</span><span>常见坑</span></h2>
       <table class="tbl">
@@ -389,10 +389,10 @@ body{
       <div class="challenge">
         <span class="label">再往上加(选做)</span>
         <h3>让它更像真产品</h3>
-        <p>①<b>流式输出</b>:后端改用 <code>StreamingResponse</code>、前端用 <code>ReadableStream</code> 逐字显示(A07 打字机效果)。②<b>用户登录</b>:按账号而非 IP 限流,给每人独立历史。③<b>换 agent 大脑</b>:把引擎换成 P6 的 agent,让它能查库+算数+调工具。④<b>加安全</b>:对输出做一遍 A06 的注入检查再返回。⑤<b>做治理面板</b>:把四块表画成一个内部仪表页,天天盯——这正是治理体系的运营界面雏形。</p>
+        <p>①<b>流式输出</b>:后端改用 <code>StreamingResponse</code>、前端用 <code>ReadableStream</code> 逐字显示(A07 打字机效果)。②<b>用户登录</b>:按账号而非 IP 限流,给每人独立历史。③<b>换 agent 大脑</b>:把引擎换成 P6 的 agent,让它能查库+算数+调工具。④<b>加安全</b>:对输出做一遍 A06 的注入检查再返回。⑤<b>做治理面板</b>:把四块表画成一个内部仪表页,天天盯——这正是我治理体系的运营界面雏形。</p>
       </div>
 
-      <h2 id="learned"><span class="no">10</span><span>到底学到了什么</span></h2>
+      <h2 id="learned"><span class="no">10</span><span>我到底学到了什么</span></h2>
       <table class="tbl">
         <caption>表 3 · 概念 / 项目 → 代码</caption>
         <thead><tr><th>来自哪里</th><th>在这个项目里变成了</th></tr></thead>
@@ -406,7 +406,7 @@ body{
       </table>
 
       <h2 id="reflist"><span class="no">11</span><span>外部资源 · 骨架之上的血肉</span></h2>
-      <p>本项目页只给搭建的骨架;真正的参数细节在下面这些一手文档里。每条注明:是什么、为什么选它、精确看哪段、对应哪一步。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;均于 2026-08-16 核实在线。</p>
+      <p>本项目页只给我搭建的骨架;真正的参数细节在下面这些一手文档里。每条注明:是什么、为什么选它、精确看哪段、对应哪一步。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;均于 2026-08-16 核实在线。</p>
       <div class="reslist">
         <div class="res spine-card">
           <div class="rh"><span class="rt2"><a href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener">FastAPI 文档</a></span><span class="spine">本项目主文档</span><span class="tags">框架官方 · 可切中文 · 免费</span></div>
@@ -443,9 +443,9 @@ body{
         </ul>
       </div>
 
-      <h2 id="next"><span class="no">13</span><span>收官:整条路走通了</span></h2>
-      <p>从 P4 调通第一句模型回答,到 P7 把应用部署上线——已经完整走过了"<b>从想法到能用的 AI 应用</b>"这条路:对话 → 检索 → agent → 全栈上线。这四个项目背后,是应用工程 A01–A07 的全部概念第一次<b>在手里变成能跑、能上线的真东西</b>。</p>
-      <p>对<b>治理体系</b>而言,这一趟的意义远不止"会做应用":现在<b>从里到外看清了一个 AI 系统是怎么搭起来的</b>——模型在哪、harness 在哪、密钥/权限/限流/日志/监控各落在哪一层。治理要管的每一个抓手,都亲手写过一遍。地基已经打好;接下来无论是深化这些项目,还是回到治理体系动手,就有了看得懂、接得住的底子。回<a href="../index.html">课程首页</a>看看还想深入哪一块。</p>
+      <h2 id="next"><span class="no">13</span><span>收官:我走通了整条路</span></h2>
+      <p>从 P4 调通第一句模型回答,到 P7 把应用部署上线——我已经完整走过了"<b>从想法到能用的 AI 应用</b>"这条路:对话 → 检索 → agent → 全栈上线。这四个项目背后,是应用工程 A01–A07 的全部概念第一次<b>在我手里变成能跑、能上线的真东西</b>。</p>
+      <p>对我的<b>治理体系</b>而言,这一趟的意义远不止"会做应用":我现在<b>从里到外看清了一个 AI 系统是怎么搭起来的</b>——模型在哪、harness 在哪、密钥/权限/限流/日志/监控各落在哪一层。治理要管的每一个抓手,我都亲手写过一遍。地基已经打好;接下来无论是深化这些项目,还是回到治理体系动手,我都有了看得懂、接得住的底子。回<a href="../index.html">课程首页</a>看看还想深入哪一块。</p>
       <nav class="chapter-nav" aria-label="项目导航">
         <a href="P6-一个小Agent.html"><span class="lb">上一个项目</span><span class="tt">P6 · 一个小 Agent</span></a>
         <a href="../index.html" class="next"><span class="lb">收官 · 回到</span><span class="tt">课程首页</span></a>

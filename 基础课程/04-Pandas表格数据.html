@@ -194,7 +194,7 @@ body{
       <p>图解骨架约 40 分钟,外部精读 + 动手约 3~5 小时。全程只用到读文件、筛选、求平均这类操作,概念都用上一章的数组作对照。每出现一个新词,当场用白话解释。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>Series 与 DataFrame——带行列标签的一维/二维表,比裸数组好用</li>
           <li>读写数据——一行把 CSV / Excel 读成表,处理完存回去</li>
@@ -290,7 +290,7 @@ body{
       <p><b>看图学更顺?加一条图解主线(和上一章同一位作者):</b></p>
       <ul>
         <li><b>Pandas Illustrated · Lev Maximov</b> — <a href="https://betterprogramming.pub/pandas-illustrated-the-definitive-visual-guide-to-pandas-c31fa921a43" target="_blank" rel="noopener">全图解的可视化指南</a>。和上一章的 NumPy Illustrated 同一作者、同一风格,先读 Series 与 DataFrame 两部分。</li>
-        <li><b>换视频主线</b> — 英文 <a href="https://www.youtube.com/playlist?list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU" target="_blank" rel="noopener">Corey Schafer · Pandas 教程(11 集)</a>,和第 2 章用过的是同一位讲者;中文 <a href="https://www.bilibili.com/video/BV1Ex411L7oT/" target="_blank" rel="noopener">莫烦 · Numpy &amp; Pandas</a>(看 Pandas 部分)。挑一条从头跟,别混着跳。</li>
+        <li><b>换视频主线</b> — 英文 <a href="https://www.youtube.com/playlist?list=PL-osiE80TeTt2d9bfVyTiXJA-UTHn6WwU" target="_blank" rel="noopener">Corey Schafer · Pandas 教程(11 集)</a>,和我第 2 章用过的是同一位讲者;中文 <a href="https://www.bilibili.com/video/BV1Ex411L7oT/" target="_blank" rel="noopener">莫烦 · Numpy &amp; Pandas</a>(看 Pandas 部分)。挑一条从头跟,别混着跳。</li>
       </ul>
 
       <div class="callout">
@@ -365,7 +365,7 @@ body{
         <span class="ql">想一想</span>
         <p><code>df.loc[1]</code> 和 <code>df.iloc[1]</code> 什么时候结果不一样?</p>
         <details><summary>看答案</summary>
-        <p>当行标签(index)不是默认的 0,1,2 时。<code>loc[1]</code> 找<b>标签叫 1</b> 的那行;<code>iloc[1]</code> 永远是<b>第 2 行</b>(位置从 0 数)。如果把某列设成了 index(比如用姓名当行标签),<code>loc['小林']</code> 用名字取行,而 <code>iloc[1]</code> 还是取位置。记住:<b>loc 认标签、iloc 认位置</b>。</p></details>
+        <p>当行标签(index)不是默认的 0,1,2 时。<code>loc[1]</code> 找<b>标签叫 1</b> 的那行;<code>iloc[1]</code> 永远是<b>第 2 行</b>(位置从 0 数)。如果我把某列设成了 index(比如用姓名当行标签),<code>loc['小林']</code> 用名字取行,而 <code>iloc[1]</code> 还是取位置。记住:<b>loc 认标签、iloc 认位置</b>。</p></details>
       </div>
 
       <p class="handoff">真实数据总有脏的地方——缺失、类型不对、列名难认。下一块是清洗。</p>
@@ -479,7 +479,7 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 3 · 五个新手误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>DataFrame 和 Excel 表一样,能随手改格子</td><td>它是代码里的对象;改动靠方法(选取、赋值、groupby),不是鼠标点。好处是可复现、能自动跑。</td></tr>
           <tr><td><code>loc</code> 和 <code>iloc</code> 差不多</td><td><code>loc</code> 认<b>标签</b>、<code>iloc</code> 认<b>位置</b>。index 不是 0,1,2 时结果不同,是最常见的坑。</td></tr>
@@ -532,7 +532,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">18</span><span>本章与下一章的连接</span></h2>
-      <p>会读表、洗表、按类别汇总之后,数据就整理成了「能喂给模型」的样子。<a href="05-机器学习核心概念.html">第 5 章 机器学习核心概念</a>开始讲:一份整理好的表,怎么分成训练集和测试集、什么叫分类和回归、模型「学」的是什么。到那时会发现,前几章练的数组和表,正是模型的输入。</p>
+      <p>会读表、洗表、按类别汇总之后,数据就整理成了「能喂给模型」的样子。<a href="05-机器学习核心概念.html">第 5 章 机器学习核心概念</a>开始讲:一份整理好的表,怎么分成训练集和测试集、什么叫分类和回归、模型「学」的是什么。到那时我会发现,前几章练的数组和表,正是模型的输入。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="03-NumPy数组与形状.html"><span class="lb">上一章</span><span class="tt">03 · NumPy</span></a>
         <a href="05-机器学习核心概念.html" class="next"><span class="lb">下一章</span><span class="tt">05 · 机器学习核心</span></a>

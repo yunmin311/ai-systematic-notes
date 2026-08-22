@@ -181,13 +181,13 @@ body{
       <header class="chapter-opener">
         <p class="chapter-label">应用工程 · Chapter A05</p>
         <h1>AI Agent 的 harness / 底层框架</h1>
-        <p class="recap">A04 从外面看清了 agent 的样子。这一章<b>掀开盖子</b>:模型只是发动机,真正让它能干活的,是外面那圈工程外壳——<b>harness</b>。它负责给模型接工具、管上下文、控制循环、处理错误、协调多个 agent。<b>此刻正在用的 Claude Code,就是一个 harness。</b>看懂这一层,就看懂了 AI 助手底层怎么运转——这正是推进治理体系时反复要打交道的地方,也是本课程为目标专门铺设的一章。</p>
+        <p class="recap">A04 从外面看清了 agent 的样子。这一章<b>掀开盖子</b>:模型只是发动机,真正让它能干活的,是外面那圈工程外壳——<b>harness</b>。它负责给模型接工具、管上下文、控制循环、处理错误、协调多个 agent。<b>我此刻正在用的 Claude Code,就是一个 harness。</b>看懂这一层,就看懂了 AI 助手底层怎么运转——这正是推进治理体系时反复要打交道的地方,也是本课程为我的目标专门铺设的一章。</p>
       </header>
 
       <p>图解骨架约 50 分钟,精读约 6~8 小时。这一章比前面重,因为它是<b>治理目标的正门</b>。所有机制都用 A04 的循环作对照。每个新词当场白话解释。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>harness 是什么——模型之外那圈"外壳",让模型变成能干活的系统</li>
           <li>agent loop 工程化——A04 的循环在真实系统里长什么样</li>
@@ -199,7 +199,7 @@ body{
 
       <div class="callout">
         <span class="label">从哪来 · 到哪去</span>
-        <p><b>接前面:</b>这一章是 <a href="A04-Agent基础.html">A04</a> 的"打开引擎盖"——A04 的 loop、工具、状态,在这里被工程化。<b>通向后面:</b>harness 里"怎么知道 agent 干得好不好、怎么防它闯祸、怎么算账"是 <a href="../index.html">A06 评估安全成本</a>;"怎么把它部署成产品"是 A07。<b>连向目标:</b>治理体系要管的,正是 harness 这一层的行为。</p>
+        <p><b>接前面:</b>这一章是 <a href="A04-Agent基础.html">A04</a> 的"打开引擎盖"——A04 的 loop、工具、状态,在这里被工程化。<b>通向后面:</b>harness 里"怎么知道 agent 干得好不好、怎么防它闯祸、怎么算账"是 <a href="../index.html">A06 评估安全成本</a>;"怎么把它部署成产品"是 A07。<b>连向我的目标:</b>治理体系要管的,正是 harness 这一层的行为。</p>
       </div>
 
       <!-- ========== 模块 A ========== -->
@@ -225,7 +225,7 @@ body{
 
       <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
       <p class="one-liner">harness(承载框架)=模型<b>之外</b>的全部工程外壳:它把模型这台"只会输出文字的发动机",接线成一辆<b>能感知、能行动、能持续干活</b>的车——工具接线、上下文管理、循环控制、错误处理、多 agent 协调,全在这一层。</p>
-      <p>A04 那段十几行的 agent loop 是玩具:工具写死、上下文一长就爆、工具报错就崩、只有一个 agent。真实系统要在它外面包一大圈:动态注册几十个工具、上下文满了自动压缩、工具失败了重试或换路、必要时派子 agent 分工……这一整圈就是 <b>harness</b>(也叫 agent runtime / scaffold / 承载框架)。一个关键认知:<b>近年 AI 能力的跃升,很大一部分不是模型本身变强,而是 harness 变强了</b>——同一个模型,套上好 harness 就能写代码、查资料、连续操作几十步。正在用的 Claude Code 就是把 Claude 这台发动机装进了一辆精心调校的车。理解 harness,就是理解"AI 系统"而不只是"AI 模型"。</p>
+      <p>A04 那段十几行的 agent loop 是玩具:工具写死、上下文一长就爆、工具报错就崩、只有一个 agent。真实系统要在它外面包一大圈:动态注册几十个工具、上下文满了自动压缩、工具失败了重试或换路、必要时派子 agent 分工……这一整圈就是 <b>harness</b>(也叫 agent runtime / scaffold / 承载框架)。一个关键认知:<b>近年 AI 能力的跃升,很大一部分不是模型本身变强,而是 harness 变强了</b>——同一个模型,套上好 harness 就能写代码、查资料、连续操作几十步。我正在用的 Claude Code 就是把 Claude 这台发动机装进了一辆精心调校的车。理解 harness,就是理解"AI 系统"而不只是"AI 模型"。</p>
 
       <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
       <figure>
@@ -265,7 +265,7 @@ body{
         <li><b>Anthropic 多 agent 研究系统复盘</b> — <a href="https://www.anthropic.com/engineering/building-a-multi-agent-research-system" target="_blank" rel="noopener">一线工程博客</a>,真实讲多 agent 怎么分工、上下文怎么隔离、代价在哪。</li>
         <li><b>上下文工程</b> — <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">Anthropic:给 agent 做上下文工程</a>,本章第 9 节的展开。</li>
       </ul>
-      <div class="callout warn"><span class="label">最好的活教材就在手边</span><p>正在用的 <b>Claude Code</b> 本身就是一个成熟 harness。读完本章,回头观察它:它怎么把工具列给模型、上下文长了怎么压缩、报错怎么处理、什么时候派子 agent——书上每个概念都能在它身上找到对应。这是理解治理对象最直接的办法。</p></div>
+      <div class="callout warn"><span class="label">最好的活教材,就在我手边</span><p>我正在用的 <b>Claude Code</b> 本身就是一个成熟 harness。读完本章,回头观察它:它怎么把工具列给模型、上下文长了怎么压缩、报错怎么处理、什么时候派子 agent——书上每个概念都能在它身上找到对应。这是理解治理对象最直接的办法。</p></div>
 
       <!-- ========== 模块 C ========== -->
       <p class="handoff">先把"模型"和"外壳"彻底分开——这是全章的地基。</p>
@@ -298,7 +298,7 @@ body{
       <p class="handoff">而这圈外壳里最难、最核心的一块,是管那块会被撑爆的上下文。</p>
       <h2 id="context"><span class="no">9</span><span>上下文管理(harness 最核心的活)</span></h2>
       <p class="one-liner">上下文窗口<b>有限又贵</b>,而 agent 每转一轮就往里塞更多(想法、工具结果……),很快撑爆。harness 必须<b>持续地裁、压、检索</b>,给模型留下"最该看见的那些",而不是全部历史。这门手艺叫<b>上下文工程</b>。</p>
-      <p>三种基本管法,常常混用:<b>裁剪</b>——扔掉不再相关的旧轮次(比如十步前一个失败的尝试);<b>压缩/总结</b>——把一大段历史让模型概括成几句要点再留下(在 Claude Code 里见过的"压缩上下文"就是它);<b>检索</b>——把全部历史存到外部,每轮只<b>取回</b>与当前最相关的几段(即把 <a href="A03-RAG检索增强生成.html">A03 的 RAG</a> 用在 agent 自己的记忆上)。为什么这是命门:上下文塞太多,模型会<b>抓不住重点</b>(A01 的"lost in the middle")、还更贵更慢;塞太少,它又<b>忘了关键信息</b>办砸事。管好这一块,是长任务 agent 能不能稳的关键。</p>
+      <p>三种基本管法,常常混用:<b>裁剪</b>——扔掉不再相关的旧轮次(比如十步前一个失败的尝试);<b>压缩/总结</b>——把一大段历史让模型概括成几句要点再留下(我在 Claude Code 里见过的"压缩上下文"就是它);<b>检索</b>——把全部历史存到外部,每轮只<b>取回</b>与当前最相关的几段(即把 <a href="A03-RAG检索增强生成.html">A03 的 RAG</a> 用在 agent 自己的记忆上)。为什么这是命门:上下文塞太多,模型会<b>抓不住重点</b>(A01 的"lost in the middle")、还更贵更慢;塞太少,它又<b>忘了关键信息</b>办砸事。管好这一块,是长任务 agent 能不能稳的关键。</p>
       <figure>
         <svg viewBox="0 0 620 210" role="img" aria-label="上下文满了之后压缩与检索">
           <defs><marker id="m-x" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
@@ -332,7 +332,7 @@ body{
           <defs><marker id="m-u" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2743c7"/></marker></defs>
           <rect x="30" y="76" width="150" height="58" rx="10" class="d-acc nf-acc" stroke-width="1.6"/>
           <text x="105" y="100" text-anchor="middle" class="nl-acc">AI 应用 host</text>
-          <text x="105" y="118" text-anchor="middle" class="el">( harness)</text>
+          <text x="105" y="118" text-anchor="middle" class="el">(我的 harness)</text>
           <line x1="180" y1="105" x2="250" y2="60" class="d-acc" marker-end="url(#m-u)"/>
           <line x1="180" y1="105" x2="250" y2="105" class="d-acc" marker-end="url(#m-u)"/>
           <line x1="180" y1="105" x2="250" y2="150" class="d-acc" marker-end="url(#m-u)"/>
@@ -345,7 +345,7 @@ body{
           <text x="530" y="120" text-anchor="middle" class="el">插口统一,</text>
           <text x="530" y="140" text-anchor="middle" class="el">即插即用</text>
         </svg>
-        <figcaption><span class="fig-num">图 4</span>MCP:host(应用/harness)通过一个统一接口连接任意 server(工具、数据源)。像 USB 统一了插口——也因此成为治理"AI 能碰什么"的天然闸门。</figcaption>
+        <figcaption><span class="fig-num">图 4</span>MCP:host(我的应用/harness)通过一个统一接口连接任意 server(工具、数据源)。像 USB 统一了插口——也因此成为治理"AI 能碰什么"的天然闸门。</figcaption>
       </figure>
 
       <p class="handoff">最后一块:一个 agent 忙不过来时,怎么让好几个协同。</p>
@@ -402,15 +402,15 @@ body{
 <span class="line"></span>
 <span class="line"><span style="color:#14181F;font-weight:bold">    return</span><span style="color:#557089"> "超预算未完成"</span><span style="color:#8B95A8;font-style:italic">                            # ⑧ 兜底</span></span></code></pre>
       </div>
-      <p>和 A04 逐行对照:多出来的全是 harness 的活——<code>system_prompt</code> 立规矩(治理抓手)、<code>registry.load</code> 动态接工具(可来自 MCP)、<code>context_manager.fit</code> 每轮给上下文瘦身(第 9 节的命门)、<code>policy.violates</code> 拦红线(A06)、<code>try/except</code> 兜住工具错误、<code>log</code> 留痕供审计。<b>模型那一行 <code>model.chat</code> 几乎没变——变强的是它外面这一圈。</b>这就是"AI 能力跃升多来自 harness"的具体样子,也是治理 AI 时真正能动手的地方。</p>
+      <p>和 A04 逐行对照:多出来的全是 harness 的活——<code>system_prompt</code> 立规矩(治理抓手)、<code>registry.load</code> 动态接工具(可来自 MCP)、<code>context_manager.fit</code> 每轮给上下文瘦身(第 9 节的命门)、<code>policy.violates</code> 拦红线(A06)、<code>try/except</code> 兜住工具错误、<code>log</code> 留痕供审计。<b>模型那一行 <code>model.chat</code> 几乎没变——变强的是它外面这一圈。</b>这就是"AI 能力跃升多来自 harness"的具体样子,也是我治理 AI 时真正能动手的地方。</p>
       <div class="challenge">
-        <span class="label">进阶挑战 · 直连目标</span>
+        <span class="label">进阶挑战 · 直连我的目标</span>
         <h3>把 Claude Code 当标本解剖</h3>
-        <p>①在 Claude Code 里观察:它是怎么把一批工具的说明摆给模型的?(对应 <code>registry.load</code>)②触发过"压缩上下文"吗?那就是 <code>context_manager.fit</code>。③它拒绝某个危险操作时,是模型自觉还是 harness 的 <code>policy.violates</code> 拦的?④如果要给这套系统<b>立治理规矩</b>,会加在这段代码的哪几行?(提示:system_prompt / policy.violates / 工具注册白名单 / 日志)——把答案写下来,这就是治理体系的技术落点。</p>
+        <p>①在 Claude Code 里观察:它是怎么把一批工具的说明摆给模型的?(对应 <code>registry.load</code>)②触发过"压缩上下文"吗?那就是 <code>context_manager.fit</code>。③它拒绝某个危险操作时,是模型自觉还是 harness 的 <code>policy.violates</code> 拦的?④如果我要给这套系统<b>立治理规矩</b>,我会加在这段代码的哪几行?(提示:system_prompt / policy.violates / 工具注册白名单 / 日志)——把答案写下来,这就是我治理体系的技术落点。</p>
       </div>
 
       <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
-      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——这一章直指治理目标,更值得往深读。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;下列链接均于 2026-08-16 核实在线。</p>
+      <p>本课程是<b>骨架</b>(脉络 + 索引 + 领读);下面这些外部资源才是长在骨架上的<b>血肉</b>——这一章直指我的治理目标,更值得往深读。每条注明:是什么、为什么选它、精确看哪段、对应本章哪一节。更全的清单见 <a href="../资料/AI学习资源库.html#apps">AI 学习资源库 · 应用工程</a>;下列链接均于 2026-08-16 核实在线。</p>
       <div class="reslist">
         <div class="res spine-card">
           <div class="rh"><span class="rt2"><a href="https://modelcontextprotocol.io/" target="_blank" rel="noopener">MCP(Model Context Protocol)官方文档</a></span><span class="spine">默认主线</span><span class="tags">协议官方 · 英文 · 1–2h · 免费</span></div>
@@ -429,7 +429,7 @@ body{
         <div class="res">
           <div class="rh"><span class="rt2"><a href="https://www.anthropic.com/engineering/building-a-multi-agent-research-system" target="_blank" rel="noopener">多 Agent 研究系统复盘</a></span><span class="tags">工程博客 · 英文 · 40min · 免费</span></div>
           <div class="rrow"><span class="rk">是什么</span><span class="rv">一个真实多 agent 系统"怎么建、踩了哪些坑"的工程复盘。</span></div>
-          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">直连治理目标:多个 agent 协作时的真实教训(协调、成本、失控)在这里。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">直连我的治理目标:多个 agent 协作时的真实教训(协调、成本、失控)在这里。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全篇;重点看"编排者-子 agent"的分工与代价。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「多 agent 编排」节 + 本章的治理落点。</span></div>
         </div>
@@ -445,7 +445,7 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 2 · 五个常见误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>AI 变强主要靠模型变大</td><td>很大一部分来自 harness 变强:同一模型套上好外壳,能连续干几十步复杂活。</td></tr>
           <tr><td>上下文窗口够大就不用管理</td><td>再大也会被长任务塞爆,且塞太多模型抓不住重点、更贵更慢。裁/压/检索是长任务的命门。</td></tr>
@@ -478,7 +478,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
-      <p>现在看清了 agent 系统的骨架:模型 + harness。但骨架能跑,不等于跑得好、跑得安全、跑得起——<b>怎么知道它变好了?怎么防它闯祸?怎么算这笔账?</b>这就是 <a href="A06-评估幻觉安全成本.html">A06 · 评估、幻觉、安全与成本</a>。它接着本章第 8 节的"留痕"和第 12 节的"拦红线"往下讲:可观测性、幻觉止损、越狱与防护、成本控制——把一个能跑的 harness,变成一个<b>可信、可控、可负担</b>的系统。这也正是治理体系最终要落地的那几件事。</p>
+      <p>我现在看清了 agent 系统的骨架:模型 + harness。但骨架能跑,不等于跑得好、跑得安全、跑得起——<b>怎么知道它变好了?怎么防它闯祸?怎么算这笔账?</b>这就是 <a href="A06-评估幻觉安全成本.html">A06 · 评估、幻觉、安全与成本</a>。它接着本章第 8 节的"留痕"和第 12 节的"拦红线"往下讲:可观测性、幻觉止损、越狱与防护、成本控制——把一个能跑的 harness,变成一个<b>可信、可控、可负担</b>的系统。这也正是治理体系最终要落地的那几件事。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="A04-Agent基础.html"><span class="lb">上一章</span><span class="tt">A04 · Agent 基础</span></a>
         <a href="A06-评估幻觉安全成本.html" class="next"><span class="lb">下一章</span><span class="tt">A06 · 评估、幻觉、安全与成本</span></a>

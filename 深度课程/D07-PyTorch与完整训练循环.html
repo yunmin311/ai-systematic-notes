@@ -196,17 +196,17 @@ body{
       <header class="chapter-opener">
         <p class="chapter-label">深度课程 · Track B · Chapter D07 · 深度学习开篇</p>
         <h1>PyTorch 与完整训练循环</h1>
-        <p class="recap">还记得 <a href="D01-线性回归全拆解.html">D01</a> 那个手写的训练循环吗——亲手算损失、亲手调那 1 个参数。<a href="../基础课程/07-神经网络入门.html">第 7 章</a>又讲了神经网络怎么前向、怎么反向传播。但真要训练一个有几万、几百万参数的网络,靠手写每一层的导数是不可能的。<b>PyTorch</b> 就是来解决这件事的:它把"数组运算 + 自动求导 + 数据加载 + 训练循环"这套骨架标准化了,让人只管"搭什么网络",把"怎么算梯度"完全交给框架。这一章把 D01 那个玩具循环,升级成<b>真正的深度学习训练循环</b>——后面 Track B 每一章(CNN、序列模型、迁移学习)都在这个循环里跑。</p>
+        <p class="recap">还记得 <a href="D01-线性回归全拆解.html">D01</a> 那个手写的训练循环吗——我亲手算损失、亲手调那 1 个参数。<a href="../基础课程/07-神经网络入门.html">第 7 章</a>又讲了神经网络怎么前向、怎么反向传播。但真要训练一个有几万、几百万参数的网络,靠手写每一层的导数是不可能的。<b>PyTorch</b> 就是来解决这件事的:它把"数组运算 + 自动求导 + 数据加载 + 训练循环"这套骨架标准化了,让我只管"搭什么网络",把"怎么算梯度"完全交给框架。这一章把 D01 那个玩具循环,升级成<b>真正的深度学习训练循环</b>——后面 Track B 每一章(CNN、序列模型、迁移学习)都在这个循环里跑。</p>
       </header>
 
-      <p>图解骨架约 30 分钟,动手 + 精读约 4~6 小时。跟着敲一遍那个五步循环,就握住了整个深度学习的"发动机"。</p>
+      <p>图解骨架约 30 分钟,动手 + 精读约 4~6 小时。跟着敲一遍那个五步循环,我就握住了整个深度学习的"发动机"。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>为什么要框架——手写反向传播不现实,框架自动求导 + GPU 加速 + 现成组件</li>
           <li>张量 Tensor——像 NumPy 数组,但能上 GPU、且会记录运算以便求导</li>
-          <li>自动求导 autograd——只写前向,一句 loss.backward() 框架把所有梯度算好</li>
+          <li>自动求导 autograd——我只写前向,一句 loss.backward() 框架把所有梯度算好</li>
           <li>数据管道 Dataset / DataLoader——把数据切成小批量、打乱、按需喂</li>
           <li>训练循环五步——前向 → 算损失 → 梯度清零 → 反向 → 更新,背下来</li>
         </ul>
@@ -227,11 +227,11 @@ body{
       <p><b>不适合</b>:完全没碰过"训练=降损失"这个概念的人——请先回 <a href="D01-线性回归全拆解.html">D01</a> 和 <a href="../基础课程/06-训练的本质.html">第 6 章</a>,那里把最核心的直觉打牢了,这一章才好懂。</p>
 
       <h2 id="prereq"><span class="no">2</span><span>前置知识</span></h2>
-      <p>需要:<a href="../基础课程/06-训练的本质.html">第 6 章训练本质</a>(损失、梯度下降、学习率)、<a href="../基础课程/07-神经网络入门.html">第 7 章</a>(层、前向、反向传播)、<a href="../基础课程/03-NumPy数组与形状.html">第 3 章</a>(数组与形状)。数学只需记住一句:<b>梯度指向"损失上升最快"的方向,所以往它的反方向走就能降损失</b>——具体导数 PyTorch 全部算好,不用手推。</p>
+      <p>需要:<a href="../基础课程/06-训练的本质.html">第 6 章训练本质</a>(损失、梯度下降、学习率)、<a href="../基础课程/07-神经网络入门.html">第 7 章</a>(层、前向、反向传播)、<a href="../基础课程/03-NumPy数组与形状.html">第 3 章</a>(数组与形状)。数学只需记住一句:<b>梯度指向"损失上升最快"的方向,所以往它的反方向走就能降损失</b>——具体导数 PyTorch 全帮我算,不用手推。</p>
 
       <h2 id="outcome"><span class="no">3</span><span>读完之后能做到什么</span></h2>
       <ol>
-        <li>说清"为什么要用框架、框架省了哪件最麻烦的事"。</li>
+        <li>说清"为什么要用框架、框架帮我省了哪件最麻烦的事"。</li>
         <li>解释张量和 NumPy 数组的两点关键区别(能上 GPU、能自动求导)。</li>
         <li>看懂 <code>loss.backward()</code> 这一句背后发生了什么。</li>
         <li>说清 Dataset / DataLoader 为什么要把数据切成小批量。</li>
@@ -239,8 +239,8 @@ body{
       </ol>
 
       <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
-      <p class="one-liner">PyTorch:<b>一个"会自己算梯度的 NumPy"。</b>使用者只负责写"数据怎么前向流成损失",框架负责把"每个参数该往哪调"(梯度)自动算好;再配上现成的层、优化器和数据管道,训练一个网络就浓缩成一个固定的五步循环。</p>
-      <p>为什么这是革命性的:D01 里模型只有 1 个参数,能手推它的导数;可一个真实网络有几百万个参数、几十层非线性变换,手推每个参数的导数是天方夜谭。PyTorch 用<b>自动求导</b>把这件最难的事变成一行代码。剩下的——把数组搬上 GPU 加速、把常用的层(线性层、卷积层)做成现成积木、把数据切批打乱——也都封装好了。于是注意力可以完全放在"搭什么样的网络、解决什么问题"上,而不是"梯度怎么算"。<b>PyTorch 和另一个框架 TensorFlow 是业界两大主流,近几年研究和教学几乎都用 PyTorch,本课程也用它。</b></p>
+      <p class="one-liner">PyTorch:<b>一个"会自己算梯度的 NumPy"。</b>我只负责写"数据怎么前向流成损失",它负责把"每个参数该往哪调"(梯度)自动算好;再配上现成的层、优化器和数据管道,训练一个网络就浓缩成一个固定的五步循环。</p>
+      <p>为什么这是革命性的:D01 里模型只有 1 个参数,我能手推它的导数;可一个真实网络有几百万个参数、几十层非线性变换,手推每个参数的导数是天方夜谭。PyTorch 用<b>自动求导</b>把这件最难的事变成一行代码。剩下的——把数组搬上 GPU 加速、把常用的层(线性层、卷积层)做成现成积木、把数据切批打乱——也都替我封装好了。于是我的注意力可以完全放在"搭什么样的网络、解决什么问题"上,而不是"梯度怎么算"。<b>PyTorch 和另一个框架 TensorFlow 是业界两大主流,近几年研究和教学几乎都用 PyTorch,本课程也用它。</b></p>
 
       <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
       <figure>
@@ -291,8 +291,8 @@ body{
       <!-- ===== 模块 C ===== -->
       <p class="handoff">先想清楚:框架到底替我们省了哪件最要命的事。</p>
       <h2 id="why"><span class="no">7</span><span>为什么要框架</span></h2>
-      <p class="one-liner">手写一个多层网络的反向传播,等于手推几百万个参数的导数——不现实、也极易出错。框架的头号价值就是:<b>只写"前向怎么算",它自动把"每个参数的梯度"算好。</b>再加上 GPU 加速和现成的层/优化器,训练网络才从"科研苦力"变成"搭积木"。</p>
-      <p>具体省了三件事:<b>一、自动求导。</b>这是核心——D01 里能手推 1 个参数的导数,但深层网络里,损失对第一层某个参数的导数要沿着几十层链式法则一路传回来,人工推导既慢又必错。框架把这一步自动化(第 9 节)。<b>二、GPU 加速。</b>神经网络的运算本质是海量矩阵乘法,GPU 天生擅长并行做这个,能比 CPU 快几十上百倍;框架让人一句 <code>.to("cuda")</code> 就把数据和模型搬上 GPU,代码几乎不用改。<b>三、现成组件。</b>线性层、卷积层、各种激活函数、各种优化器(Adam、SGD)都是封装好的积木,<code>import</code> 进来就用,不用重造轮子。这三件事凑齐,才能把精力放在"设计网络、解决问题"上。</p>
+      <p class="one-liner">手写一个多层网络的反向传播,等于手推几百万个参数的导数——不现实、也极易出错。框架的头号价值就是:<b>我只写"前向怎么算",它自动把"每个参数的梯度"算好。</b>再加上 GPU 加速和现成的层/优化器,训练网络才从"科研苦力"变成"搭积木"。</p>
+      <p>具体省了三件事:<b>一、自动求导。</b>这是核心——D01 里我能手推 1 个参数的导数,但深层网络里,损失对第一层某个参数的导数要沿着几十层链式法则一路传回来,人工推导既慢又必错。框架把这一步自动化(第 9 节)。<b>二、GPU 加速。</b>神经网络的运算本质是海量矩阵乘法,GPU 天生擅长并行做这个,能比 CPU 快几十上百倍;框架让我一句 <code>.to("cuda")</code> 就把数据和模型搬上 GPU,代码几乎不用改。<b>三、现成组件。</b>线性层、卷积层、各种激活函数、各种优化器(Adam、SGD)都是封装好的积木,<code>import</code> 进来就用,不用重造轮子。这三件事凑齐,我才能把精力放在"设计网络、解决问题"上。</p>
 
       <p class="handoff">框架里一切数据的载体,先认识它:张量。</p>
       <h2 id="tensor"><span class="no">8</span><span>张量 Tensor</span></h2>
@@ -311,13 +311,13 @@ body{
 <span class="line"><span style="color:#14181F">x </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> torch.tensor(2.0, requires_grad</span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F">True)</span></span>
 <span class="line"><span style="color:#14181F">y </span><span style="color:#14181F;font-weight:bold">=</span><span style="color:#14181F"> x </span><span style="color:#14181F;font-weight:bold">**</span><span style="color:#14181F"> 2 </span><span style="color:#14181F;font-weight:bold">+</span><span style="color:#14181F"> 3 </span><span style="color:#14181F;font-weight:bold">*</span><span style="color:#14181F"> x      </span><span style="color:#8B95A8;font-style:italic"># 前向:随便算一个式子</span></span>
 <span class="line"><span style="color:#14181F">y.backward()            </span><span style="color:#8B95A8;font-style:italic"># 反向:一句话,自动求导</span></span>
-<span class="line"><span style="color:#14181F">print(x.grad)           </span><span style="color:#8B95A8;font-style:italic"># dy/dx = 2x + 3 = 7.0 —— 框架已经算好了</span></span></code></pre>
+<span class="line"><span style="color:#14181F">print(x.grad)           </span><span style="color:#8B95A8;font-style:italic"># dy/dx = 2x + 3 = 7.0 —— 框架替我算好了</span></span></code></pre>
       </div>
 
       <p class="handoff">上面那句 <code>y.backward()</code> 是全章的心脏,单拎出来讲。</p>
       <h2 id="autograd"><span class="no">9</span><span>自动求导 autograd</span></h2>
-      <p class="one-liner">写前向计算时,PyTorch 在背后<b>悄悄记下每一步运算,连成一张"计算图"</b>。当对最终的损失调用 <code>loss.backward()</code>,它就沿这张图<b>从后往前</b>用链式法则,一路把"损失对每个参数的梯度"算出来,存进各参数的 <code>.grad</code> 里。这正是第 7 章"反向传播"的自动化版本。</p>
-      <p>拆开看:前向时,数据 <code>x</code> 经过模型算出预测 <code>ŷ</code>,再和真值算出损失 <code>loss</code>——这一串运算被框架记成一张从参数指向 loss 的图。<code>loss.backward()</code> 做的,就是第 7 章讲的反向传播:从 loss 出发,反着这张图逐层套链式法则,得到"每个参数改变一点点、loss 会变多少",也就是梯度。完全不用知道每层导数长什么样——<b>写好前向,梯度就是免费的</b>。有个坑要记住:梯度是<b>累加</b>进 <code>.grad</code> 的(为某些高级用法方便),所以每轮训练前必须先 <code>zero_grad()</code> 清零,否则这轮的梯度会和上轮的叠在一起、把方向带偏(第 11 节那五步里的第③步就是干这个)。</p>
+      <p class="one-liner">我写前向计算时,PyTorch 在背后<b>悄悄记下每一步运算,连成一张"计算图"</b>。当我对最终的损失调用 <code>loss.backward()</code>,它就沿这张图<b>从后往前</b>用链式法则,一路把"损失对每个参数的梯度"算出来,存进各参数的 <code>.grad</code> 里。这正是第 7 章"反向传播"的自动化版本。</p>
+      <p>拆开看:前向时,数据 <code>x</code> 经过模型算出预测 <code>ŷ</code>,再和真值算出损失 <code>loss</code>——这一串运算被框架记成一张从参数指向 loss 的图。<code>loss.backward()</code> 做的,就是第 7 章讲的反向传播:从 loss 出发,反着这张图逐层套链式法则,得到"每个参数改变一点点、loss 会变多少",也就是梯度。我完全不用知道每层导数长什么样——<b>写好前向,梯度就是免费的</b>。有个坑要记住:梯度是<b>累加</b>进 <code>.grad</code> 的(为某些高级用法方便),所以每轮训练前必须先 <code>zero_grad()</code> 清零,否则这轮的梯度会和上轮的叠在一起、把方向带偏(第 11 节那五步里的第③步就是干这个)。</p>
       <figure>
         <svg viewBox="0 0 720 250" role="img" aria-label="前向计算与反向求导">
           <defs>
@@ -342,13 +342,13 @@ body{
           <path d="M 600 142 C 480 200, 360 200, 262 146" class="d-acc" marker-end="url(#m-bwd)"/>
           <text x="430" y="205" text-anchor="middle" class="el-acc">loss.backward():反着图求出每个参数的梯度 → 存进 w.grad</text>
         </svg>
-        <figcaption><span class="fig-num">图 2</span>前向(黑)把数据一路算成损失;<code>loss.backward()</code>(蓝)反着计算图,自动把"损失对参数的梯度"算好。只写前向,反向是免费的。</figcaption>
+        <figcaption><span class="fig-num">图 2</span>前向(黑)把数据一路算成损失;<code>loss.backward()</code>(蓝)反着计算图,自动把"损失对参数的梯度"算好。我只写前向,反向是免费的。</figcaption>
       </figure>
 
       <p class="handoff">有了会求导的模型,还得有源源不断、切好批的数据喂它。</p>
       <h2 id="data"><span class="no">10</span><span>数据管道 Dataset / DataLoader</span></h2>
       <p class="one-liner"><b>Dataset</b> 定义"一条样本长什么样、怎么取第 i 条";<b>DataLoader</b> 把 Dataset 包起来,负责<b>切成小批量(mini-batch)、每轮打乱、并行加载</b>,一批一批地喂给训练循环。为什么切批:一次喂全部数据太占内存、也更新太慢;一次只喂一条又太抖——小批量(常见 32/64/128)是这两者的平衡(呼应第 6 章的 mini-batch)。</p>
-      <p>直觉:训练不是把全部数据连续塞进模型,而是像"一勺一勺喂"——每一勺(一个 batch)算一次前向反向、更新一次参数。<b>DataLoader</b> 就是那个自动盛勺的人:告诉它"每勺 32 条、每轮开饭前先把菜打乱",它就在循环里不断递过来 <code>(xb, yb)</code>。<b>打乱(shuffle)</b>很重要:如果数据原本按类别排好序(先全是猫、后全是狗),不打乱的话模型会先被猫带偏、再被狗带偏,学得不稳;打乱让每一批都是杂样本,梯度方向更可靠。对自己的数据,只要把它整理成"能按下标取第 i 条"的 Dataset,DataLoader 就能直接用——第 12 节的例子用最简单的 <code>TensorDataset</code>(直接把两个张量配成对)。</p>
+      <p>直觉:训练不是把全部数据一口气塞进模型,而是像"一勺一勺喂"——每一勺(一个 batch)算一次前向反向、更新一次参数。<b>DataLoader</b> 就是那个自动盛勺的人:我告诉它"每勺 32 条、每轮开饭前先把菜打乱",它就在循环里不断递给我 <code>(xb, yb)</code>。<b>打乱(shuffle)</b>很重要:如果数据原本按类别排好序(先全是猫、后全是狗),不打乱的话模型会先被猫带偏、再被狗带偏,学得不稳;打乱让每一批都是杂样本,梯度方向更可靠。对自己的数据,我只要把它整理成"能按下标取第 i 条"的 Dataset,DataLoader 就能直接用——第 12 节的例子用最简单的 <code>TensorDataset</code>(直接把两个张量配成对)。</p>
 
       <p class="handoff">五个零件到齐,把它们拼成那个每轮都跑的循环——本章的落点。</p>
       <h2 id="loop"><span class="no">11</span><span>训练循环五步(背下来)</span></h2>
@@ -384,7 +384,7 @@ body{
       </figure>
 
       <!-- ===== 模块 D ===== -->
-      <p class="handoff">把五个零件拼成一段能跑的完整代码——这就是以后所有训练脚本的模板。</p>
+      <p class="handoff">把五个零件拼成一段能跑的完整代码——这就是我以后所有训练脚本的模板。</p>
       <h2 id="assemble"><span class="no">12</span><span>组装:一段完整的训练脚本</span></h2>
       <p>下面这段就是深度学习训练的"标准模板":数据 → 管道 → 模型 → 损失/优化器 → 五步循环。记住它的形状,以后换任何模型都是往里填空:</p>
       <div class="code-block">
@@ -422,11 +422,11 @@ body{
 <span class="line"><span style="color:#14181F;font-weight:bold">    if</span><span style="color:#14181F"> epoch </span><span style="color:#14181F;font-weight:bold">%</span><span style="color:#14181F"> 20 </span><span style="color:#14181F;font-weight:bold">==</span><span style="color:#14181F"> 0:</span></span>
 <span class="line"><span style="color:#14181F">        print(</span><span style="color:#14181F;font-weight:bold">f</span><span style="color:#557089">"epoch </span><span style="color:#557089">{</span><span style="color:#14181F">epoch</span><span style="color:#14181F;font-weight:bold">:3d</span><span style="color:#557089">}</span><span style="color:#557089">  loss </span><span style="color:#557089">{</span><span style="color:#14181F">loss.item()</span><span style="color:#14181F;font-weight:bold">:.4f</span><span style="color:#557089">}</span><span style="color:#557089">"</span><span style="color:#14181F">)</span></span></code></pre>
       </div>
-      <p>逐块对照 D01:D01 里手写 <code>loss = (y - w*x)**2</code>、手推梯度、手动 <code>w -= lr * grad</code>;这里 <code>nn.MSELoss()</code> 算损失、<code>loss.backward()</code> 求所有参数的梯度、<code>optimizer.step()</code> 更新——<b>三步各自被一行代码接管,循环的骨架却和 D01 一模一样</b>。把 <code>nn.Sequential(...)</code> 换成一个 CNN,这段代码其它部分一字不改,就是 <a href="D08-卷积神经网络CNN.html">D08</a> 的手写数字识别。这就是为什么说"五步循环是 Track B 的底盘"。</p>
+      <p>逐块对照 D01:D01 里我手写 <code>loss = (y - w*x)**2</code>、手推梯度、手动 <code>w -= lr * grad</code>;这里 <code>nn.MSELoss()</code> 替我算损失、<code>loss.backward()</code> 替我求所有参数的梯度、<code>optimizer.step()</code> 替我更新——<b>三步各自被一行代码接管,循环的骨架却和 D01 一模一样</b>。把 <code>nn.Sequential(...)</code> 换成一个 CNN,这段代码其它部分一字不改,就是 <a href="D08-卷积神经网络CNN.html">D08</a> 的手写数字识别。这就是为什么说"五步循环是 Track B 的底盘"。</p>
       <div class="challenge">
         <span class="label">进阶挑战 · 上手练习</span>
         <h3>把它真的跑起来</h3>
-        <p>①按第 6 节装好 PyTorch(CPU 版即可),把上面这段原样跑通,观察 loss 一路下降。②故意<b>删掉 <code>optimizer.zero_grad()</code></b> 那一行,再跑——看 loss 变得多离谱,亲身体会"梯度不清零"的后果。③把学习率 <code>lr=1e-3</code> 改成 <code>1.0</code>,看 loss 如何震荡/发散(呼应第 6 章学习率)。④把模型中间的 <code>16</code> 改大到 <code>128</code>,看参数变多后训练有什么不同。跑通这四步,就真正握住了训练循环。</p>
+        <p>①按第 6 节装好 PyTorch(CPU 版即可),把上面这段原样跑通,观察 loss 一路下降。②故意<b>删掉 <code>optimizer.zero_grad()</code></b> 那一行,再跑——看 loss 变得多离谱,亲身体会"梯度不清零"的后果。③把学习率 <code>lr=1e-3</code> 改成 <code>1.0</code>,看 loss 如何震荡/发散(呼应第 6 章学习率)。④把模型中间的 <code>16</code> 改大到 <code>128</code>,看参数变多后训练有什么不同。跑通这四步,我就真正握住了训练循环。</p>
       </div>
 
       <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
@@ -452,14 +452,14 @@ body{
         <div class="res">
           <div class="rh"><span class="rt2"><a href="https://zh.d2l.ai/chapter_linear-networks/linear-regression-concise.html" target="_blank" rel="noopener">动手学深度学习 · 简洁实现</a></span><span class="tags">中文 · 书+代码 · 约 30min · 免费</span></div>
           <div class="rrow"><span class="rk">是什么</span><span class="rv">中文免费的深度学习教材,这一节把线性回归分别用"手写"和"框架"实现。</span></div>
-          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">正好把 <a href="D01-线性回归全拆解.html">D01</a> 的手写版和本章的 PyTorch 版并排,最能体会框架省了什么。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">正好把 <a href="D01-线性回归全拆解.html">D01</a> 的手写版和本章的 PyTorch 版并排,最能体会框架替我省了什么。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">"线性回归的简洁实现"一节;想再补底层看前一节"从零开始实现"。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 12 节(完整训练脚本)对照读。</span></div>
         </div>
 
         <div class="res">
           <div class="rh"><span class="rt2"><a href="https://pytorch.org/get-started/locally/" target="_blank" rel="noopener">PyTorch 安装页</a></span><span class="tags">官方 · 工具 · 5min · 免费</span></div>
-          <div class="rrow"><span class="rk">是什么</span><span class="rv">按系统自动给出安装命令的官方页面。</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">按我的系统自动给出安装命令的官方页面。</span></div>
           <div class="rrow"><span class="rk">为什么选它</span><span class="rv">动手前先把环境装好;没有 GPU 选 CPU 版即可,不挡本章和 P3。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">选好系统/包管理器,复制它给的那一行命令跑一下。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">开始第 12 节的动手挑战前做一次即可。</span></div>
@@ -478,9 +478,9 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 2 · 五个常见误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
-          <tr><td>用 PyTorch 得先学会手推反向传播</td><td>正相反——框架就是自动求导,只需写前向。反向传播的道理(第 7 章)懂即可。</td></tr>
+          <tr><td>用 PyTorch 得先学会手推反向传播</td><td>正相反——框架就是替我自动求导,我只需写前向。反向传播的道理(第 7 章)懂即可。</td></tr>
           <tr><td>没有 GPU 就学不了深度学习</td><td>CPU 就能学完本章和小项目(如 P3)。GPU 只是让大模型训练更快,不是入门门槛。</td></tr>
           <tr><td>zero_grad() 可有可无</td><td>不可无。梯度是累加的,不清零会把上一轮的梯度叠进来,方向出错、训练失败。</td></tr>
           <tr><td>张量就是 NumPy 数组,没区别</td><td>用法几乎一样,但张量能上 GPU、能自动求导——这两点正是深度学习需要的。</td></tr>
@@ -490,7 +490,7 @@ body{
 
       <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
       <ol class="steps">
-        <li><b>框架的头号价值。</b>PyTorch 省掉的最要命的一件事是什么?<details><summary>参考答案</summary><p>自动求导:只写前向计算,<code>loss.backward()</code> 就把损失对所有参数的梯度自动算好,免去手推深层网络导数这件不可能的苦差。</p></details></li>
+        <li><b>框架的头号价值。</b>PyTorch 替我省掉的最要命的一件事是什么?<details><summary>参考答案</summary><p>自动求导:我只写前向计算,<code>loss.backward()</code> 就把损失对所有参数的梯度自动算好,免去手推深层网络导数这件不可能的苦差。</p></details></li>
         <li><b>五步顺序。</b>不看资料,写出训练循环那五步,并说清③为什么不能省。<details><summary>参考答案</summary><p>①前向 pred=model(x) → ②算损失 → ③梯度清零 zero_grad → ④反向 backward → ⑤更新 step。③不能省:梯度是累加进 .grad 的,不清零就会叠上一轮的梯度,方向出错。</p></details></li>
         <li><b>张量 vs 数组。</b>张量比 NumPy 数组多了哪两样本事?<details><summary>参考答案</summary><p>①能搬到 GPU 上并行加速;②能记录运算、支持自动求导(requires_grad)。日常的形状/索引/广播用法则和 NumPy 基本一致。</p></details></li>
         <li><b>为什么切小批量。</b>DataLoader 为什么要把数据切成 mini-batch、还要 shuffle?<details><summary>参考答案</summary><p>切批:整批太占内存、更新太慢,单条太抖,小批量(32/64)是平衡。shuffle:防止数据原有顺序(如先猫后狗)把训练带偏,让每批都是杂样本、梯度更可靠。</p></details></li>
@@ -511,7 +511,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
-      <p>现在手里有了一台"训练发动机"——那个五步循环。<b>Track B 接下来做的,全是往这台发动机里换不同的"模型"和"数据"。</b><a href="D08-卷积神经网络CNN.html">D08 卷积神经网络 CNN</a> 会把 <code>nn.Sequential</code> 里的线性层换成<b>卷积层</b>,让网络学会"看"图像——训练循环那五步一字不改,就能训练出一个手写数字识别器(<a href="../index.html">项目 P3</a>)。先把这一章的代码亲手跑通、把五步背熟,再上楼。</p>
+      <p>我现在手里有了一台"训练发动机"——那个五步循环。<b>Track B 接下来做的,全是往这台发动机里换不同的"模型"和"数据"。</b><a href="D08-卷积神经网络CNN.html">D08 卷积神经网络 CNN</a> 会把 <code>nn.Sequential</code> 里的线性层换成<b>卷积层</b>,让网络学会"看"图像——训练循环那五步一字不改,我就能训练出一个手写数字识别器(<a href="../index.html">项目 P3</a>)。先把这一章的代码亲手跑通、把五步背熟,再上楼。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="D06-特征工程与数据预处理.html"><span class="lb">上一章</span><span class="tt">D06 · 特征工程与数据预处理</span></a>
         <a href="D08-卷积神经网络CNN.html" class="next"><span class="lb">下一章</span><span class="tt">D08 · 卷积神经网络 CNN</span></a>

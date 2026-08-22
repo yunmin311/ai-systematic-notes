@@ -182,13 +182,13 @@ body{
       <header class="chapter-opener">
         <p class="chapter-label">深度课程 · Track A · Chapter D06 · 经典机器学习收官</p>
         <h1>特征工程与数据预处理</h1>
-        <p class="recap">前五章都在讲"用什么模型、怎么评估"。但从业者有句老话:<b>数据和特征决定了模型的上限,算法只是逼近这个上限。</b>喂进去的特征是烂的,再强的模型也救不回——<b>垃圾进,垃圾出</b>。这一章讲喂模型<b>之前</b>那些决定成败的功夫:缺失值怎么补、文字类别怎么变数字、数值要不要缩放、怎么选出真正有用的特征。最后把它们打包成一个<b>防数据泄露的流水线</b>(呼应 D05)。学完它,Track A 经典机器学习就全通了,手握做项目 <a href="../index.html">P2</a> 的全部工具。</p>
+        <p class="recap">前五章都在讲"用什么模型、怎么评估"。但从业者有句老话:<b>数据和特征决定了模型的上限,算法只是逼近这个上限。</b>喂进去的特征是烂的,再强的模型也救不回——<b>垃圾进,垃圾出</b>。这一章讲喂模型<b>之前</b>那些决定成败的功夫:缺失值怎么补、文字类别怎么变数字、数值要不要缩放、怎么选出真正有用的特征。最后把它们打包成一个<b>防数据泄露的流水线</b>(呼应 D05)。学完它,Track A 经典机器学习就全通了,我手握做项目 <a href="../index.html">P2</a> 的全部工具。</p>
       </header>
 
-      <p>图解骨架约 40 分钟,动手 + 精读约 5~7 小时。用前几章的模型作对象——会看到"同一个模型,换套特征,效果天差地别"。</p>
+      <p>图解骨架约 40 分钟,动手 + 精读约 5~7 小时。用前几章的模型作对象——我会看到"同一个模型,换套特征,效果天差地别"。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>为什么特征工程最重要——数据/特征质量常比模型选择更决定成败</li>
           <li>缺失值——删还是填?怎么填?</li>
@@ -200,7 +200,7 @@ body{
 
       <div class="callout">
         <span class="label">从哪来 · 到哪去</span>
-        <p><b>接前面:</b>缩放"谁需要谁不需要"直接续 <a href="D03-决策树随机森林与梯度提升.html">D03</a>(树不受量纲影响)和 <a href="D01-线性回归全拆解.html">D01/D02</a>(线性模型对尺度敏感);流水线防泄露续 <a href="D05-评价指标与验证深挖.html">D05</a> 的数据泄露。<b>通向后面:</b>Track A 到此收官——已备齐做 <a href="../index.html">P2 第一个预测模型</a>的全部工具。深度学习(Track B)对特征的依赖会不同:它常常<b>自己学特征</b>,这正是它的魅力。</p>
+        <p><b>接前面:</b>缩放"谁需要谁不需要"直接续 <a href="D03-决策树随机森林与梯度提升.html">D03</a>(树不受量纲影响)和 <a href="D01-线性回归全拆解.html">D01/D02</a>(线性模型对尺度敏感);流水线防泄露续 <a href="D05-评价指标与验证深挖.html">D05</a> 的数据泄露。<b>通向后面:</b>Track A 到此收官——我已备齐做 <a href="../index.html">P2 第一个预测模型</a>的全部工具。深度学习(Track B)对特征的依赖会不同:它常常<b>自己学特征</b>,这正是它的魅力。</p>
       </div>
 
       <!-- ===== 模块 A ===== -->
@@ -225,7 +225,7 @@ body{
       </ol>
 
       <h2 id="essence"><span class="no">4</span><span>一句话本质</span></h2>
-      <p class="one-liner">特征工程:<b>把原始的、脏的、模型看不懂的数据,加工成干净的、模型吃得下的、信息量高的特征。</b>这一步常常比"换个更高级的模型"带来的提升还大——因为<b>模型只能从喂的特征里学,喂不进去的信息它永远学不到。</b></p>
+      <p class="one-liner">特征工程:<b>把原始的、脏的、模型看不懂的数据,加工成干净的、模型吃得下的、信息量高的特征。</b>这一步常常比"换个更高级的模型"带来的提升还大——因为<b>模型只能从我喂的特征里学,喂不进去的信息它永远学不到。</b></p>
       <p>为什么它是"性价比之王":换模型的提升往往是边际的(随机森林换成 XGBoost,可能就好一两个点),而一个好特征、或修好一处数据问题,可能让效果<b>跳一大截</b>。原始数据几乎从不是"开箱即用"的:有缺失(有人没填年龄)、有文字("北京/上海/广州"模型不认)、有量纲差异(收入几万、年龄几十,尺度差千倍)、有冗余和噪声。特征工程就是把这些一一收拾干净,再想办法<b>把领域知识变成特征</b>喂进去(比如"注册到首单的天数"往往比"注册日期"和"首单日期"分开更有用)。这活儿没有华丽公式,却最考功力、最见效——也最需要对数据和业务的理解。</p>
 
       <h2 id="map"><span class="no">5</span><span>五块地基:概念地图</span></h2>
@@ -258,7 +258,7 @@ body{
       <h2 id="path"><span class="no">6</span><span>一条统一的学习路径(本章重点)</span></h2>
       <div class="callout go">
         <span class="label">默认主线 · 边做边学</span>
-        <p><b>Kaggle《Feature Engineering》+《Data Cleaning》微课 + Google ML 速成课「数据准备」章。</b>为什么:特征工程最忌纸上谈兵,Kaggle 微课用真实数据集手把手演示补缺失、编码、造特征,做完就会用;Google 速成课补上"为什么"。链接:<a href="https://www.kaggle.com/learn/feature-engineering" target="_blank" rel="noopener">Kaggle · Feature Engineering</a>、<a href="https://www.kaggle.com/learn/data-cleaning" target="_blank" rel="noopener">Data Cleaning</a>、<a href="https://developers.google.com/machine-learning/data-prep" target="_blank" rel="noopener">Google · Data Prep</a>。</p>
+        <p><b>Kaggle《Feature Engineering》+《Data Cleaning》微课 + Google ML 速成课「数据准备」章。</b>为什么:特征工程最忌纸上谈兵,Kaggle 微课用真实数据集手把手带我补缺失、编码、造特征,做完就会用;Google 速成课补上"为什么"。链接:<a href="https://www.kaggle.com/learn/feature-engineering" target="_blank" rel="noopener">Kaggle · Feature Engineering</a>、<a href="https://www.kaggle.com/learn/data-cleaning" target="_blank" rel="noopener">Data Cleaning</a>、<a href="https://developers.google.com/machine-learning/data-prep" target="_blank" rel="noopener">Google · Data Prep</a>。</p>
       </div>
       <p><b>再配一件:</b></p>
       <ul>
@@ -268,13 +268,13 @@ body{
       <!-- ===== 模块 C ===== -->
       <p class="handoff">先认清这件事到底有多重要。</p>
       <h2 id="why"><span class="no">7</span><span>为什么特征工程最重要</span></h2>
-      <p class="one-liner">一句业界共识:<b>"垃圾进,垃圾出"</b>。模型只是从特征里学规律的机器——没喂进去的信息,它永远学不到;喂了误导性的脏数据,它就学歪。所以在真实项目里,<b>数据清洗 + 特征构造常常占掉大半时间,也带来大半提升。</b></p>
-      <p>一个直观对比:同样用随机森林,A 组直接把原始脏数据丢进去,B 组花两天补好缺失、编好类别、造了两个业务相关的新特征——B 组的效果往往甩开 A 组一大截,远超"把随机森林换成 XGBoost"那点提升。这不是说模型不重要,而是说<b>特征是地基、模型是楼</b>:地基不牢,楼盖多高都晃。对从产品视角切入的人,这其实是好消息——特征工程拼的不是数学,而是<b>对数据和业务的理解</b>,这正是长处。接下来三节,是三类最常见、几乎每个项目都要做的清洗加工。</p>
+      <p class="one-liner">一句业界共识:<b>"垃圾进,垃圾出"</b>。模型只是从特征里学规律的机器——我没喂进去的信息,它永远学不到;我喂了误导性的脏数据,它就学歪。所以在真实项目里,<b>数据清洗 + 特征构造常常占掉大半时间,也带来大半提升。</b></p>
+      <p>一个直观对比:同样用随机森林,A 组直接把原始脏数据丢进去,B 组花两天补好缺失、编好类别、造了两个业务相关的新特征——B 组的效果往往甩开 A 组一大截,远超"把随机森林换成 XGBoost"那点提升。这不是说模型不重要,而是说<b>特征是地基、模型是楼</b>:地基不牢,楼盖多高都晃。对我这样从产品视角切入的人,这其实是好消息——特征工程拼的不是数学,而是<b>对数据和业务的理解</b>,这正是我的长处。接下来三节,是三类最常见、几乎每个项目都要做的清洗加工。</p>
 
       <p class="handoff">最常见的第一个脏问题:数据有窟窿。</p>
       <h2 id="missing"><span class="no">8</span><span>缺失值处理</span></h2>
       <p class="one-liner">真实数据总有缺失(没填的年龄、漏采的传感器读数)。多数模型不能直接吃带窟窿的数据,得先处理:<b>要么删(删行或删列),要么填(用均值/中位数/众数,或用模型预测)</b>。选哪种看"缺多少、为什么缺"。</p>
-      <p>判断的诀窍:<b>删</b>——某列缺了绝大部分(如 90% 是空),这列基本没信息,删列;某几行零星缺、且样本很多,删这几行也无妨。但别轻易删:删行会丢样本,某列缺失本身可能就是信号(比如"没填收入"的人可能有共性)。<b>填(imputation)</b>——数值列常用<b>中位数</b>(比均值抗离群点),类别列用<b>众数</b>(最常见的那个),讲究的用其它特征<b>预测</b>缺失值。还有个实用技巧:填的同时<b>加一列"这里原本是不是缺的"</b>(缺失标记),把"缺失"这个信息也保留给模型。<b>关键纪律</b>:填充用的统计量(如中位数)必须只从<b>训练集</b>算,再套用到验证/测试——否则就是 D05 说的数据泄露(第 12 节的流水线自动守住这条)。</p>
+      <p>判断的诀窍:<b>删</b>——某列缺了绝大部分(如 90% 是空),这列基本没信息,删列;某几行零星缺、且样本很多,删这几行也无妨。但别轻易删:删行会丢样本,某列缺失本身可能就是信号(比如"没填收入"的人可能有共性)。<b>填(imputation)</b>——数值列常用<b>中位数</b>(比均值抗离群点),类别列用<b>众数</b>(最常见的那个),讲究的用其它特征<b>预测</b>缺失值。还有个实用技巧:填的同时<b>加一列"这里原本是不是缺的"</b>(缺失标记),把"缺失"这个信息也保留给模型。<b>关键纪律</b>:填充用的统计量(如中位数)必须只从<b>训练集</b>算,再套用到验证/测试——否则就是 D05 说的数据泄露(第 12 节的流水线自动帮我守住这条)。</p>
 
       <p class="handoff">第二个:模型只认数字,但很多特征是文字。</p>
       <h2 id="encoding"><span class="no">9</span><span>类别编码</span></h2>
@@ -312,7 +312,7 @@ body{
       <p class="handoff">收拾干净之后:留哪些特征、怎么造新的、怎么安全地串起来。</p>
       <h2 id="select"><span class="no">11</span><span>特征选择、构造与流水线</span></h2>
       <p class="one-liner"><b>选择</b>:去掉没用/冗余的特征(它们只添噪声、拖慢模型、还助长过拟合)——少而精。<b>构造</b>:用领域知识造出信息量更高的新特征(把两列组合、把连续值分箱)。<b>流水线</b>:把"预处理 + 模型"打包成一个整体,让预处理只在训练集上拟合——从机制上杜绝数据泄露(D05)。</p>
-      <p><b>选择</b>的直觉:不是特征越多越好。冗余特征(如"身高厘米"和"身高米")、无关特征只会稀释信号、增加过拟合风险;可以看特征重要性(D03)、相关性来砍。<b>构造</b>是最能体现功力的一环:模型学不会的关系,可以手动喂给它——例如把"注册日期"和"首单日期"相减,造出"决策天数"这个强特征;把连续的年龄<b>分箱</b>成"少年/青年/中年/老年"有时更稳。<b>流水线(Pipeline)</b>是工程上的定海神针:它把填充、编码、缩放、模型串成一条链,<code>fit</code> 时全部只学训练集的统计量,<code>predict</code> 时原样套用——再也不会手滑在划分前就标准化全量数据(D05 的经典泄露)。<b>先清洗、再选择、边构造,全程装进流水线</b>——这就是专业的数据准备姿势。</p>
+      <p><b>选择</b>的直觉:不是特征越多越好。冗余特征(如"身高厘米"和"身高米")、无关特征只会稀释信号、增加过拟合风险;可以看特征重要性(D03)、相关性来砍。<b>构造</b>是最能体现功力的一环:模型学不会的关系,我可以手动喂给它——例如把"注册日期"和"首单日期"相减,造出"决策天数"这个强特征;把连续的年龄<b>分箱</b>成"少年/青年/中年/老年"有时更稳。<b>流水线(Pipeline)</b>是工程上的定海神针:它把填充、编码、缩放、模型串成一条链,<code>fit</code> 时全部只学训练集的统计量,<code>predict</code> 时原样套用——我再也不会手滑在划分前就标准化全量数据(D05 的经典泄露)。<b>先清洗、再选择、边构造,全程装进流水线</b>——这就是专业的数据准备姿势。</p>
 
       <!-- ===== 模块 D ===== -->
       <p class="handoff">把这一整套——填充、编码、缩放、模型——用一条流水线安全地串起来。</p>
@@ -346,11 +346,11 @@ body{
 <span class="line"><span style="color:#14181F">model.fit(X_train, y_train)         </span><span style="color:#8B95A8;font-style:italic"># 预处理只在训练集上拟合 → 天然防泄露(D05)</span></span>
 <span class="line"><span style="color:#14181F">print(model.score(X_test, y_test))  </span><span style="color:#8B95A8;font-style:italic"># 测试时自动套用同一套变换</span></span></code></pre>
       </div>
-      <p>逐块对照:数值列用中位数填(②)+ 标准化(④);类别列用众数填(②)+ one-hot(⑨);<code>ColumnTransformer</code> 让不同列走不同处理;最外层 <code>Pipeline</code> 把整套预处理和模型<b>捆成一个对象</b>。最关键的是:<code>model.fit(X_train, ...)</code> 时,填充的中位数、缩放的均值、one-hot 的类别<b>全部只从训练集学</b>;<code>model.score(X_test, ...)</code> 时原样套用——<b>从机制上不可能再犯"划分前标准化全量数据"的泄露错误</b>(D05)。这也让整套东西能干净地进 D05 的交叉验证和网格搜索。<b>这就是专业项目里数据准备的标准姿势。</b></p>
+      <p>逐块对照:数值列用中位数填(②)+ 标准化(④);类别列用众数填(②)+ one-hot(⑨);<code>ColumnTransformer</code> 让不同列走不同处理;最外层 <code>Pipeline</code> 把整套预处理和模型<b>捆成一个对象</b>。最关键的是:<code>model.fit(X_train, ...)</code> 时,填充的中位数、缩放的均值、one-hot 的类别<b>全部只从训练集学</b>;<code>model.score(X_test, ...)</code> 时原样套用——<b>我从机制上不可能再犯"划分前标准化全量数据"的泄露错误</b>(D05)。这也让整套东西能干净地进 D05 的交叉验证和网格搜索。<b>这就是专业项目里数据准备的标准姿势。</b></p>
       <div class="challenge">
         <span class="label">进阶挑战 · 收官练习</span>
         <h3>把 Track A 串成一个项目</h3>
-        <p>①拿一个带缺失和文字列的真实数据集(如 Titanic),用上面这条流水线跑通。②对比"手动在划分前标准化全量" vs "用流水线",看离线分数差多少(体会泄露的假象)。③造一个新特征(如 Titanic 里"家庭人数=兄妹数+父母子女数+1"),看重要性排第几。④把整条流水线丢进 <a href="D05-评价指标与验证深挖.html">D05 的 GridSearchCV</a>,同时搜"填充策略"和"模型参数"——就完成了一个专业级的建模流程,这正是<a href="../index.html">项目 P2</a>。</p>
+        <p>①拿一个带缺失和文字列的真实数据集(如 Titanic),用上面这条流水线跑通。②对比"手动在划分前标准化全量" vs "用流水线",看离线分数差多少(体会泄露的假象)。③造一个新特征(如 Titanic 里"家庭人数=兄妹数+父母子女数+1"),看重要性排第几。④把整条流水线丢进 <a href="D05-评价指标与验证深挖.html">D05 的 GridSearchCV</a>,同时搜"填充策略"和"模型参数"——我就完成了一个专业级的建模流程,这正是<a href="../index.html">项目 P2</a>。</p>
       </div>
 
       <h2 id="reflist"><span class="no">13</span><span>外部资源 · 骨架之上的血肉</span></h2>
@@ -358,8 +358,8 @@ body{
       <div class="reslist">
         <div class="res spine-card">
           <div class="rh"><span class="rt2"><a href="https://www.kaggle.com/learn/feature-engineering" target="_blank" rel="noopener">Kaggle · Feature Engineering 微课</a></span><span class="spine">默认主线 · 边做边学</span><span class="tags">互动课 · 英文 · 3–4h · 免费</span></div>
-          <div class="rrow"><span class="rk">是什么</span><span class="rv">用真实数据集手把手演示补缺失、编码、造特征的免费互动微课。</span></div>
-          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">特征工程最忌纸上谈兵;这门课让人在浏览器里边做边学,做完就会用。</span></div>
+          <div class="rrow"><span class="rk">是什么</span><span class="rv">用真实数据集手把手带我补缺失、编码、造特征的免费互动微课。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">特征工程最忌纸上谈兵;这门课让我在浏览器里边做边学,做完就会用。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全微课(每课都有练习,一定动手)。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">配「类别编码」「特征选择/构造」几节。</span></div>
         </div>
@@ -389,7 +389,7 @@ body{
       <h2 id="myths"><span class="no">14</span><span>常见误区 · 实际情况</span></h2>
       <table class="tbl">
         <caption>表 2 · 五个常见误区</caption>
-        <thead><tr><th>可能以为</th><th>实际情况</th></tr></thead>
+        <thead><tr><th>我可能以为</th><th>实际情况</th></tr></thead>
         <tbody>
           <tr><td>换个更强的模型是提升的关键</td><td>多数时候修数据/造特征提升更大。特征是地基,模型是楼。</td></tr>
           <tr><td>缺失值直接删了最省事</td><td>会丢样本、丢信息(缺失本身可能是信号)。多数时候该填,并加缺失标记。</td></tr>
@@ -401,7 +401,7 @@ body{
 
       <h2 id="practice"><span class="no">15</span><span>自测 · 思考题</span></h2>
       <ol class="steps">
-        <li><b>一句话本质。</b>为什么特征常比模型更决定结果?<details><summary>参考答案</summary><p>模型只能从喂的特征里学,喂不进去的信息学不到("垃圾进垃圾出");修数据/造特征的提升常大于换模型。</p></details></li>
+        <li><b>一句话本质。</b>为什么特征常比模型更决定结果?<details><summary>参考答案</summary><p>模型只能从我喂的特征里学,喂不进去的信息学不到("垃圾进垃圾出");修数据/造特征的提升常大于换模型。</p></details></li>
         <li><b>编码。</b>为什么不能把无序类别编成 1/2/3?<details><summary>参考答案</summary><p>会强加不存在的大小/顺序关系(蓝&gt;黄&gt;红),误导模型。要用 one-hot 让各类平等;有序类别才用 1/2/3。</p></details></li>
         <li><b>缩放。</b>哪些模型需要缩放、哪些不用?<details><summary>参考答案</summary><p>靠距离/权重的(线性、逻辑、KNN、神经网络)需要;树模型不用,它按特征逐个切、不受量纲影响。</p></details></li>
         <li><b>流水线。</b>Pipeline 怎么防数据泄露?<details><summary>参考答案</summary><p>把预处理和模型打包,fit 时统计量(中位数/均值/类别)只从训练集学,predict 时套用——不可能在划分前污染全量。</p></details></li>
@@ -422,8 +422,8 @@ body{
       </div>
 
       <h2 id="next"><span class="no">17</span><span>Track A 收官 · 通向 Track B</span></h2>
-      <p>恭喜——<b>Track A 经典机器学习全通了</b>:从线性回归的三件套,到分类、树与集成、无监督、科学评估,再到这一章的数据准备。已经能独立完成一个像样的表格数据建模项目——<b>去做 <a href="../index.html">项目 P2 第一个预测模型</a>吧</b>,把这六章拧成一次真实的实战。</p>
-      <p>接下来 <b>Track B 深度学习</b>(D07 起)会带来一次思路转变:经典机器学习靠<b>人</b>手工做特征工程,而深度学习让<b>网络自己从原始数据里学特征</b>——这既是它的威力(省去大量手工),也是它的代价(要海量数据和算力、可解释性变差)。<a href="../index.html">D07 · PyTorch 与完整训练循环</a>会把 D01 那个手写梯度下降升级成真正的深度学习训练循环。地基已经打牢,上楼吧。</p>
+      <p>恭喜——<b>Track A 经典机器学习全通了</b>:从线性回归的三件套,到分类、树与集成、无监督、科学评估,再到这一章的数据准备。我已经能独立完成一个像样的表格数据建模项目——<b>去做 <a href="../index.html">项目 P2 第一个预测模型</a>吧</b>,把这六章拧成一次真实的实战。</p>
+      <p>接下来 <b>Track B 深度学习</b>(D07 起)会带来一次思路转变:经典机器学习靠<b>我</b>手工做特征工程,而深度学习让<b>网络自己从原始数据里学特征</b>——这既是它的威力(省去大量手工),也是它的代价(要海量数据和算力、可解释性变差)。<a href="../index.html">D07 · PyTorch 与完整训练循环</a>会把 D01 那个手写梯度下降升级成真正的深度学习训练循环。地基已经打牢,上楼吧。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="D05-评价指标与验证深挖.html"><span class="lb">上一章</span><span class="tt">D05 · 评价指标与验证深挖</span></a>
         <a href="D07-PyTorch与完整训练循环.html" class="next"><span class="lb">下一 Track</span><span class="tt">D07 · PyTorch 与完整训练循环</span></a>

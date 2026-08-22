@@ -190,7 +190,7 @@ body{
       <p>图解骨架约 30 分钟,精读 + 动手约 4~5 小时。读完这一章,再看任何大模型的结构图和参数配置(层数、隐藏维度、头数),都能对上号。</p>
 
       <section class="schema-panel">
-        <p class="label">这一章要立起来的骨架</p>
+        <p class="label">读完这一章,我脑子里会立起来的骨架</p>
         <ul>
           <li>一个块的四件套——多头注意力 + 前馈 + 残差 + 层归一化</li>
           <li>前馈层 FFN——注意力负责"交流",前馈负责"各自消化"</li>
@@ -334,7 +334,7 @@ body{
           <tr><td>编码器 + 解码器</td><td>编码器读全文,解码器带掩码生成</td><td>翻译、摘要</td><td>原论文、T5</td></tr>
         </tbody>
       </table>
-      <p>为什么生成式模型选了"只用解码器":任务本身就是"根据前文写下一个词",不需要一个单独的编码器;而且结构简单、易于扩大规模——事实证明,把 decoder-only 堆大 + 喂海量数据,能力就会持续上涨(这正是 <a href="D16-预训练微调与RLHF.html">D16</a> 讲的规模化路线)。<b>所以今天用的每一个大模型,几乎都是"带掩码的注意力块堆几十层"这一个东西。</b></p>
+      <p>为什么生成式模型选了"只用解码器":任务本身就是"根据前文写下一个词",不需要一个单独的编码器;而且结构简单、易于扩大规模——事实证明,把 decoder-only 堆大 + 喂海量数据,能力就会持续上涨(这正是 <a href="D16-预训练微调与RLHF.html">D16</a> 讲的规模化路线)。<b>所以我今天用的每一个大模型,几乎都是"带掩码的注意力块堆几十层"这一个东西。</b></p>
 
       <p class="handoff">最后用一段代码把整块装出来——真的就这么短。</p>
       <h2 id="assemble"><span class="no">12</span><span>组装:一个块 + 一个迷你模型</span></h2>
@@ -401,7 +401,7 @@ body{
         <div class="res spine-card">
           <div class="rh"><span class="rt2"><a href="https://www.youtube.com/watch?v=kCc8FmEb1nY" target="_blank" rel="noopener">Karpathy · Let's build GPT from scratch</a></span><span class="spine">并列主线 · 动手</span><span class="tags">视频 · 英文(可开字幕) · 2h · 免费</span></div>
           <div class="rrow"><span class="rk">是什么</span><span class="rv">从空白文件一行行写出一个能训练的 GPT 的完整实录。</span></div>
-          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章第 12 节给了骨架,它把这副骨架真的训起来——"看懂"到"做出来"的那一步。</span></div>
+          <div class="rrow"><span class="rk">为什么选它</span><span class="rv">本章第 12 节给了骨架,它带我把这副骨架真的训起来——"看懂"到"做出来"的那一步。</span></div>
           <div class="rrow"><span class="rk">精确看哪段</span><span class="rv">全片;从实现 self-attention 到堆 block 那一段最关键。</span></div>
           <div class="rrow"><span class="rk">对应本章</span><span class="rv">配第 12 节代码跟着敲。</span></div>
         </div>
@@ -457,7 +457,7 @@ body{
       </div>
 
       <h2 id="next"><span class="no">17</span><span>本章与下一章的连接</span></h2>
-      <p>骨架造好了,但此刻它<b>什么也不会</b>——所有参数都还是随机数。要让这副骨架变成会写代码、会聊天的模型,得往里灌进海量文本反复训练,再教它"听话"。<a href="D16-预训练微调与RLHF.html">D16 · 预训练、微调与 RLHF</a> 讲的就是这三个阶段:<b>预训练</b>(读半个互联网,学会语言本身)、<b>微调</b>(学会按指令做事)、<b>RLHF/DPO</b>(学会给出人类更喜欢的回答)。它还会算清一笔账:哪一段是几千万美元的事、哪一段是自己也碰得到的。</p>
+      <p>骨架造好了,但此刻它<b>什么也不会</b>——所有参数都还是随机数。要让这副骨架变成会写代码、会聊天的模型,得往里灌进海量文本反复训练,再教它"听话"。<a href="D16-预训练微调与RLHF.html">D16 · 预训练、微调与 RLHF</a> 讲的就是这三个阶段:<b>预训练</b>(读半个互联网,学会语言本身)、<b>微调</b>(学会按指令做事)、<b>RLHF/DPO</b>(学会给出人类更喜欢的回答)。它还会算清一笔账:哪一段是几千万美元的事、哪一段是我自己也碰得到的。</p>
       <nav class="chapter-nav" aria-label="章节导航">
         <a href="D14-注意力机制逐步手算.html"><span class="lb">上一章</span><span class="tt">D14 · 注意力机制逐步手算</span></a>
         <a href="D16-预训练微调与RLHF.html" class="next"><span class="lb">下一章</span><span class="tt">D16 · 预训练、微调与 RLHF</span></a>
