@@ -129,7 +129,7 @@ article h2,article [id]{scroll-margin-top:64px;}
 .toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
 .toc-group{margin-bottom:14px;}
 .toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
-.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
 .toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
 .toc-sidebar a:hover{color:var(--ink);}
 .toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
@@ -287,10 +287,35 @@ print("\n各大区客单价(总额 / 总单数):")
 print((df.groupby("region")["amount"].sum() / df.groupby("region")["orders"].sum()).round(1))</textarea>
         <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
       </div>
-      <div class="expect"><b>应该看到</b>每个大区的总额:   华东 310 · 华北 260 · 华南 240
-每个品类的平均金额: 文具 85.0 · 纸品 156.7
-各大区客单价:     华东 44.3 · 华北 52.0 · 华南 30.0
-(上面还会先原样打印那张 7 行的表)</div>
+      <div class="expect"><b>应该看到</b>原始表:
+  region category  amount  orders
+0     华东       纸品     120       3
+1     华东       文具      80       2
+2     华北       纸品     200       4
+3     华北       文具      60       1
+4     华南       纸品     150       5
+5     华南       文具      90       3
+6     华东       文具     110       2
+
+每个大区的总额:
+region
+华东    310
+华北    260
+华南    240
+Name: amount, dtype: int64
+
+每个品类的平均金额:
+category
+文具     85.0
+纸品    156.7
+Name: amount, dtype: float64
+
+各大区客单价(总额 / 总单数):
+region
+华东    44.3
+华北    52.0
+华南    30.0
+dtype: float64</div>
       <p><code>groupby("region")["amount"].sum()</code> 这一行就是「按大区分组,对金额求和」。注意最后一问:<b>客单价不能先按行算好再平均</b>——那是「平均的平均」,分母被摊平了。正确做法是总额除以总单数,这类错误在真实报表里非常常见。</p>
 
       <h2 id="s5"><span class="no">5</span><span>缺失值不是 0</span></h2>
@@ -312,8 +337,10 @@ print("\ncount(非空个数) =", df["score"].count())
 print("mean(平均)       =", df["score"].mean())
 print("sum(求和)        =", df["score"].sum())
 print("\n如果把缺失当 0 来算,平均会变成:", df["score"].fillna(0).mean())
-print("缺失情况:")
-print(df.isna().sum())</textarea>
+# 直接 print(isna().sum()) 会打出多行带 dtype 的 Series,
+# 拼成一行更清爽,输出也更好对照。
+miss = df.isna().sum()
+print("缺失情况: " + " · ".join(f"{col} {int(n)}" for col, n in miss.items()))</textarea>
         <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
       </div>
       <div class="expect"><b>应该看到</b>  name  score
@@ -327,7 +354,7 @@ mean(平均)       = 80.0
 sum(求和)        = 160.0
 
 如果把缺失当 0 来算,平均会变成: 40.0
-缺失情况:  name 0 · score 2</div>
+缺失情况: name 0 · score 2</div>
       <p><code>mean()</code> 默认<b>跳过</b>缺失值:分母是 2 不是 4。填 0 再平均得到的是另一个数,而且是错的——「没考」和「考了 0 分」是两回事。<a href="../深度课程/D06-特征工程与数据预处理.html">D06</a> 会讲什么时候该填、填什么。</p>
 
       <h2 id="tweak"><span class="no">6</span><span>自己改一改</span></h2>

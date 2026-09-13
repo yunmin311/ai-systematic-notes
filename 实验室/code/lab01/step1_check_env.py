@@ -6,4 +6,4 @@ import platform   # platform:查询操作系统信息的标准库模块
 
 print("Python 版本:", sys.version.split()[0])   # sys.version 是一大段文字,取开头的版本号
 print("运行平台:", platform.system())            # Windows / Linux / Darwin(macOS)
-print("如果你能看到上面两行,说明 Python 已经在为你干活了")
+print("如果能看到上面两行,说明 Python 已经跑起来了")

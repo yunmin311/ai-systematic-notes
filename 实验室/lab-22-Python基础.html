@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-22 · 五块地基:用一个真任务把它们串起来</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../基础课程/02-Python基础.html">第 2 章</a><span class="sep">—</span>
+      <a href="lab-22-Python基础.html" class="current">lab-22 Python 基础</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-22 · 配套 第 2 章 Python 基础 · 纯 Python,不装任何东西</p>
+        <h1>五块地基:用一个真任务把它们串起来</h1>
+        <p class="recap">第 2 章把整门语言收成五块:变量、容器、控制流、函数、读报错。这一节不逐条讲语法,而是用一个真能干活的小任务——<b>统计一段文字里每个词出现几次</b>——把前四块一次用上,再故意制造一个报错,把第五块也练掉。<b>读懂报错这件事,在 AI 帮写代码的时代比背语法更值钱。</b></p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>列表(按位置取)和字典(按名字取)两种容器分工不同</li>
+          <li>for 挨个过、if 分情况、while 反复做,三种控制流各管一件事</li>
+          <li>同一段逻辑包成函数之后,换个输入就能重用</li>
+          <li>一个真实报错:<code>ZeroDivisionError: division by zero</code>,以及读它的三步</li>
+          <li>加上一道闸之后,空列表不再让程序崩</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../基础课程/02-Python基础.html">第 2 章</a> 的五块地基。数组和表格是下一章 (<a href="lab-02-数组与表.html">lab-02</a>),环境怎么建在 <a href="lab-01-规则与学习.html">lab-01</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p>两段都<b>只用 Python 本身</b>,不装任何第三方库。<b>方式 A</b> 点「▶ 运行」(Pyodide);<b>方式 B</b> 在本机终端跑 <code>实验室\code\lab22\</code> 下的同名文件——第 2 章要求的 <code>.venv</code> 里就能直接跑。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>五块地基听起来零碎,其实只有一条主线:<b>给数据起名字(变量)→ 把数据装起来(容器)→ 决定怎么走(控制流)→ 打包成可重用的块(函数)→ 出错时看懂它在说什么(读报错)。</b>这一节用一个任务把它们串成一条,看看每一块在真实代码里落在哪个位置。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>变量、容器、控制流</span></h2>
+      <p>任务:统计一句话里每个词出现了几次。这段代码里,前三块地基各出现一次。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_containers.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="34"># 五块地基里的前三块:变量、容器、控制流。
+# 任务很小:统计一句话里每个词出现了几次——这三块刚好都用上。
+
+text = "猫 喜欢 吃 鱼 狗 喜欢 吃 骨头 猫 喜欢 睡 觉"
+words = text.split()                 # 容器①:列表 —— 一串按顺序排的东西
+print("切成词之后:", words)
+print(f"一共 {len(words)} 个词\n")
+
+counts = {}                          # 容器②:字典 —— 一个词对应一个次数
+for w in words:                      # 控制流①:for —— 把列表里的东西挨个过一遍
+    if w in counts:                  # 控制流②:if —— 分情况处理
+        counts[w] += 1
+    else:
+        counts[w] = 1
+
+print("每个词出现了几次:")
+for w, n in counts.items():
+    print(f"   {w:&lt;4} {n} 次  {'█' * n}")
+
+# 控制流③:while —— 反复做,直到条件不成立(这里手写一遍 max,看清它怎么找最大值)
+nums = list(counts.values())
+i, target = 0, 0
+while i &lt; len(nums):
+    if nums[i] &gt; target:
+        target = nums[i]
+    i += 1
+best = []
+for w, n in counts.items():
+    if n == target:
+        best.append(w)
+
+print(f"\n出现最多的是「{'、'.join(best)}」,各 {target} 次。")
+print("\n回头对一遍那五块地基:")
+print("   变量   text / words / counts / target —— 给数据起名字")
+print("   容器   列表(有序、按位置取)和字典(按名字取)—— 装东西的两种盒子")
+print("   控制流 for 挨个过、if 分情况、while 反复做 —— 决定代码怎么走")
+print("   这三块加起来,已经能写出「统计词频」这种真能干活的程序了。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>切成词之后: ['猫', '喜欢', '吃', '鱼', '狗', '喜欢', '吃', '骨头', '猫', '喜欢', '睡', '觉']
+一共 12 个词
+
+每个词出现了几次:
+   猫    2 次  ██
+   喜欢   3 次  ███
+   吃    2 次  ██
+   鱼    1 次  █
+   狗    1 次  █
+   骨头   1 次  █
+   睡    1 次  █
+   觉    1 次  █
+
+出现最多的是「喜欢」,各 3 次。
+
+回头对一遍那五块地基:
+   变量   text / words / counts / target —— 给数据起名字
+   容器   列表(有序、按位置取)和字典(按名字取)—— 装东西的两种盒子
+   控制流 for 挨个过、if 分情况、while 反复做 —— 决定代码怎么走
+   这三块加起来,已经能写出「统计词频」这种真能干活的程序了。</div>
+      <p>两种容器的分工值得记牢:<b>列表按位置取</b>(<code>words[0]</code> 是第一个词),<b>字典按名字取</b>(<code>counts["猫"]</code> 直接给出猫出现几次)。要按顺序一排排处理就用列表,要按名字查东西就用字典——这个词频统计里两个都用上了。<br>控制流那三种也各管一件事:<b>for</b> 是「把这一串东西挨个过一遍」,<b>if</b> 是「分情况处理」,<b>while</b> 是「反复做,直到条件不成立」。代码里那个 <code>while</code> 是在手写一遍 <code>max()</code>——用现成的当然更短,但手写一遍才看得清「找最大值」到底是怎么找的。<b>读别人(或 AI)写的代码时,这三块就是骨架</b>:先认出哪个是容器、哪个是循环,剩下的细节才挂得上去。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>函数与读报错</span></h2>
+      <p>把上一段的逻辑包成函数,然后故意让它出错,看报错该怎么读。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_function_error.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="34"># 后两块地基:函数 和 读报错。
+# 函数 = 把一段会重复用的逻辑打包,起个名字,以后一行调用它。
+
+def average(nums):
+    """求平均数。传空列表进去会有惊喜。"""
+    return sum(nums) / len(nums)
+
+def word_count(text):
+    """把第 1 步那段逻辑包成函数:给它一段文字,还回一个词频字典。"""
+    counts = {}
+    for w in text.split():
+        counts[w] = counts.get(w, 0) + 1     # get(键, 默认值):键不在时就当它是 0
+    return counts
+
+print("函数用起来就一行:")
+print(f"   average([4.2, 7.9, 12.1]) = {average([4.2, 7.9, 12.1]):.4f}")
+print(f"   word_count('猫 吃 鱼 猫') = {word_count('猫 吃 鱼 猫')}")
+print("   同一段逻辑,换个输入就能重用 —— 这就是函数的全部意义。")
+
+print("\n再看最常见的一类报错:")
+try:
+    average([])
+except ZeroDivisionError as e:
+    print(f"   调用 average([]) 报错 →  {type(e).__name__}: {e}")
+
+print("\n报错信息要从下往上看,一共三步:")
+print("   ① 最后一行   ZeroDivisionError: division by zero —— 出了什么错")
+print("   ② 倒数第二行  File \"...\", line N, in average —— 哪一行代码出的错")
+print("   ③ 回到那一行   len(nums) 是 0,除以 0 当然不行")
+print("\n读懂这三步,再回去改:要么让函数拦住空列表,要么在调用前先判断。")
+print("AI 生成的代码跑不通时,这一套读法就是最快的那条线索。")
+
+def average_safe(nums):
+    """加上一道闸:空列表直接返回 None,而不是崩掉。"""
+    if not nums:
+        return None
+    return sum(nums) / len(nums)
+
+print(f"\n改完之后:average_safe([]) = {average_safe([])}(不崩了)")
+print(f"          average_safe([1, 2, 3]) = {average_safe([1, 2, 3]):.4f}")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>函数用起来就一行:
+   average([4.2, 7.9, 12.1]) = 8.0667
+   word_count('猫 吃 鱼 猫') = {'猫': 2, '吃': 1, '鱼': 1}
+   同一段逻辑,换个输入就能重用 —— 这就是函数的全部意义。
+
+再看最常见的一类报错:
+   调用 average([]) 报错 →  ZeroDivisionError: division by zero
+
+报错信息要从下往上看,一共三步:
+   ① 最后一行   ZeroDivisionError: division by zero —— 出了什么错
+   ② 倒数第二行  File "...", line N, in average —— 哪一行代码出的错
+   ③ 回到那一行   len(nums) 是 0,除以 0 当然不行
+
+读懂这三步,再回去改:要么让函数拦住空列表,要么在调用前先判断。
+AI 生成的代码跑不通时,这一套读法就是最快的那条线索。
+
+改完之后:average_safe([]) = None(不崩了)
+          average_safe([1, 2, 3]) = 2.0000</div>
+      <p>函数那一半很直白:<b>把会重复用的逻辑打包、起名字、以后一行调用它</b>。代码里 <code>word_count</code> 就是把第 1 步那一整段循环包了起来——如果每个地方都重抄一遍,改一处就要改十处。<br>另一半是这一节真正要练的:<b>读报错</b>。上面那三步读法(最后一行看错什么、倒数第二行看哪一行、再回去看那一行的变量)是通用的,不管错在 Python 标准库、自己的函数,还是 AI 生成的几百行代码里。<b>报错信息不是障碍,它是程序给出的、最精确的一句诊断。</b>很多人卡住不是因为不会写,是因为没读——看到一片红色就重写,反而把问题盖住了。<br>最后那个 <code>average_safe</code> 演示了「加一道闸」:问题不是靠重跑解决的,是靠<b>在那个会出事的地方明确判断一次</b>。</p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 第 1 步把 <code>text</code> 换成一段英文再跑。<code>split()</code> 会怎么切?中文和英文在这件事上差在哪?<br>
+        <b>②</b> 第 1 步把 <code>while</code> 那一段整个删掉,换成 <code>target = max(counts.values())</code>。结果一样吗?<b>哪个更好读?</b><br>
+        <b>③</b> 第 1 步把 <code>counts = {}</code> 改成 <code>counts = []</code> 再跑。会报什么错?按那三步读一遍——<b>这正是「容器选错了」的现场。</b><br>
+        <b>④</b> 第 2 步把 <code>average_safe</code> 的闸去掉,直接调用 <code>average([])</code>(不放在 <code>try</code> 里),看完整的报错长什么样。<b>对比一下:报错里出现了几次 <code>average</code>?</b><br>
+        <b>⑤</b> 第 2 步给 <code>word_count</code> 加一个参数 <code>top=None</code>:传了数字就只返回前几名。这是把函数从「能用」改到「好用」的常见一步。</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td><code>NameError: name 'x' is not defined</code></td><td>用了一个还没赋值的变量名,通常是拼错了</td><td>对着报错给的行号,看那个名字和定义处是不是一模一样(大小写、下划线)</td></tr>
+            <tr><td><code>IndentationError</code></td><td>缩进不一致——Python 靠缩进划分代码块</td><td>同一个块里统一用 4 个空格,别混 Tab</td></tr>
+            <tr><td><code>TypeError: unsupported operand type(s)</code></td><td>把两种不该相加的东西加在了一起(比如数字和字符串)</td><td>按那三步读报错,看那一行的变量各自是什么类型</td></tr>
+            <tr><td>程序没有任何输出</td><td>只定义了函数,但没有调用它</td><td>定义不等于执行;要写一行 <code>average([1,2,3])</code> 才会真的跑</td></tr>
+            <tr><td>循环停不下来</td><td><code>while</code> 的条件永远成立(常见是忘了 <code>i += 1</code>)</td><td>先按 Ctrl+C 停下,再检查循环体里有没有改变条件的那一行</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">第 2 章说「整门语言几百页,AI 代码里反复出现的核心只有五块」。这一节证明了这句话:<b>一个真能干活的词频统计,加一次真实的报错处理,五块全用上了,总共不到四十行。</b><br>后面所有章节的代码——数组、模型训练、检索、服务——用的都是这五块。区别只在两处:<b>容器从列表换成数组和表(lab-02),函数的内部从几行变成几十行。</b>骨架始终是这一副。</p>
+
+      <nav class="chapter-nav">
+        <a href="../基础课程/02-Python基础.html"><span class="lb">回讲义</span><span class="tt">第 2 章 Python 基础</span></a>
+        <a href="lab-02-数组与表.html" class="next"><span class="lb">下一个实验</span><span class="tt">lab-02 数组与表</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-22 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>变量·容器·控制流</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>函数与读报错</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-22" data-kind="lab" data-title="五块地基:用一个真任务把它们串起来"></script>
+</body>
+</html>

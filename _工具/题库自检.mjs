@@ -33,7 +33,10 @@ const suspects = []
 
 for (const f of files) {
   const src = readFileSync(join(DIR, f), 'utf8')
-  const m = src.match(/window\.QUESTIONS = ([\s\S]*?);\n<\/script>/)
+  // 2026-08-30 修:原来是 `;\n<\/script>`,只认 LF。库里 98 个 HTML 是 CRLF(Windows),
+  // `];\r\n</script>` 匹配不上 → 32 份全报「解析失败」,样本 0 反而让总闸判绿(假绿灯)。
+  // 改成 `;\s*<\/script>`,LF / CRLF 都认。
+  const m = src.match(/window\.QUESTIONS = ([\s\S]*?);\s*<\/script>/)
   if (!m) { bad.push([f, '解析失败:找不到 window.QUESTIONS']); continue }
   let qs
   try { qs = Function('return ' + m[1])() } catch (e) { bad.push([f, '解析失败:' + e.message]); continue }

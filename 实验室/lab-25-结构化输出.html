@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-25 · 给模型一张表格:合格就通过,不合格就拦住并告诉它哪里错</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../应用工程/A02-结构化输出与函数调用.html">A02</a><span class="sep">—</span>
+      <a href="lab-25-结构化输出.html" class="current">lab-25 结构化输出</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-25 · 配套 A02 结构化输出与函数调用 · 只要标准库,不调 API</p>
+        <h1>给模型一张表格:合格就通过,不合格就拦住并告诉它哪里错</h1>
+        <p class="recap">A02 说结构化输出是「给模型一张表格模板,逼它把答案填进格子里」,函数调用是「把有哪些工具也做成表格」。这一节把这两件事各写一遍:先用 schema 拦住四种不合格的模型输出,<b>连「22 被引号包成了字符串」这种肉眼看不出问题的都拦住了</b>;再看工具调用的三层防护,以及第三层为什么最要紧。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>四种模型输出里,一种通过、三种被拦住,并给出各自的具体原因</li>
+          <li>「内容全对、只是类型不对」是最隐蔽的一类,人眼几乎看不出</li>
+          <li>把「哪里不合格」回给模型,三次重试全部一次改对</li>
+          <li>工具调用有三层:schema 挡前两层,危险动作要靠代码挡第三层</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../应用工程/A02-结构化输出与函数调用.html">A02</a> 的 schema 与函数调用;<b>提示词怎么写</b>见 <a href="lab-24-提示词工程.html">lab-24</a>,<b>工具白名单和危险动作拦截</b>见 <a href="lab-09-最小harness.html">lab-09</a>,检索给答案找依据见 <a href="lab-19-RAG检索增强.html">lab-19</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p>两段都<b>只用 Python 标准库,不调 API</b>——模型的输出是写在代码里的桩数据,校验和重试逻辑是真的。<b>方式 A</b> 点「▶ 运行」(Pyodide);<b>方式 B</b> 跑 <code>实验室\code\lab25\</code> 下的同名文件。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>A02 有一句话点明了这件事的价值:<b>应用程序要的是能可靠解析的数据,不是自然语言。</b>同一个意思模型能用一百种句式写,而 <code>{"city":"北京","temp":28}</code> 只有一种解析法。这一节要看的就是「怎么把这一百种收成一种」,以及收不干净时拿什么兜底。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>schema 校验:拦住四种不合格</span></h2>
+      <p>四种典型的模型输出,逐个按 schema 过一遍。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_schema.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="44">import json
+
+# 给模型一张「表格模板」:三个字段,各是什么类型
+SCHEMA = {"city": str, "temp": int, "condition": str}
+
+# 桩模型第一次的四种输出。真实场景这里是一次 API 调用。
+RAW = [
+    '{"city": "北京", "temp": 28, "condition": "晴"}',
+    '{"city": "上海", "temp": "22", "condition": "多云"}',
+    '{"city": "广州", "condition": "小雨"}',
+    '好的,北京今天 28 度,晴天。',
+]
+
+def check(text):
+    """按 schema 校验。返回 (通过?, 问题描述或数据)"""
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as e:
+        return False, f"不是合法 JSON({e.msg})"
+    if not isinstance(data, dict):
+        return False, "顶层不是对象"
+    for field, typ in SCHEMA.items():
+        if field not in data:
+            return False, f"缺字段 {field}"
+        # 注意 bool 是 int 的子类,要单独排除,否则 True 会被当成合格的整数
+        if typ is int and isinstance(data[field], bool):
+            return False, f"{field} 的布尔值不能当整数"
+        if not isinstance(data[field], typ):
+            return False, f"{field} 类型不对,要 {typ.__name__},给了 {type(data[field]).__name__}"
+    return True, data
+
+print("四种模型输出,逐个按 schema 过一遍:\n")
+for i, raw in enumerate(RAW, 1):
+    ok, info = check(raw)
+    mark = "✓ 通过" if ok else "✗ 拦下"
+    print(f"   {i}. {mark}   输入:{raw[:38]}")
+    if not ok:
+        print(f"        原因:{info}")
+
+print("\n这就是结构化输出的全部价值:")
+print("   自然语言有无数种写法(第 4 条那种),程序没法可靠地解析;")
+print("   而 schema 把「要什么」写在前面,不合格的直接在程序这一侧就被挡住,")
+print("   不用等到下游某个地方莫名其妙地崩掉。")
+
+print("\n第 2 条值得单独看:它内容全对,只是 22 被引号包成了字符串。")
+print("   人眼看不出问题,但程序拿到 '22' 去做加法会直接报错。")
+print("   schema 校验就是把这类「看起来对」的东西提前拦住。")
+
+# ---- 拦截之后怎么办:带着具体原因重试 ----
+def fake_model_retry(feedback):
+    """桩模型:被告知哪里错了,就改对。真实场景这里是把错误信息拼回提示词再调一次。"""
+    if "缺字段 temp" in feedback: return '{"city": "广州", "temp": 26, "condition": "小雨"}'
+    if "temp 类型不对" in feedback: return '{"city": "上海", "temp": 22, "condition": "多云"}'
+    if "不是合法 JSON" in feedback: return '{"city": "北京", "temp": 28, "condition": "晴"}'
+    return "{}"
+
+print("\n重试机制:把「哪里不合格」告诉模型,让它改:")
+for i, raw in enumerate(RAW, 1):
+    ok, info = check(raw)
+    if ok:
+        print(f"   {i}. 一次通过")
+        continue
+    fixed = fake_model_retry(info)
+    ok2, info2 = check(fixed)
+    print(f"   {i}. 第 1 次被拦({info}) → 重试 → {'通过' if ok2 else '仍不合格:' + str(info2)}")
+
+print("\n注意重试不是「再问一遍」,而是把具体错误回给模型。")
+print("   只说「格式不对」它只能猜;说「缺字段 temp」它一次就能改对。")
+print("   所以 schema 校验器的价值不只是拦截,还在于它产出的是可用的反馈。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>四种模型输出,逐个按 schema 过一遍:
+
+   1. ✓ 通过   输入:{"city": "北京", "temp": 28, "condition"
+   2. ✗ 拦下   输入:{"city": "上海", "temp": "22", "conditio
+        原因:temp 类型不对,要 int,给了 str
+   3. ✗ 拦下   输入:{"city": "广州", "condition": "小雨"}
+        原因:缺字段 temp
+   4. ✗ 拦下   输入:好的,北京今天 28 度,晴天。
+        原因:不是合法 JSON(Expecting value)
+
+这就是结构化输出的全部价值:
+   自然语言有无数种写法(第 4 条那种),程序没法可靠地解析;
+   而 schema 把「要什么」写在前面,不合格的直接在程序这一侧就被挡住,
+   不用等到下游某个地方莫名其妙地崩掉。
+
+第 2 条值得单独看:它内容全对,只是 22 被引号包成了字符串。
+   人眼看不出问题,但程序拿到 '22' 去做加法会直接报错。
+   schema 校验就是把这类「看起来对」的东西提前拦住。
+
+重试机制:把「哪里不合格」告诉模型,让它改:
+   1. 一次通过
+   2. 第 1 次被拦(temp 类型不对,要 int,给了 str) → 重试 → 通过
+   3. 第 1 次被拦(缺字段 temp) → 重试 → 通过
+   4. 第 1 次被拦(不是合法 JSON(Expecting value)) → 重试 → 通过
+
+注意重试不是「再问一遍」,而是把具体错误回给模型。
+   只说「格式不对」它只能猜;说「缺字段 temp」它一次就能改对。
+   所以 schema 校验器的价值不只是拦截,还在于它产出的是可用的反馈。</div>
+      <p>四条输出正好覆盖四种不合格,而<b>第 2 条最值得盯</b>:它内容全对,人眼看不出任何毛病,但程序拿到 <code>'22'</code> 去做加法会直接崩。<b>这类「看起来对」的问题最贵</b>——它不会在测试时冒出来,而是上线后某个用户碰上才炸。<br>后半段的重试机制是另一个要点:<b>重试不是「再问一遍」,而是把具体的错误原因回给模型。</b>三种不合格三次都一次改对,靠的就是反馈里那句「缺字段 temp」而不是「格式不对」。这也说明一件事——<b>校验器真正的产出不是「通过/不通过」,而是那句能让人(或模型)照着改的话</b>。校验信息写得含糊,再聪明的模型也只能瞎猜。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>函数调用:三层防护,一层都不能少</span></h2>
+      <p>把「有哪些工具」也做成 schema,再看模型给出的三次决定分别被哪一层挡住。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_tools.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="44">import json
+
+# 工具表:每个工具有什么参数、参数是什么类型。这份「表」就是给模型看的 schema。
+TOOLS = {
+    "get_weather": {"desc": "查某个城市的天气", "params": {"city": str}},
+    "send_email":  {"desc": "发一封邮件",       "params": {"to": str, "subject": str, "body": str}},
+    "delete_file": {"desc": "删除一个文件",     "params": {"path": str}},
+}
+
+# 桩模型给出的三次「决定」——真实场景这里是模型返回的 tool_calls。
+CALLS = [
+    ('{"tool": "get_weather", "args": {"city": "北京"}}',           "正常一次调用"),
+    ('{"tool": "get_weather", "args": {"city_name": "北京"}}',      "参数名写错了"),
+    ('{"tool": "delete_file", "args": {"path": "/data/all.db"}}',   "合法但危险"),
+]
+
+def validate(call_text):
+    """校验模型给的工具调用:工具存在吗?参数名和类型对吗?"""
+    try:
+        call = json.loads(call_text)
+    except json.JSONDecodeError as e:
+        return False, f"不是合法 JSON({e.msg})", None
+    name = call.get("tool")
+    if name not in TOOLS:
+        return False, f"没有这个工具:{name}", None
+    spec = TOOLS[name]["params"]
+    args = call.get("args", {})
+    # 先查「多出来的」再查「缺的」:参数名写错时,会同时多一个、缺一个,
+    # 报「多了 city_name」比报「缺 city」更接近病因。
+    extra = [k for k in args if k not in spec]
+    if extra:
+        return False, f"多了参数 {extra}(该工具只需要 {list(spec)})", None
+    missing = [k for k in spec if k not in args]
+    if missing:
+        return False, f"缺参数 {missing}(该工具需要 {list(spec)})", None
+    bad = [k for k, t in spec.items() if not isinstance(args[k], t)]
+    if bad:
+        return False, f"参数类型不对:{bad}", None
+    return True, "校验通过", (name, args)
+
+# 危险动作要人点头 —— 和治理逻辑放在同一层,不靠提示词求模型别调
+DANGEROUS = {"delete_file"}
+APPROVED = False
+
+def execute(name, args):
+    """桩实现:真实场景这里才是真的发请求 / 改数据。"""
+    if name == "get_weather": return f"{args['city']} 今天 28 度,晴"
+    if name == "send_email":  return f"已发送给 {args['to']}"
+    if name == "delete_file": return f"已删除 {args['path']}"
+    return "?"
+
+print("模型给出的三次决定,逐层过一遍:\n")
+for call_text, note in CALLS:
+    ok, msg, payload = validate(call_text)
+    print(f"   {note}")
+    print(f"      模型说:{call_text}")
+    if not ok:
+        print(f"      ✗ 拦下:{msg}")
+        print("      → 把这句话原样拼回提示词,让模型重出一次\n")
+        continue
+    name, args = payload
+    if name in DANGEROUS and not APPROVED:
+        print(f"      ⚠ 参数没问题,但 {name} 是危险动作 —— 执行前需要人确认")
+        print(f"      → 这次不执行,记一条待批记录\n")
+        continue
+    print(f"      ✓ 执行:{execute(name, args)}\n")
+
+print("三层各挡一类问题,顺序不能换:")
+print("   ① 格式层  JSON 不合法 / 工具名不存在 —— 模型「说错了话」")
+print("   ② 参数层  缺参数 / 多参数 / 类型不对 —— 模型「话说得不全」")
+print("   ③ 权限层  合法但危险的动作 —— 模型「说对了但不该做」")
+print()
+print("第 3 层最容易被忽略,也最要紧:前两层靠 schema 就能自动挡,")
+print("而「这个动作能不能做」是业务判断,只能由人来定、由代码来执行。")
+print("把它写进提示词(「请不要删除文件」)是请求,不是约束 —— 模型可能不听。")
+print("写成代码里的白名单 + 人确认,它才是真的挡得住。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>模型给出的三次决定,逐层过一遍:
+
+   正常一次调用
+      模型说:{"tool": "get_weather", "args": {"city": "北京"}}
+      ✓ 执行:北京 今天 28 度,晴
+
+   参数名写错了
+      模型说:{"tool": "get_weather", "args": {"city_name": "北京"}}
+      ✗ 拦下:多了参数 ['city_name'](该工具只需要 ['city'])
+      → 把这句话原样拼回提示词,让模型重出一次
+
+   合法但危险
+      模型说:{"tool": "delete_file", "args": {"path": "/data/all.db"}}
+      ⚠ 参数没问题,但 delete_file 是危险动作 —— 执行前需要人确认
+      → 这次不执行,记一条待批记录
+
+三层各挡一类问题,顺序不能换:
+   ① 格式层  JSON 不合法 / 工具名不存在 —— 模型「说错了话」
+   ② 参数层  缺参数 / 多参数 / 类型不对 —— 模型「话说得不全」
+   ③ 权限层  合法但危险的动作 —— 模型「说对了但不该做」
+
+第 3 层最容易被忽略,也最要紧:前两层靠 schema 就能自动挡,
+而「这个动作能不能做」是业务判断,只能由人来定、由代码来执行。
+把它写进提示词(「请不要删除文件」)是请求,不是约束 —— 模型可能不听。
+写成代码里的白名单 + 人确认,它才是真的挡得住。</div>
+      <p>三次决定正好落在三层上,而<b>第三层是关键</b>。第二条被拦,是因为校验器先查「多出来的参数」再查「缺的」——这样报出来的「多了 city_name」比「缺 city」更接近病因,模型照着一改就对。<b>报错信息写得好不好,直接决定重试要几轮。</b><br>而第三条才是真正的分水岭:它的 JSON 合法、工具存在、参数完整、类型也对,<b>三层校验里前两层完全放行</b>。挡住它的不是 schema,是那句 <code>DANGEROUS = {"delete_file"}</code>。<br>这就是 A02 和 A05 交界的地方:<b>「请不要删除文件」写在提示词里是请求,写在代码里才是约束。</b>模型可能听、可能不听,而一个线上服务不能建立在「它应该会听」上面。这条也是 <a href="lab-09-最小harness.html">lab-09</a> 那五个治理抓手里的同一个 —— 危险动作要在<b>执行前</b>由代码拦住,不是执行完再回滚。</p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 第 1 步把 <code>SCHEMA</code> 里的 <code>temp</code> 改成 <code>str</code>,再跑。第 2 条会通过吗?<b>这说明 schema 定义的是「要什么样」,定义松了校验就形同虚设。</b><br>
+        <b>②</b> 第 1 步给 <code>RAW</code> 加一条 <code>'{"city": "深圳", "temp": 30, "condition": "阴", "humidity": 70}'</code>。多出来的字段该放行还是拦下?<b>两种做法都对,取决于下游能不能容忍多余字段——但这必须是一个明确的决定,而不是默认行为。</b><br>
+        <b>③</b> 第 1 步在 <code>check</code> 里试一下 <code>isinstance(True, int)</code> 返回什么。这解释了代码里为什么专门为布尔值写了一行判断。<br>
+        <b>④</b> 第 2 步把 <code>APPROVED</code> 改成 <code>True</code> 再跑。第三条会直接执行——<b>这一行就是「人点头」在代码里的样子。</b><br>
+        <b>⑤</b> 第 2 步给 <code>delete_file</code> 加一条约束:只允许删 <code>/tmp/</code> 下的文件。想清楚这条规则该写在校验层还是权限层,以及为什么。</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>报 <code>JSONDecodeError</code></td><td>模型输出里带了 Markdown 代码块围栏或前后缀说明文字</td><td>先从文本里截出 <code>{…}</code> 那一段再解析;或在提示词里明确「只输出 JSON,不要任何解释」</td></tr>
+            <tr><td>校验通过但下游仍然报错</td><td>schema 定义得比实际需要松(比如该是金额却定义了 <code>str</code>)</td><td>把 schema 收紧到和下游要求一致;它挡不住没写进 schema 的约束</td></tr>
+            <tr><td><code>True</code> 被当成合格的整数</td><td>Python 里 <code>bool</code> 是 <code>int</code> 的子类</td><td>代码里那行单独的布尔判断就是为它写的,别删</td></tr>
+            <tr><td>重试几次都改不对</td><td>反馈信息太笼统(「格式不对」),模型只能猜</td><td>把具体字段名和期望类型写进反馈,像代码里那样</td></tr>
+            <tr><td>危险动作还是被执行了</td><td>只靠提示词约束,没在代码里设白名单</td><td>把它加进 <code>DANGEROUS</code>;这是权限层的事,和提示词无关</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">A02 的两件事在这一节都落地了:<b>结构化输出是「给模型一张表格,让它填」,函数调用是「把有哪些工具也做成表格,让它选」。</b>两张表的写法一样,区别只在填完之后谁去执行。<br>真正值得带走的是那个三层结构:<b>格式和参数可以靠 schema 自动挡,权限只能靠代码和人。</b>很多人把三者混在提示词里解决,结果是前两层时灵时不灵、第三层完全挡不住。分开之后,每一层各管一件事,也各有一个可以测试的地方——<b>能被测试的约束,才叫约束。</b></p>
+
+      <nav class="chapter-nav">
+        <a href="../应用工程/A02-结构化输出与函数调用.html"><span class="lb">回讲义</span><span class="tt">A02 结构化输出与函数调用</span></a>
+        <a href="../台账/学习台账.html" class="next"><span class="lb">记一笔</span><span class="tt">学习台账</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-25 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>schema 校验</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>函数调用三层</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-25" data-kind="lab" data-title="给模型一张表格:合格就通过,不合格就拦住并告诉它哪里错"></script>
+</body>
+</html>

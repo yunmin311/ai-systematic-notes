@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-27 · Agent 的全部,就是一个循环加三样东西</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../应用工程/A04-Agent基础.html">A04</a><span class="sep">—</span>
+      <a href="lab-27-Agent循环.html" class="current">lab-27 Agent 循环</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-27 · 配套 A04 Agent 基础 · 只要标准库,不调 API</p>
+        <h1>Agent 的全部,就是一个循环加三样东西</h1>
+        <p class="recap">A04 说 Agent 就是「把模型放进一个循环」,差别不在模型多聪明,在外面套没套那个循环。这一节把循环本身写出来——<b>想 → 做 → 看</b>,三轮解决一个需要两步才能算的问题;再看循环真正会卡住的地方:<b>工具失败的那几步</b>,三种应对各有适用场景,还有一种最危险的做法不能碰。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>一句话的任务,循环走了 3 轮「想/做/看」才完成</li>
+          <li>循环只需要三样东西:可重复的步骤、终止条件、一份记忆</li>
+          <li>工具失败时三种应对各跑一遍:原样重试白费一轮、换写法有效、换工具有效</li>
+          <li>「重试 N 次不行就自己编一个」是把幻觉做成了默认行为</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../应用工程/A04-Agent基础.html">A04</a> 的循环与工具;<b>循环外面那圈治理</b>(白名单、步数上限、危险动作拦截、日志)见 <a href="lab-09-最小harness.html">lab-09</a>,工具调用怎么校验见 <a href="lab-25-结构化输出.html">lab-25</a>,记忆靠上下文窗口这件事见 <a href="lab-08-Token与账单.html">lab-08</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p>两段都<b>只用 Python 标准库,不调 API</b>——模型的部分写成脚本化的决定表,好把循环本身看清楚。<b>方式 A</b> 点「▶ 运行」(Pyodide);<b>方式 B</b> 跑 <code>实验室\code\lab27\</code> 下的同名文件。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>Agent 这个词被用得很重,但机制是轻的:<b>模型输出不再只是给用户的答案,而是决定下一步做什么的动作。</b>这一个改动,把「一次问答」变成了「多轮推进」。这一节要看的就是这个改动本身,以及它在工具失败时暴露出的真问题。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>循环:想、做、看</span></h2>
+      <p>任务是一句话,但要两步数据加一次计算才能回答。看循环怎么一轮轮推进。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_loop.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="42"># Agent 和普通问答的差别,全在这一个循环里。
+# 这里把「模型」写成一份脚本化的决定表,好把循环本身看清楚;
+# 真实场景里每一次「想」都是一次模型调用。
+
+TOOLS = {
+    "get_weather":  lambda city: {"北京": 28, "上海": 22, "广州": 31}.get(city),
+    "calculator":   lambda expr: eval(expr, {"__builtins__": {}}, {}),
+}
+
+# 模型每一步的「想」和「做」——按顺序排好,模拟一个会分步推进的 agent
+PLAN = [
+    ("要算温差,得先拿到北京的温度", ("get_weather", "北京")),
+    ("北京 28 度。还缺上海的温度",   ("get_weather", "上海")),
+    ("两个数都有了,做减法",         ("calculator", "28 - 22")),
+]
+
+def observe(tool, arg):
+    """执行工具并返回「看到」的结果"""
+    if tool not in TOOLS:
+        return None, f"没有这个工具:{tool}"
+    try:
+        result = TOOLS[tool](arg)
+    except Exception as e:
+        return None, f"工具报错:{type(e).__name__}"
+    if result is None:
+        return None, "工具没找到对应数据"
+    return result, None
+
+task = "北京和上海的温差是多少?"
+print(f"任务:{task}\n")
+print("循环开始 —— 每一轮都是 想 → 做 → 看:\n")
+
+trace = []
+MAX_STEPS = 8
+for step, (thought, (tool, arg)) in enumerate(PLAN, 1):
+    if step &gt; MAX_STEPS:
+        print(f"   到达步数上限 {MAX_STEPS},停下")
+        break
+    print(f"   ── 第 {step} 轮 ──")
+    print(f"   想   {thought}")
+    print(f"   做   {tool}({arg!r})")
+    result, err = observe(tool, arg)
+    if err:
+        print(f"   看   ✗ {err}")
+        break
+    print(f"   看   {result}")
+    trace.append(result)
+    print()
+
+# 循环的出口:模型判断「够了,可以回答」
+if len(trace) == 3:
+    print("   想   三个数齐了,任务完成 → 输出答案,退出循环")
+
+print("\n循环结束。整个过程回答的是一句话,但走了 3 轮:")
+print("   普通问答:一次输入 → 一次输出,错了也就错了。")
+print("   agent:  一次输入 → 多轮「想/做/看」,每轮都能根据看到的东西改主意。")
+print()
+print("差别不在模型多聪明,在外面套没套那个循环 ——")
+print("模型还是那个模型,但它的输出现在能改变下一步的输入了。")
+print()
+print("循环本身只需要三样东西:")
+print("   ① 一个能重复的步骤(这里就是 想/做/看)")
+print("   ② 一个终止条件(任务完成,或者到了步数上限)")
+print("   ③ 一份记忆(把每轮「看到」的记下来,否则下一轮等于失忆)")
+print("   第三样最容易被忽略 —— 它其实就是上下文窗口在做的事。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>任务:北京和上海的温差是多少?
+
+循环开始 —— 每一轮都是 想 → 做 → 看:
+
+   ── 第 1 轮 ──
+   想   要算温差,得先拿到北京的温度
+   做   get_weather('北京')
+   看   28
+
+   ── 第 2 轮 ──
+   想   北京 28 度。还缺上海的温度
+   做   get_weather('上海')
+   看   22
+
+   ── 第 3 轮 ──
+   想   两个数都有了,做减法
+   做   calculator('28 - 22')
+   看   6
+
+   想   三个数齐了,任务完成 → 输出答案,退出循环
+
+循环结束。整个过程回答的是一句话,但走了 3 轮:
+   普通问答:一次输入 → 一次输出,错了也就错了。
+   agent:  一次输入 → 多轮「想/做/看」,每轮都能根据看到的东西改主意。
+
+差别不在模型多聪明,在外面套没套那个循环 ——
+模型还是那个模型,但它的输出现在能改变下一步的输入了。
+
+循环本身只需要三样东西:
+   ① 一个能重复的步骤(这里就是 想/做/看)
+   ② 一个终止条件(任务完成,或者到了步数上限)
+   ③ 一份记忆(把每轮「看到」的记下来,否则下一轮等于失忆)
+   第三样最容易被忽略 —— 它其实就是上下文窗口在做的事。</div>
+      <p>三轮下来,每一轮的「看」都变成了下一轮「想」的输入——<b>这就是循环的全部意义</b>。注意第 2 轮的想:「北京 28 度。还缺上海的温度」——它记得上一轮看到了什么。这份记忆不在模型参数里,<b>在上下文窗口里</b>:每轮的「看到」都要拼回提示词再发一次。<br>循环需要的三样东西里,<b>第三样最容易被忽略,也最先出问题</b>。真实 agent 跑到几十轮之后上下文会被塞满,于是要么丢掉了早期的关键信息、要么成本失控——这正是 <a href="lab-08-Token与账单.html">lab-08</a> 和 <a href="lab-21-幻觉与成本.html">lab-21</a> 里算过的账。<br>代码里那个 <code>MAX_STEPS</code> 在这一轮没触发(只用了 3 步),但它是必须存在的:循环要有第二个出口,否则遇到「怎么试都完不成」的任务会一直转下去。<b>没有上限的循环不叫 agent,叫失控。</b></p>
+
+      <h2 id="s4"><span class="no">4</span><span>工具失败时,怎么退场</span></h2>
+      <p>循环跑通不难,难的是工具失败的那几步。三种应对各跑一遍。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_failure.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="44"># 循环跑起来不难,难的是工具失败的那几步。
+# 这一节把三种应对各演示一遍,再说第四种不该做的。
+
+def get_weather(city):
+    data = {"北京": 28, "上海": 22}
+    if city not in data:
+        return None, "未收录该城市"
+    return data[city], None
+
+# 搜索知道的城市比天气工具多一些 —— 这正是「换工具」能救回来的前提。
+WEB_DB = {"北京": 28, "上海": 22, "广州": 31}
+
+def search_web(query):
+    """桩搜索:从问句里认出城市名,并且只认带「气温」的问法。"""
+    if "气温" not in query:
+        return None, "没有找到相关结果"
+    for city, temp in WEB_DB.items():
+        if city in query:
+            return f"{city}今日气温 {temp} 摄氏度", None
+    return None, "没有找到相关结果"
+
+TOOLS = {"get_weather": get_weather, "search_web": search_web}
+
+def run(label, calls, verdict):
+    """把一串尝试依次跑下来,一旦成功就停 —— 和真实循环一样。"""
+    print(f"   {label}")
+    for tool, arg in calls:
+        result, err = TOOLS[tool](arg)
+        print(f"      做   {tool}({arg!r})")
+        if err:
+            print(f"      看   ✗ {err}")
+            continue
+        print(f"      看   ✓ {result}")
+        print(f"      → 成功,退出循环")
+        break
+    print(f"      评价 {verdict}\n")
+
+print("任务:北京今天多少度?\n")
+print("三种应对,各跑一遍:\n")
+
+run("① 原样重试:同参数再问一次",
+     [("get_weather", "北京市"), ("get_weather", "北京市")],
+     "无用。工具是确定性的,同样的输入不会给出不同的结果,白费一轮。")
+
+run("② 换个写法:从失败信息里猜自己哪儿不对",
+     [("get_weather", "北京市"), ("get_weather", "北京")],
+     "有效,而且最常见。失败信息说「未收录该城市」,提示可能是名称写法问题。")
+
+run("③ 换工具:一个不通就试另一个",
+     [("get_weather", "广州"), ("search_web", "广州 气温")],
+     "有效。天气工具没有广州,搜索有 —— 这就是「能力有重叠」的价值。")
+
+print("三种应对的区别,在循环里是三种不同的分支:")
+print("   ① 原样重试  — 只在「可能是偶发故障」(网络抖动、限流)时才有意义。")
+print("   ② 换个写法  — agent 最常用的一招:把失败信息当成线索,改自己的输入。")
+print("   ③ 换工具    — 多一条路,成功率高很多;前提是工具能力有重叠。")
+
+print("\n还有第四种,也是最危险的一种:编一个答案。")
+print("   循环里如果写「重试 N 次还不行就自己说一个」,那等于把幻觉做成了默认行为。")
+print("   正确的兜底只有一句:如实说「我没查到」。")
+print()
+print("所以判断一个 agent 好不好,不只看它成功时多能干,")
+print("更要看它失败时怎么退场 ——")
+print("   是老实说没查到,还是编一个听起来合理的数字。")
+print("   前者是可用的工具,后者是要出事的工具。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>任务:北京今天多少度?
+
+三种应对,各跑一遍:
+
+   ① 原样重试:同参数再问一次
+      做   get_weather('北京市')
+      看   ✗ 未收录该城市
+      做   get_weather('北京市')
+      看   ✗ 未收录该城市
+      评价 无用。工具是确定性的,同样的输入不会给出不同的结果,白费一轮。
+
+   ② 换个写法:从失败信息里猜自己哪儿不对
+      做   get_weather('北京市')
+      看   ✗ 未收录该城市
+      做   get_weather('北京')
+      看   ✓ 28
+      → 成功,退出循环
+      评价 有效,而且最常见。失败信息说「未收录该城市」,提示可能是名称写法问题。
+
+   ③ 换工具:一个不通就试另一个
+      做   get_weather('广州')
+      看   ✗ 未收录该城市
+      做   search_web('广州 气温')
+      看   ✓ 广州今日气温 31 摄氏度
+      → 成功,退出循环
+      评价 有效。天气工具没有广州,搜索有 —— 这就是「能力有重叠」的价值。
+
+三种应对的区别,在循环里是三种不同的分支:
+   ① 原样重试  — 只在「可能是偶发故障」(网络抖动、限流)时才有意义。
+   ② 换个写法  — agent 最常用的一招:把失败信息当成线索,改自己的输入。
+   ③ 换工具    — 多一条路,成功率高很多;前提是工具能力有重叠。
+
+还有第四种,也是最危险的一种:编一个答案。
+   循环里如果写「重试 N 次还不行就自己说一个」,那等于把幻觉做成了默认行为。
+   正确的兜底只有一句:如实说「我没查到」。
+
+所以判断一个 agent 好不好,不只看它成功时多能干,
+更要看它失败时怎么退场 ——
+   是老实说没查到,还是编一个听起来合理的数字。
+   前者是可用的工具,后者是要出事的工具。</div>
+      <p>三种应对的差别很实在。<b>① 原样重试在最常见的失败上完全无用</b>——「未收录该城市」是个确定性结果,再问十次也是这句。很多人第一次写 agent 都会犯这个错:把「重试」当成万能药,其实它只对网络抖动、限流这类偶发故障有效。<b>② 换个写法才是主力</b>:失败信息本身就是线索,agent 要从「未收录该城市」猜到「可能是名称写法不对」。<b>这要求工具把错误说明白</b>——只回一个「失败」,agent 就只能瞎猜。这和 <a href="lab-25-结构化输出.html">lab-25</a> 里「重试要把具体错误回给模型」是同一条经验。<br><b>③ 换工具</b>能救回更多情况,但有个前提藏在数据里:搜索工具知道的城市比天气工具多一个(广州)。<b>工具之间必须有重叠的能力,否则换工具也只是多失败一次。</b><br>最后那条最值得记住:<b>判断一个 agent 好不好,不看它成功时多能干,看它失败时怎么退场。</b>老实说「我没查到」是可用的工具;编一个听起来合理的数字,是要出事的工具。</p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 第 1 步把 <code>PLAN</code> 里三步的顺序打乱(比如先算减法)。<b>会发生什么?</b>——这能看出「循环顺序由模型决定」既是能力也是风险。<br>
+        <b>②</b> 第 1 步把 <code>MAX_STEPS</code> 从 8 改成 2,再跑。<b>循环会怎么退出?</b>剩下那步没做完,这时该输出什么?<br>
+        <b>③</b> 第 1 步把 <code>trace</code>(那份记忆)删掉,只在循环里用结果、不留记录。循环还能跑吗?<b>如果 PLAN 改成需要引用上一轮结果,会立刻坏掉。</b><br>
+        <b>④</b> 第 2 步给 <code>get_weather</code> 加一个「偶发失败」:第一次调用必定失败、第二次成功。这时策略①还无用吗?<b>区分「确定性失败」和「偶发失败」是选对策略的前提。</b><br>
+        <b>⑤</b> 第 2 步把三种策略串成一个真正的兜底链(重试 → 换写法 → 换工具 → 如实说没查到),再给它加一个总步数上限。<b>这就是一个能上线的失败处理逻辑。</b></p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>循环一直转不停</td><td>没有第二个出口,只靠「任务完成」判断</td><td>加步数上限;这是 <a href="lab-09-最小harness.html">lab-09</a> 那五个治理抓手之一</td></tr>
+            <tr><td>第二轮就「忘了」第一轮的结果</td><td>没有把上一轮的「看到」拼回下一轮的输入</td><td>每轮的观察结果都要进上下文;记忆是拼出来的,不是自动的</td></tr>
+            <tr><td>工具报错后 agent 反复重试同一件事</td><td>把「确定性失败」当成了「偶发失败」</td><td>看错误信息:改不了的那种(名称写错、参数不合法)就别重试,该换写法</td></tr>
+            <tr><td>工具只回一个「失败」,agent 不知道怎么改</td><td>工具的报错信息太笼统</td><td>让工具说清为什么失败;错误信息的质量直接决定下一步能不能走对</td></tr>
+            <tr><td>任务没完成就输出了一段像模像样的答案</td><td>兜底逻辑写成了「不行就自己说一个」</td><td>改成如实报告;这是把幻觉做成默认行为,是最危险的一类 bug</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">A04 说 Agent 是「从回答问题变成完成任务」。这一节把那个转变写成了二十行:<b>想 → 做 → 看</b>,加一个终止条件、一份记忆。没有更多。<br>真正的手艺在两头:<b>一头是循环外面那圈治理</b>(步数上限、危险动作拦截、日志——见 lab-09),<b>另一头是失败时的退场方式</b>。而后者更容易被忽略,因为它只在出错时才显形——偏偏出错的时候,用户最需要一个可靠的反应。</p>
+
+      <nav class="chapter-nav">
+        <a href="../应用工程/A04-Agent基础.html"><span class="lb">回讲义</span><span class="tt">A04 Agent 基础</span></a>
+        <a href="lab-09-最小harness.html" class="next"><span class="lb">配套读</span><span class="tt">lab-09 最小 harness</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-27 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>循环:想、做、看</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>工具失败时</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-27" data-kind="lab" data-title="Agent 的全部,就是一个循环加三样东西"></script>
+</body>
+</html>

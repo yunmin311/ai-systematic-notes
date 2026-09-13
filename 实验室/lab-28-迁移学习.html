@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-28 · 冻结还是微调:两个任务的「相关性」才是那个变量</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../深度课程/D11-迁移学习与微调.html">D11</a><span class="sep">—</span>
+      <a href="lab-28-迁移学习.html" class="current">lab-28 迁移学习</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-28 · 配套 D11 迁移学习与微调 · 只要 numpy,不用 PyTorch</p>
+        <h1>冻结还是微调:两个任务的「相关性」才是那个变量</h1>
+        <p class="recap">D11 说迁移学习是把别人训好的模型当地基,还给了两种用法——冻结特征和微调。这一节用 numpy 搭一个两层小网络,把上游和下游都跑通,然后<b>对比两种上游</b>:一种和下游高度相关,一种只是有点关系。<b>结论藏在两张表的差别里:同样是迁移,一个一直划算,另一个数据多了反而变成负担。</b></p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>上游只学「两对坐标」时(高度相关),冻结特征在每种数据量下都领先,最多领先 8.5%</li>
+          <li>上游学「四对坐标」时(只是有点关系),6 条标签下优势归零,400 条时从头训反超 15.0%</li>
+          <li>同一个下游任务、同一套代码,只换了上游的预训练任务,结论完全翻转</li>
+          <li>任务选成线性不可分,「有没有好特征」才真的决定成败</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../深度课程/D11-迁移学习与微调.html">D11</a> 的特征复用与微调;训练循环见 <a href="lab-06-五步循环.html">lab-06</a>,过拟合怎么现原形见 <a href="lab-04-过拟合现场.html">lab-04</a>,大规模微调那一步的参数账见 <a href="lab-26-微调与对齐.html">lab-26</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p><b>只用 numpy,不需要 PyTorch</b>——两层网络的前向和反向都是手写的,几十行。<b>方式 A</b> 点「▶ 运行」(Pyodide);<b>方式 B</b> 跑 <code>实验室\code\lab28\</code> 下的同名文件。跑完约几秒。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>D11 给了一句经验:数据少时冻结特征,数据够时微调。这一节要看的是<b>那句话背后真正的变量</b>——不是「数据多少」单独决定的,而是「任务离上游有多远」和「自己的数据够不够」一起决定的。要看清这一点,得让上游换一次、其他都不变。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>同一个下游,换一个上游</span></h2>
+      <p>上游任务改成线性不可分(标签是两个坐标乘积的符号),这样特征好不好才真的决定成败。然后换两种上游,其余条件完全一样。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_freeze.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="52">import numpy as np
+
+# 用 numpy 搭一个两层小网络。第一层(隐层)就是「通用特征」所在的位置。
+# 任务故意选成线性不可分的:标签 = 两个坐标乘积的符号。
+# 这样「有没有好特征」才真的决定成败 —— 换个线性可分的数据集,怎么训都差不多。
+
+def make_data(n, pairs, seed):
+    """每条的标签 = 随机挑一对坐标,看它们乘积是正是负。
+       线性不可分,靠一个权重矩阵直接分不开,必须先造出「乘积」这种特征。"""
+    r = np.random.default_rng(seed)
+    X = r.normal(0, 1.0, size=(n, DIM))
+    k = r.integers(0, len(pairs), size=n)
+    i = np.array([pairs[t][0] for t in k])
+    j = np.array([pairs[t][1] for t in k])
+    y = ((X[np.arange(n), i] * X[np.arange(n), j]) &gt; 0).astype(int)
+    return X, y
+
+def init(classes, seed=0):
+    r = np.random.default_rng(seed)
+    return {"W1": r.normal(0, 0.3, (DIM, HIDDEN)), "b1": np.zeros(HIDDEN),
+            "W2": r.normal(0, 0.3, (HIDDEN, classes)), "b2": np.zeros(classes)}
+
+def forward(p, X):
+    h = np.maximum(0, X @ p["W1"] + p["b1"])      # ReLU —— 隐层,也就是「特征层」
+    return h, h @ p["W2"] + p["b2"]
+
+def softmax(z):
+    z = z - z.max(axis=1, keepdims=True)
+    e = np.exp(z)
+    return e / e.sum(axis=1, keepdims=True)
+
+def train(p, X, y, epochs, lr, freeze_feature):
+    """freeze_feature=True 就冻住特征层,只训输出头"""
+    n, classes = len(y), p["W2"].shape[1]
+    oh = np.zeros((n, classes)); oh[np.arange(n), y] = 1
+    for _ in range(epochs):
+        h, logits = forward(p, X)
+        dlogits = (softmax(logits) - oh) / n
+        if not freeze_feature:
+            dh = (dlogits @ p["W2"].T) * (h &gt; 0)   # ReLU 的导数
+            p["W1"] -= lr * (X.T @ dh)
+            p["b1"] -= lr * dh.sum(0)
+        p["W2"] -= lr * (h.T @ dlogits)
+        p["b2"] -= lr * dlogits.sum(0)
+    return p
+
+def accuracy(p, X, y):
+    return (forward(p, X)[1].argmax(1) == y).mean()
+
+DIM, HIDDEN, HEAD_SEED = 20, 64, 99
+
+# ---- 上游 A:预训练任务和下游「同一件事」——四对坐标,其中就有下游要用那对 ----
+UP_STRONG = [(2, 3), (4, 5)]
+# ---- 上游 B:预训练任务和下游只是「有点关系」——四对混在一起 ----
+UP_WEAK = [(0, 1), (2, 3), (4, 5), (6, 7)]
+
+def downstream(n, seed):
+    return make_data(n, [(2, 3)], seed)
+
+def pretrain(pairs, n=4000, epochs=1500):
+    X, y = make_data(n, pairs, seed=1)
+    m = train(init(2), X, y, epochs, 0.5, freeze_feature=False)
+    return m, accuracy(m, X, y)
+
+def compare(pre, label):
+    print(f"\n{label}")
+    print(f"{'下游标签数':&lt;12}{'A 从头训':>11}{'B 冻结特征':>13}{'C 微调全部':>13}")
+    out = []
+    for n in [6, 20, 100, 400]:
+        Xtr, ytr = downstream(n, seed=7)
+        Xte, yte = downstream(800, seed=8)
+        h = init(2, seed=HEAD_SEED)
+        base = dict(W1=h['W1'].copy(), b1=h['b1'].copy(), W2=h['W2'].copy(), b2=h['b2'].copy())
+        a = train({k: v.copy() for k, v in base.items()}, Xtr, ytr, 400, 0.5, False)
+        b = train(dict(W1=pre['W1'].copy(), b1=pre['b1'].copy(), W2=base['W2'].copy(), b2=base['b2'].copy()),
+                  Xtr, ytr, 400, 0.5, True)
+        c = train(dict(W1=pre['W1'].copy(), b1=pre['b1'].copy(), W2=base['W2'].copy(), b2=base['b2'].copy()),
+                  Xtr, ytr, 400, 0.05, False)
+        ra, rb, rc = accuracy(a, Xte, yte), accuracy(b, Xte, yte), accuracy(c, Xte, yte)
+        out.append((n, ra, rb, rc))
+        print(f'{n:>8} 条  {ra:>10.1%}{rb:>13.1%}{rc:>13.1%}')
+    return out
+
+print('同一件下游任务(只用第 2、3 两个坐标,标签很少),三种做法:')
+print('   A 从头训    随机初始化,两层都在下游的小数据上学 —— 等于不用预训练模型')
+print('   B 冻结特征  抄来上游的特征层并冻住,只训新换的输出头')
+print('   C 微调全部  抄来上游的特征层但解冻,用小学习率一起调')
+
+pre_strong, acc_s = pretrain(UP_STRONG)
+pre_weak,   acc_w = pretrain(UP_WEAK)
+strong = compare(pre_strong, f'【上游 A:两对坐标 {UP_STRONG},上游准确率 {acc_s:.0%}】—— 和下游高度相关')
+weak   = compare(pre_weak,   f'【上游 B:四对坐标 {UP_WEAK},上游准确率 {acc_w:.0%}】—— 和下游只是有点关系')
+
+print('\n两张表对着看,才是这一节真正的结论:')
+print(f"   上游 A(高度相关):数据少时冻结领先 {strong[0][2]-strong[0][1]:.1%},")
+print(f"      数据多时依然领先 {strong[-1][2]-strong[-1][1]:.1%} —— 迁移一直划算。")
+print(f"   上游 B(只是有点关系):数据少时优势只剩 {weak[0][2]-weak[0][1]:.1%},")
+print(f"      到 {weak[-1][0]} 条时从头训反超 {weak[-1][1]-weak[-1][2]:+.1%} —— 迁移变成了负担。")
+print()
+print('所以 D11 那句「数据够时微调更好」要补一个前提:两个任务得多相关。')
+print('   相关 + 数据少 → 冻结特征,快、稳、省算力;')
+print('   不相关   → 预训练那层帮不上忙,反而要额外纠正它的偏差;')
+print('   数据够多 → 自己的数据能学出特征,从头训是最干净的。')
+print()
+print('这也解释了一个常见困惑:为什么拿一个通用大模型微调,有时效果好得惊人,')
+print('   有时几乎没变化 —— 差别往往不在调参,而在「任务离它原来学的有多远」。')</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>同一件下游任务(只用第 2、3 两个坐标,标签很少),三种做法:
+   A 从头训    随机初始化,两层都在下游的小数据上学 —— 等于不用预训练模型
+   B 冻结特征  抄来上游的特征层并冻住,只训新换的输出头
+   C 微调全部  抄来上游的特征层但解冻,用小学习率一起调
+
+【上游 A:两对坐标 [(2, 3), (4, 5)],上游准确率 79%】—— 和下游高度相关
+下游标签数             A 从头训       B 冻结特征       C 微调全部
+       6 条       51.0%        56.4%        54.9%
+      20 条       51.4%        57.2%        55.2%
+     100 条       57.1%        77.5%        69.0%
+     400 条       75.5%        84.0%        81.6%
+
+【上游 B:四对坐标 [(0, 1), (2, 3), (4, 5), (6, 7)],上游准确率 72%】—— 和下游只是有点关系
+下游标签数             A 从头训       B 冻结特征       C 微调全部
+       6 条       51.0%        50.7%        48.8%
+      20 条       51.4%        55.1%        52.4%
+     100 条       57.1%        55.8%        55.0%
+     400 条       75.5%        60.5%        65.5%
+
+两张表对着看,才是这一节真正的结论:
+   上游 A(高度相关):数据少时冻结领先 5.4%,
+      数据多时依然领先 8.5% —— 迁移一直划算。
+   上游 B(只是有点关系):数据少时优势只剩 -0.3%,
+      到 400 条时从头训反超 +15.0% —— 迁移变成了负担。
+
+所以 D11 那句「数据够时微调更好」要补一个前提:两个任务得多相关。
+   相关 + 数据少 → 冻结特征,快、稳、省算力;
+   不相关   → 预训练那层帮不上忙,反而要额外纠正它的偏差;
+   数据够多 → 自己的数据能学出特征,从头训是最干净的。
+
+这也解释了一个常见困惑:为什么拿一个通用大模型微调,有时效果好得惊人,
+   有时几乎没变化 —— 差别往往不在调参,而在「任务离它原来学的有多远」。</div>
+      <p>两张表唯一的差别是<b>上游学了哪几对坐标</b>,其余条件一模一样。结果差得很大:相关时冻结在每种数据量下都领先(最多 8.5%),不相关时不仅优势消失,<b>数据一多还倒亏 15%</b>。这条对比把 D11 那句经验补全了——<b>「数据够不够」是条件之一,「任务相关不相关」是另一个,而且是先决的那个。</b><br>还有一个设计细节值得说明:<b>任务被故意做成线性不可分(标签是两个坐标乘积的符号)</b>。这不是为了难为人——如果换成普通的「几团高斯点」,线性分类器在原始特征上就够了,那么不管有没有预训练、冻不冻结,结果都会差不多,什么也看不出来。这也是一项通用的实验经验:<b>想让「特征好不好」显出差别,任务本身得真的需要好特征。</b><br>表里那些 51% 也值得看一眼:6 条标签时,从头训几乎等于抛硬币。这不是代码写错了,而是<b>参数比样本多得多的时候,模型会把训练集背下来,在测试集上原形毕露</b>——D11 说的第一道坎(Kaggle 语境里常说的过拟合)在二十行代码里就复现了。</p>
+
+      <h2 id="tweak"><span class="no">4</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 把 <code>downstream()</code> 里那对坐标从 <code>(2, 3)</code> 换成 <code>(8, 9)</code>(上游从没见过的坐标对),再跑。<b>两张表会变成什么样?</b>——这才是「任务不相关」的真正测试。<br>
+        <b>②</b> 把 <code>HIDDEN</code> 从 64 改成 8。冻结还有优势吗?<b>特征层的容量是有下限的:太窄的话上游也学不出可迁移的东西。</b><br>
+        <b>③</b> 把上游的 <code>epochs</code> 从 1500 改成 50,再跑。上游准确率会掉到多少?下游跟着掉吗?<b>这就是「预训练也是要够量才有用」。</b><br>
+        <b>④</b> 第 1 步的 <code>train</code> 里,把 <code>freeze_feature=True</code> 时的 <code>lr</code> 从 0.5 改成 0.01。只训输出头需要多大的学习率?<b>换个头要重新学,步子太小会学不完。</b><br>
+        <b>⑤</b> 把 <code>make_data</code> 换成线性可分的任务(标签 = 第一个坐标的正负),再跑一遍。三列还有差别吗?<b>这一改能看到「任务选错,实验白做」。</b></p>
+      </div>
+
+      <h2 id="trouble"><span class="no">5</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>三列的准确率都在 50% 上下</td><td>这个任务太难,或者网络太小,三边都没学会</td><td>不是 bug;去看两张表的<strong>相对</strong>差别,别只看绝对值</td></tr>
+            <tr><td>每次跑数值略有不同</td><td>初始化或数据生成的种子变过</td><td>改回代码里的种子;比的是相对差距,不要求绝对一致</td></tr>
+            <tr><td>从头训那一列在小数据上特别差</td><td>参数远多于样本,把训练集背下来了</td><td>这正是要看的现象;对照 <a href="lab-04-过拟合现场.html">lab-04</a></td></tr>
+            <tr><td>冻结那一列几乎不涨</td><td>只训输出头,可调参数少,学习率又低</td><td>调高冻结时的学习率;见改一改 ④</td></tr>
+            <tr><td>换了个上游任务,结论全反了</td><td>两个任务的相关性变了</td><td>不是 bug;这正是这个实验要说明的事</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">6</span><span>收口</span></h2>
+      <p class="handoff">D11 的两种用法——冻结特征和微调——在这一节各自跑出了数字。<b>但真正该带走的是那张「换个上游,结论翻转」的对比</b>:迁移学习不是「用了预训练模型就一定更好」,它是一次<b>押注</b>——押上游学到的东西对自己的任务有用。押对了,少量数据就能拿到好结果;押错了,不但没用,还得花力气纠正它带来的偏差。<br>这也解释了一个日常困惑:同一个预训练模型,有人微调后效果惊人,有人几乎没变化——<b>差别常常不在调参,而在「任务离它原来学的有多远」。</b></p>
+
+      <nav class="chapter-nav">
+        <a href="../深度课程/D11-迁移学习与微调.html"><span class="lb">回讲义</span><span class="tt">D11 迁移学习与微调</span></a>
+        <a href="lab-26-微调与对齐.html" class="next"><span class="lb">配套读</span><span class="tt">lab-26 微调与对齐</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-28 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>同一个下游,换一个上游</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>4</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>5</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>6</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-28" data-kind="lab" data-title="冻结还是微调:两个任务的「相关性」才是那个变量"></script>
+</body>
+</html>

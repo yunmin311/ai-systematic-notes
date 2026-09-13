@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-10 · 线性回归:闭式解、梯度下降和一行 sklearn</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../深度课程/D01-线性回归全拆解.html">D01</a><span class="sep">—</span>
+      <a href="lab-10-线性回归.html" class="current">lab-10 线性回归</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-10 · 配套 D01 线性回归全拆解 · 需要 numpy / scikit-learn</p>
+        <h1>线性回归:闭式解、梯度下降和一行 sklearn</h1>
+        <p class="recap">同一个问题用三种办法解一遍:<b>闭式解</b>一步算出答案,<b>梯度下降</b>一步步挪过去,<b>sklearn</b> 只要一行。三者的答案必须一样——如果不一致,一定是有地方算错了,而不是「方法不同所以结果不同」。这是「模型-损失-训练」三件套最干净的一次示范。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>闭式解直接给出 w 和 b,残差之和恰好为 0</li>
+          <li>梯度下降的 MSE 从 1.0 掉到 0.0002,而且<b>先快后慢</b></li>
+          <li>手写梯度下降和闭式解的结果,小数点后 4 位一致</li>
+          <li>为什么原始尺度下必须标准化——w 的梯度是 b 的上百倍</li>
+          <li>加第二个特征时系数会「变怪」,这是多重共线性,不是 bug</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../深度课程/D01-线性回归全拆解.html">D01</a> 的模型-损失-训练三件套;梯度的直觉来自 <a href="../基础课程/06-训练的本质.html">第 6 章</a>;标准化是 <a href="../深度课程/D06-特征工程与数据预处理.html">D06</a> 的内容,这里先撞见一次。做完可以接 <a href="../项目/P2-第一个预测模型.html">项目 P2</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p><b>方式 A · 页面内运行器</b>:每段代码旁边有「▶ 运行」,用的是 Pyodide——一个跑在浏览器里的<b>真实 Python</b>,不是模拟输出。首次点击要下载运行时,约 10–20 秒,需要联网;第 3 步用到 scikit-learn,第一次会自动装包,再多等一会儿。</p>
+      <p><b>方式 B · 本机终端</b>:代码同时放在 <code>实验室\code\lab10\</code> 下,可以直接 <code>python step1_closed_form.py</code>。本机跑得更快,而且能改文件、能存结果。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>把 D01 那句话变成能跑的数:<b>学习就是把 w、b 这两个旋钮,调到让 MSE 最小。</b>闭式解是直接解出那个最小的位置;梯度下降是一步一步摸过去。路径不同,终点必须是同一个。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>闭式解:一步算出来</span></h2>
+      <p>最小二乘有解析解,不用迭代。<code>w = Σ(x−x̄)(y−ȳ) / Σ(x−x̄)²</code>,<code>b = ȳ − w·x̄</code>。这一节先把「正确答案」算出来,后面两步都拿它当基准。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_closed_form.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="24">import numpy as np
+
+# 六套房:面积(㎡) → 总价(万元)
+X = np.array([50, 60, 80, 100, 120, 150], dtype=float)
+y = np.array([155, 182, 235, 290, 348, 430], dtype=float)
+
+x_bar, y_bar = X.mean(), y.mean()
+
+# 最小二乘闭式解:w = Σ(x-x̄)(y-ȳ) / Σ(x-x̄)²
+w = ((X - x_bar) * (y - y_bar)).sum() / ((X - x_bar) ** 2).sum()
+b = y_bar - w * x_bar
+print(f"闭式解直接给出:  w = {w:.4f}   b = {b:.4f}")
+print(f"也就是:  总价 ≈ {w:.2f} × 面积 + {b:.1f}\n")
+
+pred = w * X + b
+print("面积     真实     预测     残差(预测-真实)")
+for xi, yi, pi in zip(X, y, pred):
+    print(f"{xi:5.0f}  {yi:7.1f}  {pi:7.1f}  {pi - yi:+8.2f}")
+
+mse = ((pred - y) ** 2).mean()
+print(f"\nMSE(均方误差) = {mse:.2f}")
+print(f"残差之和 = {(pred - y).sum():.2f}   ← 几乎为 0,这是最小二乘的必然结果")
+print(f"\n外推:95㎡ → {w * 95 + b:.1f} 万元")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>闭式解直接给出:  w = 2.7565   b = 16.0561
+也就是:  总价 ≈ 2.76 × 面积 + 16.1
+
+面积     真实     预测     残差(预测-真实)
+   50    155.0    153.9     -1.12
+   60    182.0    181.4     -0.55
+   80    235.0    236.6     +1.58
+  100    290.0    291.7     +1.71
+  120    348.0    346.8     -1.16
+  150    430.0    429.5     -0.46
+
+MSE(均方误差) = 1.42
+残差之和 = 0.00   ← 几乎为 0,这是最小二乘的必然结果
+
+外推:95㎡ → 277.9 万元</div>
+      <p>两个点值得盯一下。<b>残差之和恰好是 0</b>——不是凑巧,是最小二乘的必然:如果残差之和不为 0,把 b 挪一点就能让 MSE 更小,那它就不是最小了。<b>MSE 只有 1.42</b>,相当于每套房平均差一万两百块,这是因为这份数据是照着直线抖出来的;真实数据的 MSE 会大得多。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>梯度下降:一步步挪过去</span></h2>
+      <p>闭式解快,但特征一多、模型一复杂就没有解析解了,那时只能靠梯度下降。这一节手写它,看 MSE 怎么一轮轮掉下去。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_gradient_descent.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="30">import numpy as np
+
+X = np.array([50, 60, 80, 100, 120, 150], dtype=float)
+y = np.array([155, 182, 235, 290, 348, 430], dtype=float)
+
+# 先做标准化:两列都换成标准分(减均值、除标准差)
+# 原因很实在——原始尺度下 w 的梯度是 b 的上百倍,一个学习率顾不住两个旋钮。
+x_bar, x_std = X.mean(), X.std()
+y_bar, y_std = y.mean(), y.std()
+Xs = (X - x_bar) / x_std
+ys = (y - y_bar) / y_std
+
+w, b = 0.0, 0.0          # 两个旋钮都从 0 起步
+lr = 0.1                 # 步长:每轮沿梯度方向挪多远
+
+print("轮次      w        b        MSE       dw")
+for epoch in range(0, 61):
+    pred = w * Xs + b
+    err = pred - ys
+    mse = (err ** 2).mean()
+    dw = (2 / len(Xs)) * (err * Xs).sum()      # MSE 对 w 的偏导
+    db = (2 / len(Xs)) * err.sum()             # MSE 对 b 的偏导
+    if epoch % 10 == 0:
+        print(f"{epoch:4d}  {w:8.4f}  {b:8.4f}  {mse:8.4f}  {dw:9.4f}")
+    w -= lr * dw                               # 往梯度的反方向挪一小步
+    b -= lr * db
+
+# 把标准化尺度下的 w、b 换算回「万元 / ㎡」
+w_real = w * y_std / x_std
+b_real = y_bar + y_std * b - w_real * x_bar
+print(f"\n换算回原单位:  w = {w_real:.4f}   b = {b_real:.4f}")
+
+w_closed = ((X - x_bar) * (y - y_bar)).sum() / ((X - x_bar) ** 2).sum()
+b_closed = y_bar - w_closed * x_bar
+print(f"第 1 步闭式解:  w = {w_closed:.4f}   b = {b_closed:.4f}")
+print(f"两者相差:      w {abs(w_real - w_closed):.5f}   b {abs(b_real - b_closed):.5f}")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>轮次      w        b        MSE       dw
+   0    0.0000    0.0000    1.0000    -1.9998
+  10    0.8926    0.0000    0.0117    -0.2147
+  20    0.9884    0.0000    0.0003    -0.0231
+  30    0.9987    0.0000    0.0002    -0.0025
+  40    0.9998    0.0000    0.0002    -0.0003
+  50    0.9999    0.0000    0.0002    -0.0000
+  60    0.9999    0.0000    0.0002    -0.0000
+
+换算回原单位:  w = 2.7565   b = 16.0564
+第 1 步闭式解:  w = 2.7565   b = 16.0561
+两者相差:      w 0.00000   b 0.00032</div>
+      <p>三条要看出来的:<br>
+      <b>① 先快后慢。</b>前 10 轮 MSE 从 1.0 掉到 0.0117,后 50 轮只从 0.0003 挪到 0.0002。因为梯度本身在变小——越接近谷底坡越平。这是所有梯度下降的共性。<br>
+      <b>② b 一直是 0。</b>不是没更新,是标准化之后 y 的均值就是 0,截距在这个尺度下天然为 0。换算回去 b 就回来了(16.0564)。<br>
+      <b>③ 和第 1 步对上了。</b>w 一模一样,b 差 0.0003。闭式解和梯度下降给出同一个答案——<b>它们不是两种模型,是解同一个问题的两条路。</b></p>
+
+      <h2 id="s5"><span class="no">5</span><span>sklearn:一行,以及加一个特征会怎样</span></h2>
+      <p>真干活当然不手写。看 sklearn 的答案,顺手加第二个特征,撞见一个很多人第一次都会误解的现象。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step3_sklearn.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="22">import numpy as np
+from sklearn.linear_model import LinearRegression
+
+X = np.array([50, 60, 80, 100, 120, 150], dtype=float).reshape(-1, 1)  # sklearn 要二维
+y = np.array([155, 182, 235, 290, 348, 430], dtype=float)
+
+model = LinearRegression()
+model.fit(X, y)                                  # 就这一行,训练完成了
+
+print(f"sklearn 给出:  w = {model.coef_[0]:.4f}   b = {model.intercept_:.4f}")
+print(f"第 1 步手算:   w = 2.7565   b = 16.0561")
+print(f"R² = {model.score(X, y):.6f}   ← 1.0 表示完全贴合\n")
+
+# 多个特征时,闭式解的手写公式会变麻烦,而 sklearn 的接口不变
+X2 = np.array([[50, 2], [60, 2], [80, 3], [100, 3], [120, 4], [150, 4]], dtype=float)  # 面积 + 卧室数
+m2 = LinearRegression().fit(X2, y)
+print(f"两个特征时:    面积系数 {m2.coef_[0]:.3f}   卧室系数 {m2.coef_[1]:.3f}   截距 {m2.intercept_:.3f}")
+print(f"R² = {m2.score(X2, y):.6f}")
+print("\n注意卧室数的系数——它很小甚至可能为负,因为面积和卧室数高度相关。")
+print("这不代表卧室不重要,是多重共线性的典型表现;这时单个系数没法单独解读。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>sklearn 给出:  w = 2.7565   b = 16.0561
+第 1 步手算:   w = 2.7565   b = 16.0561
+R² = 0.999843   ← 1.0 表示完全贴合
+
+两个特征时:    面积系数 2.759   卧室系数 -0.114   截距 16.159
+R² = 0.999843
+
+注意卧室数的系数——它很小甚至可能为负,因为面积和卧室数高度相关。
+这不代表卧室不重要,是多重共线性的典型表现;这时单个系数没法单独解读。</div>
+      <p><b>三行数字完全一样</b>——手算、梯度下降、sklearn 三条路同一个终点,这才说明前面没算错。<br>
+      加第二个特征那一段是关键:<b>卧室数的系数是 −0.114</b>,难道多一间卧室房子还更便宜?不是。面积和卧室数在这份数据里几乎一起涨,模型没法分清「面积涨带来的涨价」和「卧室多带来的涨价」该各算多少,于是把权重在两者之间随便一分。<b>这就是多重共线性:系数还在,但单个系数不再能单独解读。</b>R² 一点没变,说明模型预测能力没变差,坏的只是「可解释性」。</p>
+
+      <h2 id="tweak"><span class="no">6</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 把第 2 步的 <code>lr</code> 从 0.1 改成 1.0,会看到 MSE 不降反升甚至发散。这说明学习率是什么的上限。<br>
+        <b>②</b> 把 <code>lr</code> 改成 0.001,60 轮之后 w 到多少?和第 1 步差多少?——这就是「训练没训够」。<br>
+        <b>③</b> 删掉第 2 步的标准化(直接用 <code>X</code>、<code>y</code>),<code>lr</code> 保持 0.1 再跑。会看到 w 直接飞掉,而 b 几乎没动——这就是注释里那句「一个学习率顾不住两个旋钮」的现场。<br>
+        <b>④</b> 在第 3 步的数据里加一套 300㎡ 的豪宅,看 w 和 MSE 怎么变。一个点能把整条线拽多少?</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">7</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>第 3 步报 <code>ModuleNotFoundError: sklearn</code></td><td>页面内运行器第一次用这个包</td><td>等它自动装完再点一次;本机跑就 <code>pip install scikit-learn</code></td></tr>
+            <tr><td>第 3 步报 <code>ValueError: Expected 2D array</code></td><td>sklearn 要二维的 X</td><td>用 <code>.reshape(-1, 1)</code> 把一维列变成一列二维</td></tr>
+            <tr><td>第 4 步 MSE 变成 <code>nan</code> 或越来越大</td><td>学习率太大,一步跨过了谷底并且越跨越远</td><td>把 <code>lr</code> 调小一个数量级(0.1 → 0.01 → 0.001)</td></tr>
+            <tr><td>换算回去的 b 和闭式解差很多</td><td>迭代轮数不够,还没收敛</td><td>把 <code>range(0, 61)</code> 改大;看 dw 那列是不是已经接近 0</td></tr>
+            <tr><td>自己改数据时 R² 变成负数</td><td>模型比「直接猜均值」还差,通常是特征和目标毫无关系</td><td>不是 bug;换一组真的有关系的量试试</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">8</span><span>收口</span></h2>
+      <p class="handoff">「模型-损失-训练」这三件套,在这个实验里第一次完整跑通:模型是 <code>ŷ = w·x + b</code>,损失是 MSE,训练是「算梯度 → 往反方向挪一小步」。后面所有模型——逻辑回归、神经网络、Transformer——换的都是前两项,第三项这套动作从没变过。<b>把这一节的手写循环看懂,后面几十章的训练代码就都是它的变体。</b></p>
+
+      <nav class="chapter-nav">
+        <a href="../深度课程/D01-线性回归全拆解.html"><span class="lb">回讲义</span><span class="tt">D01 线性回归全拆解</span></a>
+        <a href="../台账/学习台账.html" class="next"><span class="lb">记一笔</span><span class="tt">学习台账</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-10 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>闭式解</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>梯度下降</a>
+        <a data-toc-target="s5" href="#s5"><i>5</i>sklearn 与两个特征</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>6</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>7</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>8</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-10" data-kind="lab" data-title="线性回归:闭式解、梯度下降和一行 sklearn"></script>
+</body>
+</html>

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-24 · 提示词体检:把「写得清不清楚」变成能逐项打勾的事</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../应用工程/A01-提示词工程与上下文.html">A01</a><span class="sep">—</span>
+      <a href="lab-24-提示词工程.html" class="current">lab-24 提示词工程</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-24 · 配套 A01 提示词工程与上下文 · 只要标准库,不调 API</p>
+        <h1>提示词体检:把「写得清不清楚」变成能逐项打勾的事</h1>
+        <p class="recap">A01 说提示词工程就是「把上下文设计好」。但「设计好」是个很难自评的标准——<b>多数人以为说了格式,其实只说了「写得清楚点」</b>。这一节做一个提示词体检器,把五个要素逐项打勾,再看第二个容易踩的坑:<b>上下文塞得越多越好吗?</b>数据会说不是。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>同一件事的四版提示词,五要素得分是 1 / 2 / 4 / 5</li>
+          <li>最完整那版字数是裸问的 15 倍,但差距不在字数、在该给的信息给了没有</li>
+          <li>往上下文里塞 7 条无关资料,有效信息占比从 100% 掉到 17%</li>
+          <li>token 涨了 5.9 倍,而真正有用的那条一个字都没变</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../应用工程/A01-提示词工程与上下文.html">A01</a> 的提示词骨架与上下文窗口;<b>上下文怎么按预算裁剪</b>见 <a href="lab-21-幻觉与成本.html">lab-21</a>,<b>检索筛资料</b>见 <a href="lab-19-RAG检索增强.html">lab-19</a>,token 怎么数见 <a href="lab-08-Token与账单.html">lab-08</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p>两段都<b>只用 Python 标准库,不调 API</b>——体检器是规则检查,信噪比是纯算数。<b>方式 A</b> 点「▶ 运行」(Pyodide);<b>方式 B</b> 跑 <code>实验室\code\lab24\</code> 下的同名文件。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>提示词工程最容易被当成玄学——「多试几次」「换个说法」。这一节把它拆成两件可检查的事:<b>要素齐不齐</b>(可以逐项打勾)和<b>上下文值不值</b>(可以算占比)。两件都能量,就不靠感觉了。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>提示词体检:五个要素逐项打勾</span></h2>
+      <p>拿同一件事的四版提示词,用关键词规则逐项检查缺了什么。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_prompt_lint.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="44"># 一个「提示词体检器」。真实工作中它可以是提交前的自检清单,
+# 也可以做成 CI 里的一道闸——让提示词模板不靠记忆,而靠检查。
+
+ELEMENTS = {
+    "角色":   ["扮演", "作为一", "以……的身份"],
+    "任务":   ["帮我", "请", "写一份", "总结", "改写", "生成", "分析"],
+    "输出格式": ["格式", "JSON", "列表", "表格", "分三", "字数", "Markdown"],
+    "示例":   ["例如", "示例", "举例", "比如", "像这样"],
+    "约束":   ["不要", "必须", "只能", "不准", "避免", "至少", "不超过"],
+}
+
+PROMPTS = {
+    "A 裸问": "帮我写个周报。",
+    "B 加角色": "扮演一个做事细致的项目经理。帮我写一份本周工作周报。",
+    "C 补格式和约束": "扮演一个做事细致的项目经理。帮我写一份本周工作周报。"
+                     "用 Markdown 列表输出,分「本周完成」「下周计划」「风险」三块。"
+                     "不要写空话,每条必须带具体数字。",
+    "D 再加示例": "扮演一个做事细致的项目经理。帮我写一份本周工作周报。"
+                  "用 Markdown 列表输出,分「本周完成」「下周计划」「风险」三块。"
+                  "不要写空话,每条必须带具体数字。"
+                  "例如:「完成登录接口联调,覆盖 12 个用例」。",
+}
+
+def lint(prompt):
+    hit = {k: any(w in prompt for w in ws) for k, ws in ELEMENTS.items()}
+    return hit, sum(hit.values())
+
+print(f"{'提示词':&lt;16}{'角色':>6}{'任务':>6}{'格式':>6}{'示例':>6}{'约束':>6}{'  得分':>8}")
+for name, p in PROMPTS.items():
+    hit, score = lint(p)
+    row = "".join(f"{'✓' if hit[k] else '✗':>6}" for k in ELEMENTS)
+    print(f"{name:&lt;16}{row}{score:>6}/5")
+
+print("\n同一件事,四版提示词的差距:")
+print(f"   A 只有一句话:{len(PROMPTS['A 裸问']):>3} 字,只命中「任务」这一项")
+print(f"   D 补全之后:  {len(PROMPTS['D 再加示例']):>3} 字,五项全中")
+print(f"   D 的字数是 A 的 {len(PROMPTS['D 再加示例'])/len(PROMPTS['A 裸问']):.0f} 倍,但差距不在字数,在该给的信息给了没有。")
+
+print("\n五个要素各自管什么:")
+print("   角色    限定它从哪个角度说话(项目经理 / 法务 / 客服),直接影响用词和取舍")
+print("   任务    说清要干什么 —— 这一项最容易自以为说了,其实没说")
+print("   格式    让它输出能直接用的东西,而不是一段还得手工整理的话")
+print("   示例    一个例子抵一段描述,尤其是「什么算好」这种说不清的标准")
+print("   约束    划出边界:不要什么、必须什么 —— 这是最容易被忽略、也最省事的一项")
+
+print("\n体检器的用法不是「必须五项全满」:")
+print("   简单任务只给任务 + 格式就够;写示例反而啰嗦。")
+print("   它的价值在于暴露「以为写了、其实没写」的项——")
+print("   比如很多人以为说了格式,其实只说了「写得清楚点」。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>提示词                 角色    任务    格式    示例    约束      得分
+A 裸问                 ✗     ✓     ✗     ✗     ✗     1/5
+B 加角色                ✓     ✓     ✗     ✗     ✗     2/5
+C 补格式和约束             ✓     ✓     ✓     ✗     ✓     4/5
+D 再加示例               ✓     ✓     ✓     ✓     ✓     5/5
+
+同一件事,四版提示词的差距:
+   A 只有一句话:  7 字,只命中「任务」这一项
+   D 补全之后:  102 字,五项全中
+   D 的字数是 A 的 15 倍,但差距不在字数,在该给的信息给了没有。
+
+五个要素各自管什么:
+   角色    限定它从哪个角度说话(项目经理 / 法务 / 客服),直接影响用词和取舍
+   任务    说清要干什么 —— 这一项最容易自以为说了,其实没说
+   格式    让它输出能直接用的东西,而不是一段还得手工整理的话
+   示例    一个例子抵一段描述,尤其是「什么算好」这种说不清的标准
+   约束    划出边界:不要什么、必须什么 —— 这是最容易被忽略、也最省事的一项
+
+体检器的用法不是「必须五项全满」:
+   简单任务只给任务 + 格式就够;写示例反而啰嗦。
+   它的价值在于暴露「以为写了、其实没写」的项——
+   比如很多人以为说了格式,其实只说了「写得清楚点」。</div>
+      <p>得分那一列 1 / 2 / 4 / 5 就是这一节的主线:<b>每一次补充,都是把一项模糊的要求变成明确的要求。</b>从 A 到 B 补了角色,从 B 到 C 补了格式和约束,从 C 到 D 补了示例——<b>而 D 的字数是 A 的 15 倍,可读起来并不累</b>,因为多出来的每一个字都在解决一个具体问题,不是在堆客气话。<br>还有一点要说明:<b>这个体检器用的是关键词规则,一定会有误判</b>——「写得清楚点」没被算成格式要求,但人可能觉得它算了。这正是这类工具的正确用法:<b>它不判定好坏,它负责提醒「这一项没明确写」</b>,最后一遍还是人来过。和 <a href="lab-21-幻觉与成本.html">lab-21</a> 那个「报警器」是同一个思路。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>上下文塞得越多越好吗</span></h2>
+      <p>第二个坑更隐蔽:资料给得越多,模型是不是答得越好?算一下有效信息占比。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_signal.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="42"># 上下文窗口里的「信噪比」:塞进去的东西越多,真正有用的那条占比越低。
+# 这解释了为什么 RAG 不是「把资料全塞进去」,而是「只塞最相关的那几条」。
+
+QUESTION = "睡眠灯保修几年?"
+
+RELEVANT = "睡眠灯 A1 整机保修两年,灯珠保修三年,均从签收之日起算。"   # 真正有用的那条
+
+NOISE = [
+    "本店支持七天无理由退换,需保持包装完好。",
+    "发货时间为付款后 48 小时内,节假日顺延。",
+    "会员每消费一元累计一分,可在积分商城兑换。",
+    "目前支持微信、支付宝两种支付方式。",
+    "如需开发票,请在订单备注中填写抬头与税号。",
+    "我们的客服在线时间为每天 9:00 到 21:00。",
+    "部分地区可享受次日达,具体以下单页为准。",
+]
+
+TOK_PER_CHAR = 1.5      # 中文大约 1.5 字一个 token(与第 8 章的估算一致)
+
+def report(n_noise):
+    ctx = RELEVANT + "".join(NOISE[:n_noise])
+    total = int(len(ctx) * TOK_PER_CHAR)
+    useful = len(RELEVANT) / len(ctx)
+    return n_noise, len(ctx), total, useful
+
+print(f"问题:{QUESTION}\n")
+print("往上下文里塞不同数量的无关资料,看有效信息占比怎么变:")
+print("   无关条数   资料总字数   约多少 token   有效信息占比")
+rows = [report(n) for n in [0, 1, 2, 4, 7]]
+for n, chars, toks, useful in rows:
+    bar = "█" * int(useful * 40)
+    print(f"   {n:>6}   {chars:>9}   {toks:>11}   {useful:>9.1%}  {bar}")
+
+first, last = rows[0], rows[-1]
+print(f"\n只放那一条有用的:上下文 {first[1]} 字,有效信息占 {first[3]:.0%}。")
+print(f"再塞 7 条无关的:上下文涨到 {last[1]} 字({last[2]} token),占比掉到 {last[3]:.0%}。")
+print(f"token 涨了 {last[2]/first[2]:.1f} 倍,而真正有用的那条一点没变长。")
+
+print("\n三点要连着看:")
+print("   ① 钱:token 涨了,费用跟着涨,而且这部分是每轮都要重付的固定开销。")
+print("   ② 效果:无关内容越多,模型越容易被带偏 —— 它不会「自动忽略」噪声,")
+print("      而是把这一整段都当成「当前要说的事」。")
+print("   ③ 关键信息的位置:真正有用的那条一旦被埋在中间,更容易被忽略。")
+print()
+print("所以「塞得越多越好」是错的。正确的做法是先把候选筛一遍,只留最相关的几条:")
+print("   这就是 RAG 里「检索」那一步存在的全部理由(见 lab-19)。")
+print("   反过来,如果筛不准,宁可少塞 —— 给 1 条对的,好过给 8 条里混 1 条对的。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>问题:睡眠灯保修几年?
+
+往上下文里塞不同数量的无关资料,看有效信息占比怎么变:
+   无关条数   资料总字数   约多少 token   有效信息占比
+        0          30            45      100.0%  ████████████████████████████████████████
+        1          50            75       60.0%  ████████████████████████
+        2          72           108       41.7%  ████████████████
+        4         110           165       27.3%  ██████████
+        7         177           265       16.9%  ██████
+
+只放那一条有用的:上下文 30 字,有效信息占 100%。
+再塞 7 条无关的:上下文涨到 177 字(265 token),占比掉到 17%。
+token 涨了 5.9 倍,而真正有用的那条一点没变长。
+
+三点要连着看:
+   ① 钱:token 涨了,费用跟着涨,而且这部分是每轮都要重付的固定开销。
+   ② 效果:无关内容越多,模型越容易被带偏 —— 它不会「自动忽略」噪声,
+      而是把这一整段都当成「当前要说的事」。
+   ③ 关键信息的位置:真正有用的那条一旦被埋在中间,更容易被忽略。
+
+所以「塞得越多越好」是错的。正确的做法是先把候选筛一遍,只留最相关的几条:
+   这就是 RAG 里「检索」那一步存在的全部理由(见 lab-19)。
+   反过来,如果筛不准,宁可少塞 —— 给 1 条对的,好过给 8 条里混 1 条对的。</div>
+      <p><b>100% → 17%</b> 这一列是这个实验最有用的一格。注意它和「模型能力」毫无关系——真正有用的那条资料<b>一个字都没变</b>,变的只是周围多了 7 条不相干的。而模型的注意力是有限的:它不会因为提示词里写了「只回答保修问题」就把其余 6 条扔掉,<b>它会把整段都当成「当前要说的事」</b>。<br>这一格也顺手解释了 RAG 里「检索」那一步为什么要反复调:调的不是模型,是<b>塞进去的那几条够不够准</b>。而 lab-19 里那个「质保期多久」搜不到的例子,正是反过来的风险——<b>筛得太严会漏掉该给的,筛得太松会稀释有效信息</b>,两头都要试。<br>一个可以直接用的判断标准:<b>如果一段上下文里数不出哪一句是在回答这个问题,那它就不该整段塞进去。</b></p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 第 1 步给 <code>ELEMENTS</code> 加一项「受众」(关键词如「给」「面向」「读者是」),再看四版提示词各得几分。<b>看看自己写的提示词通常缺哪一项。</b><br>
+        <b>②</b> 第 1 步把 A 加上一句「写得清楚点」,它会命中「格式」吗?——<b>不会。这正是体检器最有用的一格:它区分了「提了要求」和「说清要求」。</b><br>
+        <b>③</b> 第 2 步把 <code>RELEVANT</code> 缩短一半(只留「整机保修两年」),再看占比那一列。<b>同样的噪声量下,占比会怎么变?</b><br>
+        <b>④</b> 第 2 步给 <code>NOISE</code> 再加 13 条(凑到 20),按上面的趋势估算占比会掉到多少,再跑一遍验证。<br>
+        <b>⑤</b> 第 2 步把 <code>TOK_PER_CHAR</code> 从 1.5 改成 1.0 再跑。<b>占比变了吗?哪个数变了?</b>——这能用来区分「信息效率」和「计费」两件事。</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>某版提示词五项全是 ✗</td><td>它确实一句话都没写清</td><td>不是 bug;体检器报出来的是真的,去看 <code>PROMPTS</code> 里那一条</td></tr>
+            <tr><td>自己写的提示词被判缺项,但明明写了</td><td>关键词规则没覆盖该写法</td><td>把该说法加进 <code>ELEMENTS</code> 对应的列表;规则本来就要按自己的习惯养</td></tr>
+            <tr><td>占比算出来不是整数百分比</td><td>是按字符数算的,不是按条数</td><td>正常;换成按 token 算结果相近,见改一改 ⑤</td></tr>
+            <tr><td>想让那 7 条噪声「不影响」</td><td>那要靠模型自身的指令遵循能力,不是靠数学</td><td>这一节量的是「占比」这个客观事实;模型能忽略多少,得另做评测</td></tr>
+            <tr><td>加了很多噪声但占比掉得不多</td><td>有用那段本身很长,分母大</td><td>正常;占比看的是相对量,不是绝对条数</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">A01 说提示词工程是把上下文设计好。这一节把「设计好」拆成了两个可以检查的量:<b>要素齐不齐(逐项打勾,1 到 5 分)、上下文值不值(有效信息占比,100% 到 17%)。</b>两个都不靠感觉,也就不靠反复试。<br>两条结论合起来是一句话:<b>写给模型的东西,和写给人的东西一样,多不等于好。</b>要素要多到说清为止,资料要少到只留相关的——这两个「刚好」的位置,就是提示词工程真正的手艺所在。</p>
+
+      <nav class="chapter-nav">
+        <a href="../应用工程/A01-提示词工程与上下文.html"><span class="lb">回讲义</span><span class="tt">A01 提示词工程与上下文</span></a>
+        <a href="lab-25-结构化输出.html" class="next"><span class="lb">下一个实验</span><span class="tt">lab-25 结构化输出与函数调用</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-24 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>提示词体检</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>塞得越多越好吗</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-24" data-kind="lab" data-title="提示词体检:把「写得清不清楚」变成能逐项打勾的事"></script>
+</body>
+</html>

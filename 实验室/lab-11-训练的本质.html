@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-11 · 训练的本质:看清那座山,和四种下山的步子</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../基础课程/06-训练的本质.html">第 6 章</a><span class="sep">—</span>
+      <a href="lab-11-训练的本质.html" class="current">lab-11 训练的本质</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-11 · 配套 第 6 章 训练的本质 · 纯 Python,不需要任何库</p>
+        <h1>训练的本质:看清那座山,和四种下山的步子</h1>
+        <p class="recap">把训练拆到只剩一个旋钮:<b>损失就是一座山,训练就是摸黑下山。</b>这一节先用手算把这座山的形状扫出来,再让梯度下降用四种步子下山——太小走得慢、正好最快、太大来回荡、过头直接飞出山谷。这四行输出比任何比喻都直观。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>一个只有单个旋钮的损失曲线,谷底在 w=3、损失=2</li>
+          <li>梯度为负时该往大调、为正时该往小调——符号就是方向</li>
+          <li>学习率 0.03 / 0.30 / 0.90 / 1.05 的四种下场</li>
+          <li>一条能算出来的判据:每步误差乘以 (1 − 2×lr)</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../基础课程/06-训练的本质.html">第 6 章</a> 的损失函数与梯度下降;<a href="../深度课程/D10-优化器正则化与训练技巧.html">D10</a> 会讲真实训练里怎么自动调这个步长。这条代码不依赖任何库,随便一台装了 Python 的机器都能跑。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p>两段代码都是<b>纯 Python</b>,不需要 numpy、不需要装任何东西。<b>方式 A</b> 点代码旁边的「▶ 运行」(Pyodide,浏览器里的真实 Python);<b>方式 B</b> 用本机终端跑 <code>实验室\code\lab11\</code> 下的同名文件。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>把第 6 章那句话变成能算的数:<b>训练 = 不停地问「现在错多少」和「往哪调能变少」,然后朝那个方向挪一小步。</b>这里故意用最简单的损失函数,好让每一次挪动都能手算验证——而不是交给库之后变成黑箱。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>损失:先看清这座山</span></h2>
+      <p>损失定为 <code>(w − 3)² + 2</code>。谷底在哪我们事先就知道(w=3、损失=2),所以后面每一步对不对都能当场验算。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_loss_curve.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="22"># 把「训练」这件事拆到最简:只有一个旋钮 w
+# 损失 = (w - 3)² + 2       ← 谷底在 w=3、损失=2,这是我们事先就知道的正确答案
+def loss(w):
+    return (w - 3) ** 2 + 2
+
+def grad(w):
+    return 2 * (w - 3)          # 损失对 w 的导数:正的表示 w 该往小调
+
+print("  w      损失     梯度(往哪调)")
+w = 0.0
+while w &lt;= 6.01:
+    print(f"{w:5.1f}  {loss(w):8.3f}  {grad(w):+8.3f}")
+    w += 0.5
+
+best = min([(loss(x / 10), x / 10) for x in range(0, 61)])
+print(f"\n扫一遍找到的最低点:  w = {best[1]:.1f}   损失 = {best[0]:.3f}")
+print("这就是「穷举」——能找到答案,但 w 要是有一万个,这条路就走不通了。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>  w      损失     梯度(往哪调)
+  0.0    11.000    -6.000
+  0.5     8.250    -5.000
+  1.0     6.000    -4.000
+  1.5     4.250    -3.000
+  2.0     3.000    -2.000
+  2.5     2.250    -1.000
+  3.0     2.000    +0.000
+  3.5     2.250    +1.000
+  4.0     3.000    +2.000
+  4.5     4.250    +3.000
+  5.0     6.000    +4.000
+  5.5     8.250    +5.000
+  6.0    11.000    +6.000
+
+扫一遍找到的最低点:  w = 3.0   损失 = 2.000
+这就是「穷举」——能找到答案,但 w 要是有一万个,这条路就走不通了。</div>
+      <p>三件事。<b>损失是对称的</b>——w=2 和 w=4 的损失一样(都是 3.000),所以只看损失大小分不清自己在谷底哪一侧。<b>梯度带着方向</b>:w 小于 3 时梯度是负的,意思是「再往大调还能更低」;w 大于 3 时变正。到 w=3 时梯度恰好为 0,这就是<b>停下来的信号</b>。<br>最后一句是重点:穷举能解,但真实模型有几十亿个旋钮,穷举根本走不通——这才需要梯度。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>学习率:四种下山的步子</span></h2>
+      <p>同样从 w=0 出发、同样跑 12 步,只改「每步挪多远」,结果天差地别。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_learning_rate.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="26">def loss(w): return (w - 3) ** 2 + 2
+def grad(w): return 2 * (w - 3)
+
+def run(lr, steps=12, w0=0.0):
+    w = w0
+    trace = [w]
+    for _ in range(steps):
+        w = w - lr * grad(w)          # 就这一行:往梯度的反方向挪
+        trace.append(w)
+    return w, trace
+
+print("学习率太小 / 正好 / 太大 / 过头,都从 w=0 跑 12 步:\n")
+for lr, name in [(0.03, "太小  0.03"), (0.30, "正好  0.30"),
+                 (0.90, "震荡  0.90"), (1.05, "过头  1.05")]:
+    w, trace = run(lr)
+    path = " → ".join(f"{t:.2f}" for t in trace[:7])
+    print(f"lr = {name}   最终 w = {w:>9.4f}   最终损失 = {loss(w):>10.4f}")
+    print(f"   前 6 步: {path}")
+    print()
+
+print("判据:每步的更新量是 lr × 梯度。这个例子里梯度 = 2(w-3),")
+print("所以一步之后,误差(w-3)会变成原来的 (1 - 2×lr) 倍:")
+for lr in (0.03, 0.30, 0.90, 1.05):
+    r = 1 - 2 * lr
+    if r >= 1 or r &lt;= -1:   verdict = "发散——越跑越远"
+    elif r &lt; 0:             verdict = "震荡,但还在收敛"
+    elif r &lt; 0.5:           verdict = "收敛快"
+    else:                   verdict = "收敛慢——步子太小"
+    print(f"   lr={lr:<5} → 每步误差 ×{r:>6.2f}   {verdict}")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>学习率太小 / 正好 / 太大 / 过头,都从 w=0 跑 12 步:
+
+lr = 太小  0.03   最终 w =    1.5722   最终损失 =     4.0385
+   前 6 步: 0.00 → 0.18 → 0.35 → 0.51 → 0.66 → 0.80 → 0.93
+
+lr = 正好  0.30   最终 w =    2.9999   最终损失 =     2.0000
+   前 6 步: 0.00 → 1.80 → 2.52 → 2.81 → 2.92 → 2.97 → 2.99
+
+lr = 震荡  0.90   最终 w =    2.7938   最终损失 =     2.0425
+   前 6 步: 0.00 → 5.40 → 1.08 → 4.54 → 1.77 → 3.98 → 2.21
+
+lr = 过头  1.05   最终 w =   -6.4153   最终损失 =    90.6476
+   前 6 步: 0.00 → 6.30 → -0.63 → 6.99 → -1.39 → 7.83 → -2.31
+
+判据:每步的更新量是 lr × 梯度。这个例子里梯度 = 2(w-3),
+所以一步之后,误差(w-3)会变成原来的 (1 - 2×lr) 倍:
+   lr=0.03  → 每步误差 ×  0.94   收敛慢——步子太小
+   lr=0.3   → 每步误差 ×  0.40   收敛快
+   lr=0.9   → 每步误差 × -0.80   震荡,但还在收敛
+   lr=1.05  → 每步误差 × -1.10   发散——越跑越远</div>
+      <p>四种下场要一条条对上:<br>
+      <b>lr=0.03</b>——12 步只走到 1.57,离 3 还差得远。不是方向错,是<b>步子太小</b>。<br>
+      <b>lr=0.30</b>——第 6 步就到 2.99,损失 2.0000。这是四种里唯一真正收敛的。<br>
+      <b>lr=0.90</b>——看轨迹:0 → 5.40 → 1.08 → 4.54……<b>在谷底两侧来回荡</b>,每步都跨过 3。虽然还收敛(系数是 −0.8,绝对值小于 1),但很浪费。<br>
+      <b>lr=1.05</b>——荡的幅度一次比一次大,12 步之后跑到 −6.4,损失 90。<b>这就是「训崩了」</b>,真实训练里表现为 loss 突然变成 nan。<br>
+      最后那张表是关键:这个例子能<b>手算出收敛条件</b>——每步误差乘以 (1 − 2×lr),只要这个数的绝对值小于 1 就收敛。<b>学习率不是越小越安全,是有一个上限。</b></p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 把第 2 步的 <code>steps</code> 从 12 改成 100,再看 lr=0.03——它其实<b>会</b>收敛,只是慢。这纠正一个常见误解:学习率小不等于不收敛。<br>
+        <b>②</b> 算一下 lr 等于多少时刚好在发散的边界上(提示:让 1 − 2×lr = −1)。把这个值填进去跑,看轨迹是不是保持等幅震荡。<br>
+        <b>③</b> 把损失函数改成 <code>(w - 3) ** 4 + 2</code>(四次方),梯度变成 <code>4 * (w - 3) ** 3</code>。原来的 lr=0.30 还合适吗?——真实模型里没人手算这个,所以要 Adam 这类自适应优化器(D10)。<br>
+        <b>④</b> 把起点 <code>w0</code> 从 0 改成 3.5,梯度变成正的,看 w 往哪个方向走。</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>损失一直是 2.0000,一步都不动</td><td>起点正好在 w=3,梯度为 0</td><td>把 <code>w0</code> 改成别的值;这也说明「梯度为 0」就是收敛的判据</td></tr>
+            <tr><td>输出的数和这里写的差一点点</td><td>浮点精度,或者改过 steps</td><td>前 4 位有效数字一致就算对;差距在第 2 位就要回查代码</td></tr>
+            <tr><td>改了损失函数之后报 <code>TypeError</code></td><td><code>grad</code> 还是旧的,和新的 <code>loss</code> 不配套</td><td>梯度必须是新损失函数的导数,两个要一起改</td></tr>
+            <tr><td>lr 很大但最终 w 反而接近 3</td><td>步数是偶数,来回荡正好荡回来了</td><td>把 <code>steps</code> 改成奇数再看,会看到它其实在发散</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">「损失 + 梯度下降」这套动作就这么点东西:算误差、看梯度符号决定方向、按学习率挪一步、重复。真实训练里换的是——损失不再是这条光滑的抛物线(可能有无数个坑)、旋钮从 1 个变成几十亿个、学习率交给 Adam 自动调。<b>但每一次参数更新,干的还是这一行 <code>w = w - lr * grad(w)</code>。</b></p>
+
+      <nav class="chapter-nav">
+        <a href="../基础课程/06-训练的本质.html"><span class="lb">回讲义</span><span class="tt">第 6 章 训练的本质</span></a>
+        <a href="lab-12-神经网络.html" class="next"><span class="lb">下一个实验</span><span class="tt">lab-12 神经网络</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-11 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>先看清这座山</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>四种下山的步子</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-11" data-kind="lab" data-title="训练的本质:看清那座山,和四种下山的步子"></script>
+</body>
+</html>

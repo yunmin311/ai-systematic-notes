@@ -49,8 +49,8 @@ body{
   <div class="hero">
     <div class="chip-row">
       <span class="chip">实验室</span>
-      <span class="chip teal">9 个 · 分步跑</span>
-      <span class="chip teal">八个可在页面里跑</span>
+      <span class="chip teal">28 个 · 分步跑</span>
+      <span class="chip teal">二十七个可在页面里跑</span>
     </div>
     <h1>实验室入口</h1>
     <p class="lede">讲义负责看懂,实验室负责跑通。每个实验都是<b>分步的</b>:一段代码、一句「应该看到什么」、一句「为什么」;跑完还有「自己改一改」和一张排错表。<b>跑出来的数和页面上写的对不上,就是最值钱的时刻</b>——排错表第一栏就是从那里开始。</p>
@@ -64,7 +64,7 @@ body{
   </div>
 
   <div class="modhead">Stage 1 / 配套基础课程</div>
-  <p class="modnote">读完对应章节再来跑。前两个不需要任何第三方库以外的东西。</p>
+  <p class="modnote">读完对应章节再来跑。lab-01 与 lab-11 是纯 Python,不装任何东西就能跑。</p>
   <div class="qgrid">
     <a class="qcard" href="lab-01-规则与学习.html">
       <span class="no">lab-01</span>
@@ -90,10 +90,42 @@ body{
         <span class="meta">配 第 5 章 · D02 · D05 · 浏览器 + 本机 · <b>3 个脚本</b></span>
       </span>
     </a>
+    <a class="qcard" href="lab-11-训练的本质.html">
+      <span class="no">lab-11</span>
+      <span class="body">
+        <span class="tt">训练的本质:看清那座山,和四种下山的步子</span>
+        <span class="ds">学习率 0.03 / 0.30 / 0.90 / 1.05 四种下场:太慢、正好、来回荡、直接飞出山谷。</span>
+        <span class="meta">配 第 6 章 · <b>纯 Python</b> · 2 个脚本</span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-12-神经网络.html">
+      <span class="no">lab-12</span>
+      <span class="body">
+        <span class="tt">神经网络:从一个神经元,到手搓反向传播</span>
+        <span class="ds">30 行 numpy 训一个 2→4→1 的小网络,把 XOR 从 50% 训到 100%。</span>
+        <span class="meta">配 第 7 章 · 浏览器 + 本机 · <b>2 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-20-大语言模型鸟瞰.html">
+      <span class="no">lab-20</span>
+      <span class="body">
+        <span class="tt">预测下一个词:把大模型缩到能用眼睛看完</span>
+        <span class="ds">10 句话造一个语言模型;温度 0.2 时首选占 99.2%,5.0 时只剩 38.4%。</span>
+        <span class="meta">配 第 8 章 · <b>纯 numpy</b> · 2 个脚本</span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-22-Python基础.html">
+      <span class="no">lab-22</span>
+      <span class="body">
+        <span class="tt">五块地基:用一个真任务把它们串起来</span>
+        <span class="ds">变量、容器、控制流、函数、读一次真实报错——五块全用上,不到四十行。</span>
+        <span class="meta">配 第 2 章 · <b>纯 Python</b> · 2 个脚本</span>
+      </span>
+    </a>
   </div>
 
   <div class="modhead">Stage 2 / 配套深度课程 · Track A 经典机器学习</div>
-  <p class="modnote">这两个实验各演示一种「分数骗人」的方式——一种是自己骗自己,一种是写法骗了自己。</p>
+  <p class="modnote">lab-10 把同一个问题用三种办法各解一遍,答案必须一致;另两个各演示一种「分数骗人」的方式——一种是自己骗自己,一种是写法骗了自己。</p>
   <div class="qgrid">
     <a class="qcard" href="lab-04-过拟合现场.html">
       <span class="no">lab-04</span>
@@ -111,10 +143,34 @@ body{
         <span class="meta">配 D06 · 浏览器 + 本机 · <b>2 个脚本</b></span>
       </span>
     </a>
+    <a class="qcard" href="lab-10-线性回归.html">
+      <span class="no">lab-10</span>
+      <span class="body">
+        <span class="tt">线性回归:闭式解、梯度下降和一行 sklearn</span>
+        <span class="ds">同一个问题解三遍,三条路的答案小数点后 4 位都一样;再加一个特征撞见共线性。</span>
+        <span class="meta">配 D01 · 浏览器 + 本机 · <b>3 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-13-决策树.html">
+      <span class="no">lab-13</span>
+      <span class="body">
+        <span class="tt">决策树:把过拟合调成一根刻度</span>
+        <span class="ds">树深从 1 加到不限,训练准确率爬到 1.000,「差值」列从 +0.043 扩到 +0.094。</span>
+        <span class="meta">配 D03 · 浏览器 + 本机 · <b>2 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-14-聚类与降维.html">
+      <span class="no">lab-14</span>
+      <span class="body">
+        <span class="tt">聚类与降维:没有标签时凭什么说「对了」</span>
+        <span class="ds">K 调大指标永远在变好;30 维压到 7 维保住 90%,压到 2 维只剩 63%。</span>
+        <span class="meta">配 D04 · 浏览器 + 本机 · <b>2 个脚本</b></span>
+      </span>
+    </a>
   </div>
 
   <div class="modhead">Stage 2 / 配套深度课程 · Track B 深度学习</div>
-  <p class="modnote">唯一一个只能在本机跑的实验。</p>
+  <p class="modnote">lab-06 是全部实验里唯一一个只能在本机跑的;lab-16 用纯 numpy 复现了同一段脉络。</p>
   <div class="qgrid">
     <a class="qcard" href="lab-06-五步循环.html">
       <span class="no">lab-06</span>
@@ -124,10 +180,26 @@ body{
         <span class="meta">配 D07 · <b>只能本机</b> · 3 个脚本</span>
       </span>
     </a>
+    <a class="qcard" href="lab-16-序列模型.html">
+      <span class="no">lab-16</span>
+      <span class="body">
+        <span class="tt">从 RNN 到注意力:把两堵墙量出来</span>
+        <span class="ds">记忆每传一步就乘一次循环权重:谱半径 0.9 二十步只剩 12%,1.05 则涨到 265%。</span>
+        <span class="meta">配 D09 · <b>纯 numpy</b> · 2 个脚本</span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-18-卷积神经网络.html">
+      <span class="no">lab-18</span>
+      <span class="body">
+        <span class="tt">卷积:一个核滑遍全图</span>
+        <span class="ds">numpy 手写卷积与池化;竖边核响应 27、横边核 0;8 层堆出 17×17 感受野。</span>
+        <span class="meta">配 D08 · <b>纯 numpy</b> · 2 个脚本</span>
+      </span>
+    </a>
   </div>
 
   <div class="modhead">Stage 2 / 配套深度课程 · Track C 大模型内部</div>
-  <p class="modnote">这两个实验把大模型最核心的机制和最现实的账,都变成能自己算的数。</p>
+  <p class="modnote">这三个实验把大模型最核心的机制和最现实的账,都变成能自己算的数。</p>
   <div class="qgrid">
     <a class="qcard" href="lab-07-手算注意力.html">
       <span class="no">lab-07</span>
@@ -145,10 +217,26 @@ body{
         <span class="meta">配 D12 · D17 · 浏览器 + 本机 · <b>3 个脚本</b></span>
       </span>
     </a>
+    <a class="qcard" href="lab-15-Embedding.html">
+      <span class="no">lab-15</span>
+      <span class="body">
+        <span class="tt">Embedding:让「意思像不像」变成一个数</span>
+        <span class="ds">余弦和欧氏距离给出相反答案;再只用 12 句语料 + 一次 SVD,让猫狗兔子自己聚成一堆。</span>
+        <span class="meta">配 D13 · 浏览器 + 本机 · <b>2 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-17-Transformer结构.html">
+      <span class="no">lab-17</span>
+      <span class="body">
+        <span class="tt">Transformer 块:为什么它能堆几十层</span>
+        <span class="ds">40 行搭出四件套;裸堆 40 层信号归零,只加残差涨到 16 万%,两个一起才稳住。</span>
+        <span class="meta">配 D15 · <b>纯 numpy</b> · 2 个脚本</span>
+      </span>
+    </a>
   </div>
 
   <div class="modhead">Stage 3 / 配套应用工程</div>
-  <p class="modnote">不调任何 API、不花一分钱——模型部分用一个写死的桩替代,要看的是外面那圈框架。</p>
+  <p class="modnote">这六个都不调 API、不花一分钱——模型部分用一个写死的桩替代。lab-09 看外面那圈框架,lab-19 看整条检索链路,lab-21 看评估与成本,lab-23 看限流与缓存,lab-24/25 看提示词与结构化输出。</p>
   <div class="qgrid">
     <a class="qcard" href="lab-09-最小harness.html">
       <span class="no">lab-09</span>
@@ -158,10 +246,80 @@ body{
         <span class="meta">配 A05 · 浏览器 + 本机 · <b>2 个脚本</b></span>
       </span>
     </a>
+    <a class="qcard" href="lab-19-RAG检索增强.html">
+      <span class="no">lab-19</span>
+      <span class="body">
+        <span class="tt">RAG:开卷考试,和它开卷也答不出的那一道</span>
+        <span class="ds">3 篇资料走完 切块 → 检索 → 拼提示词 → 生成;故意留一个查不到的问句。</span>
+        <span class="meta">配 A03 · 不调 API · <b>2 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-21-幻觉与成本.html">
+      <span class="no">lab-21</span>
+      <span class="body">
+        <span class="tt">幻觉怎么被查出来,以及省钱该砍谁</span>
+        <span class="ds">编造的句子命中率 12%、老实的 90%+;砍历史只动 29%,砍资料要动 42%。</span>
+        <span class="meta">配 A06 · 不调 API · <b>2 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-23-限流与缓存.html">
+      <span class="no">lab-23</span>
+      <span class="body">
+        <span class="tt">限流与缓存:打不垮、烧不穿</span>
+        <span class="ds">固定窗口会被跨窗口绕过、令牌桶不会;整条缓存省 41.4%,前缀缓存反而省 50.7%。</span>
+        <span class="meta">配 A07 · 不调 API · <b>2 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-24-提示词工程.html">
+      <span class="no">lab-24</span>
+      <span class="body">
+        <span class="tt">提示词体检:逐项打勾</span>
+        <span class="ds">四版提示词得分 1/2/4/5;上下文塞 7 条无关资料,有效信息从 100% 掉到 17%。</span>
+        <span class="meta">配 A01 · 不调 API · <b>2 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-25-结构化输出.html">
+      <span class="no">lab-25</span>
+      <span class="body">
+        <span class="tt">结构化输出与函数调用</span>
+        <span class="ds">四种不合格输出逐个拦下;工具调用三层防护——前两层靠 schema,第三层只能靠代码。</span>
+        <span class="meta">配 A02 · 不调 API · <b>2 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-26-微调与对齐.html">
+      <span class="no">lab-26</span>
+      <span class="body">
+        <span class="tt">微调和对齐:一笔账,一次转换</span>
+        <span class="ds">LoRA 只动 0.130% 的参数且部署不加延迟;9 场「谁赢」转成可排序的分数。</span>
+        <span class="meta">配 D16 · 不调 API · <b>2 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-27-Agent循环.html">
+      <span class="no">lab-27</span>
+      <span class="body">
+        <span class="tt">Agent 的全部:一个循环加三样东西</span>
+        <span class="ds">想/做/看三轮完成一个两步任务;工具失败时三种应对各跑一遍。</span>
+        <span class="meta">配 A04 · 不调 API · <b>2 个脚本</b></span>
+      </span>
+    </a>
+    <a class="qcard" href="lab-28-迁移学习.html">
+      <span class="no">lab-28</span>
+      <span class="body">
+        <span class="tt">冻结还是微调:相关性才是那个变量</span>
+        <span class="ds">同一个下游换一个上游,结论翻转:相关时冻结一直领先,不相关时数据多了反亏 15%。</span>
+        <span class="meta">配 D11 · <b>纯 numpy,不用 PyTorch</b> · 1 个脚本</span>
+      </span>
+    </a>
   </div>
 
   <div class="modhead">还没有实验的章节</div>
-  <p class="modnote">第 2 章(Python 基础)、第 8 章(大模型鸟瞰)、D01–D04、D09、D11、D13、D15、D16、A01–A04、A06、A07 目前没有独立实验——它们的动手部分在讲义的「组装」一节和对应的<a href="../项目/P1-数据体检报告.html">项目</a>里。</p>
+  <p class="modnote">上面 28 个实验配套了 32 章(<code>01</code> <code>03</code> <code>04</code> <code>05</code> <code>02</code> <code>06</code> <code>07</code> <code>08</code> <code>D01</code> <code>D02</code> <code>D03</code> <code>D04</code> <code>D05</code> <code>D06</code> <code>D07</code> <code>D10</code> <code>D12</code> <code>D13</code> <code>D14</code> <code>D08</code> <code>D09</code> <code>D11</code> <code>D15</code> <code>D16</code> <code>D17</code> <code>A03</code> <code>A04</code> <code>A01</code> <code>A02</code> <code>A05</code> <code>A06</code> <code>A07</code>)。剩下 14 章要分两类看,别照着数字硬补:</p>
+  <p class="modnote"><b>一、设计上就不该有的(14 章)</b>:<br>
+  · <b>项目 P1–P7</b>——项目本身就是动手交付物,再配一个实验是重复,动手部分在项目页里。<br>
+  · <b>AI 使用 U01–U07</b>——这一整段明确不写代码(U01 开头就写了「这一章不需要写代码」),它的「动手」是判断题与流程练习,不是能跑的脚本。</p>
+  <p class="modnote"><b>二、真正的欠账:0 章</b>:<br>
+  讲义部分已经全部有配套实验,剩下的 14 章是设计上不设实验的(项目 7 + AI 使用 7)。<br>
+  这些章的动手环节目前落在讲义的「组装」一节里。新实验按「一段代码 + 一句应该看到什么 + 一句为什么」的骨架加,并且<b>每一步的「应该看到」必须真跑一遍抓回来</b>,不许凭空写——所以一次做一两个才稳。加完记得同步首页与本页的计数。</p>
 
   <div class="pagefoot">
     <a href="../index.html">← 课程首页</a>

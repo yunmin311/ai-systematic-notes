@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-14 · 聚类与降维:没有标签的时候,凭什么说「对了」</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../深度课程/D04-聚类与降维.html">D04</a><span class="sep">—</span>
+      <a href="lab-14-聚类与降维.html" class="current">lab-14 聚类与降维</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-14 · 配套 D04 聚类与降维 · 需要 scikit-learn</p>
+        <h1>聚类与降维:没有标签的时候,凭什么说「对了」</h1>
+        <p class="recap">前三个实验室都有标签——对错一目了然。无监督学习没有这个。<b>K-Means 最反直觉的一点是:把 K 调大,它给出的「聚得更好」的指标永远在变好,所以那个指标本身就用了判断答案。</b>降维也类似:压到几维才够,取决于愿意丢掉多少。这一节把这两件事都量出来。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>K=3 时簇大小正好是 [100, 100, 100],还原了造数据时的真实结构</li>
+          <li>但 K=8 的「簇内平均半径」比 K=3 好看得多——指标自己判不了对错</li>
+          <li>30 个特征压到 7 个,还能保住 90% 的方差</li>
+          <li>压到 2 维只有 63% —— 可视化是拿信息换的</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../深度课程/D04-聚类与降维.html">D04</a> 的无监督学习、K-Means 与 PCA。聚类结果好坏怎么评,回到 <a href="../深度课程/D05-评价指标与验证深挖.html">D05</a>;「没有标签就没有客观答案」这件事在 <a href="../AI使用/U07-验收AI的产出.html">U07</a> 也出现过一次。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p><b>方式 A</b> 点代码旁边的「▶ 运行」(Pyodide,浏览器里的真实 Python,第一次用到 scikit-learn 会自动装包);<b>方式 B</b> 用本机终端跑 <code>实验室\code\lab14\</code> 下的同名文件。两段用的数据集都是 sklearn 自带的,不需要联网。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>监督学习里有一个客观的裁判(标签);无监督学习里没有。<b>这一节要看的就是:缺了裁判之后,那些看起来很像「分数」的指标,到底能证明什么、不能证明什么。</b></p>
+
+      <h2 id="s3"><span class="no">3</span><span>K-Means:簇数是个没有客观答案的问题</span></h2>
+      <p>数据是我们自己造的三堆,所以真实答案已知。看看 K 取不同值时,两个指标各说什么。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_kmeans.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="23">import numpy as np
+from sklearn.datasets import make_blobs
+from sklearn.cluster import KMeans
+
+# 造三堆很分明的数据。真实答案我们事先就知道:就是三堆。
+X, _ = make_blobs(n_samples=300, centers=3, cluster_std=0.9, random_state=42)
+print(f"造了 {X.shape[0]} 条样本,{X.shape[1]} 个特征,真实簇数 = 3\n")
+
+print("K    簇内平均半径    簇大小")
+for k in [2, 3, 4, 5, 8]:
+    km = KMeans(n_clusters=k, n_init=10, random_state=0).fit(X)
+    sizes = [int(n) for n in np.bincount(km.labels_, minlength=k)]
+    radius = np.mean([np.linalg.norm(X[km.labels_ == i] - km.cluster_centers_[i], axis=1).mean()
+                      for i in range(k)])
+    print(f"{k:<4} {radius:>12.3f}    {sizes}")
+
+print("\n① K=3 那一行的簇大小是 [100, 100, 100] —— 正好还原了造数据时的真实结构。")
+print("② 但注意簇内平均半径:簇数越多它越小。K=8 时半径 0.749,比 K=3 的 1.099 好看得多。")
+print("   这个指标自己没法告诉该停在哪 —— 只要愿意多切几刀,它总能更好看。")
+print("   这就是无监督学习和监督学习最大的区别:没有标签,就没有一个客观的「对了」。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>造了 300 条样本,2 个特征,真实簇数 = 3
+
+K    簇内平均半径    簇大小
+2           3.154    [200, 100]
+3           1.099    [100, 100, 100]
+4           0.998    [100, 45, 100, 55]
+5           0.922    [100, 63, 49, 51, 37]
+8           0.749    [26, 24, 54, 36, 28, 38, 46, 48]
+
+① K=3 那一行的簇大小是 [100, 100, 100] —— 正好还原了造数据时的真实结构。
+② 但注意簇内平均半径:簇数越多它越小。K=8 时半径 0.749,比 K=3 的 1.099 好看得多。
+   这个指标自己没法告诉该停在哪 —— 只要愿意多切几刀,它总能更好看。
+   这就是无监督学习和监督学习最大的区别:没有标签,就没有一个客观的「对了」。</div>
+      <p>数字要一起读。<b>簇大小 [100, 100, 100] 是最强的那条线索</b>——它说明模型找到的三堆正好是造数据时的三堆,K=3 是对的。<b>但簇内平均半径那一列,如果只看它,会一路选到 K=8</b>,因为切得越细每块当然越紧凑。<br>所以实际工作中选 K 靠这三样,没有一样是数学给的:<b>①业务的含义</b>(分三个等级就分三个)、<b>②簇大小是否合理</b>(出现 [200, 100] 这种严重不均,多半是两堆被合并了)、<b>③拐点法</b>——把 K 从 1 到 10 都画出来,找半径下降速度突然变缓的那个位置。拐点法的道理是:过了真实簇数之后,再切下去只是把已经分好的堆继续剁碎,收益会突然变小。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>PCA:压到几维才够</span></h2>
+      <p>换一个真正的高维数据(30 个特征),看降维能压到什么程度、代价是什么。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_pca.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="25">import numpy as np
+from sklearn.datasets import load_breast_cancer
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
+data = load_breast_cancer()
+X = StandardScaler().fit_transform(data.data)      # 降维前必须先标准化,否则量纲大的特征会独占主成分
+print(f"原始数据: {X.shape[0]} 条样本,{X.shape[1]} 个特征\n")
+
+pca = PCA().fit(X)
+cum = np.cumsum(pca.explained_variance_ratio_)
+print("保留前 N 个主成分时:")
+print("  N     解释了多少方差")
+for n in [1, 2, 3, 5, 10, 15, 20, 30]:
+    print(f"{n:>3}      {cum[n-1] * 100:>8.2f}%")
+
+for target in [0.90, 0.95, 0.99]:
+    n = int(np.searchsorted(cum, target) + 1)
+    print(f"\n要保住 {target*100:.0f}% 的信息,需要 {n} 个主成分(从 30 压到 {n},{30/n:.1f} 倍)。")
+
+X2 = PCA(n_components=2).fit_transform(X)
+print(f"\n压到 2 维之后,前两个主成分各自解释了 "
+      f"{pca.explained_variance_ratio_[0]*100:.1f}% 和 {pca.explained_variance_ratio_[1]*100:.1f}%。")
+print("丢掉的是「不重要的方向」——但注意:不重要的方向里也可能藏着关键信息。")
+print("降维是拿可解释性换可视化,不是免费的午餐。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>原始数据: 569 条样本,30 个特征
+
+保留前 N 个主成分时:
+  N     解释了多少方差
+  1         44.27%
+  2         63.24%
+  3         72.64%
+  5         84.73%
+ 10         95.16%
+ 15         98.65%
+ 20         99.56%
+ 30        100.00%
+
+要保住 90% 的信息,需要 7 个主成分(从 30 压到 7,4.3 倍)。
+
+要保住 95% 的信息,需要 10 个主成分(从 30 压到 10,3.0 倍)。
+
+要保住 99% 的信息,需要 17 个主成分(从 30 压到 17,1.8 倍)。
+
+压到 2 维之后,前两个主成分各自解释了 44.3% 和 19.0%。
+丢掉的是「不重要的方向」——但注意:不重要的方向里也可能藏着关键信息。
+降维是拿可解释性换可视化,不是免费的午餐。</div>
+      <p>两个数最值得记:<b>第一个主成分就吃掉了 44.27%</b>——30 个特征里有这么大一块信息挤在同一个方向上,说明这些特征之间高度相关(它们本来就是在量同一件事的不同侧面:半径、周长、面积)。<b>压到 7 维保住 90%</b>,是这类数据的典型量级。<br>但最后那句提醒才是重点:<b>PCA 选的是「方差最大」的方向,不是「最有判别力」的方向。</b>一个方差很小、但对分类极其关键的特征,可能第一个就被丢掉了。所以拿 PCA 降维之后,<b>一定要重新评估模型效果</b>,不能默认「保住了 95% 方差就什么都保住了」。<br>另外注意代码里那句标准化:不做的话,量纲大的特征(比如面积 0~2500)会独占领主成分,降维结果就没有意义了。</p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 第 1 步把 <code>cluster_std</code> 从 0.9（很分明）改成 3.0（三堆严重重叠）。K=3 还能还原成 [100, 100, 100] 吗?<b>重叠的数据上,聚类的结果就没有唯一解了。</b><br>
+        <b>②</b> 第 1 步把 <code>n_init</code> 从 10 改成 1 多跑几次。K-Means 对初始中心是敏感的,<code>n_init</code> 就是「换几组起点各跑一遍,取最好的」。<br>
+        <b>③</b> 第 2 步把标准化那一行注释掉再跑。看第一个主成分的解释比例变成多少——它会飞涨,因为面积那种大量纲特征把整个方向垄断了。<br>
+        <b>④</b> 第 2 步用 <code>PCA(n_components=7)</code> 降维后再训一个 <code>LogisticRegression</code>,和用全部 30 维的比测试准确率。掉了多少?<b>这就是「用 4 倍的速度换多少精度」的具体答案。</b><br>
+        <b>⑤</b> 第 1 步把 KMeans 换成 <code>KMeans(n_clusters=3, init="random")</code>,连跑五次看簇大小是否每次都一样。</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>K=3 的簇大小不是 [100, 100, 100]</td><td><code>random_state</code> 或 <code>n_init</code> 被改过,K-Means 落进了局部最优</td><td>把 <code>n_init</code> 调回 10;这不是 bug,是 K-Means 的固有毛病</td></tr>
+            <tr><td>报 <code>ConvergenceWarning</code></td><td>迭代次数不够就停了</td><td>加大 <code>max_iter</code>;或者 <code>n_init</code> 太小时的正常提示</td></tr>
+            <tr><td>第一个主成分解释比例特别大(比如 99%)</td><td>忘了标准化,量纲大的特征垄断了主成分</td><td>加回 <code>StandardScaler</code>,这是降维前的必做步骤</td></tr>
+            <tr><td>降维后模型准确率掉很多</td><td>丢掉的维度里恰好有判别力强的信息</td><td>不是 bug;PCA 保的是方差不是判别力,少压几维或换特征选择</td></tr>
+            <tr><td><code>np.searchsorted</code> 给出的 N 比预期大 1</td><td>累积和是「达到」不是「超过」的边界</td><td>代码里的 <code>+1</code> 就是这个修正;改一改看看去掉会怎样</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">监督学习有老师,无监督学习没有。这句话的后果很实在:<b>聚类没有「正确答案」,降维没有「最佳维度」,两者最终都要人来拍板。</b>所以 D04 里那些指标(Euclidean 距离、解释方差比、簇内半径)不是答案,是给拍板提供的依据。<br>这一点在别处也反复出现——大模型评测、agent 的产出验收,都是「指标能量出一部分,最后那一下必须是人」。这条线从 D04 一直通到 <a href="../AI使用/U07-验收AI的产出.html">U07</a>。</p>
+
+      <nav class="chapter-nav">
+        <a href="../深度课程/D04-聚类与降维.html"><span class="lb">回讲义</span><span class="tt">D04 聚类与降维</span></a>
+        <a href="../台账/学习台账.html" class="next"><span class="lb">记一笔</span><span class="tt">学习台账</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-14 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>K-Means 与簇数</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>PCA 压到几维</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-14" data-kind="lab" data-title="聚类与降维:没有标签的时候,凭什么说「对了」"></script>
+</body>
+</html>

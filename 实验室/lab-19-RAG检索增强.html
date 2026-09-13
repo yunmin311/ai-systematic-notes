@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-19 · RAG:开卷考试,和它开卷也答不出的那一道</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../应用工程/A03-RAG检索增强生成.html">A03</a><span class="sep">—</span>
+      <a href="lab-19-RAG检索增强.html" class="current">lab-19 RAG</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-19 · 配套 A03 RAG 检索增强生成 · 只要 numpy,不调 API</p>
+        <h1>RAG:开卷考试,和它开卷也答不出的那一道</h1>
+        <p class="recap">A03 说 RAG 是「先搜出最相关的几段、塞进提示词、再让模型照着答」。这一节用 3 篇自己编的资料把整条链路跑一遍——<b>切块 → 检索 → 拼提示词 → 生成</b>,全程不调 API,生成那一步用桩模型代替。<b>关键在最后一个问句:它一个字都搜不到</b>,而那正是理解 RAG 为什么能治幻觉的地方。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>3 篇共 221 字的资料,切块之后变成 9 块(块之间留了重叠)</li>
+          <li>「怎么调亮度」「保修几年」「灯总是自动关闭」都命中了对的那一块</li>
+          <li>「质保期多久」全部返回 0——换个同义词就彻底失效</li>
+          <li>检索为空时,模型照约定回答「资料中没有提到」</li>
+          <li>答案被截断在 40 字——切块大小是有代价的</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../应用工程/A03-RAG检索增强生成.html">A03</a> 的切块、向量检索与拼上下文;Embedding 的原理见 <a href="../深度课程/D13-Embedding与向量空间.html">D13</a>(<a href="lab-15-Embedding.html">lab-15</a> 亲手算过余弦相似度);拼好之后怎么接成产品见 <a href="../项目/P5-个人知识库问答.html">项目 P5</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p>两段都<b>只用 numpy,不调任何 API</b>——没有密钥、不花钱、离线可跑。检索是自己写的,生成那一步用桩模型代替。<b>方式 A</b> 点「▶ 运行」(Pyodide);<b>方式 B</b> 本机跑 <code>实验室\code\lab19\</code> 下的同名文件。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>RAG 听起来是「给模型加点资料」,实际是一整条流水线:<b>切块 → 检索 → 拼提示词 → 生成</b>。这一节要看的不是它怎么成功,而是<b>它在哪一步失败、以及失败之后应该发生什么</b>。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>切块与检索:三个命中,一个落空</span></h2>
+      <p>三篇资料(说明书 / 售后政策 / 常见问题),先切成块,再用词频向量找最相关的块。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_retrieve.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="46">import numpy as np
+
+docs = {
+  "说明书": "睡眠灯 A1 支持三档亮度。轻触顶部圆环可以在低亮、中亮、高亮之间循环切换。"
+            "长按圆环两秒进入夜灯模式,亮度自动降到最低。"
+            "灯体侧面有一个色温滑条,可以从暖黄调到冷白。",
+  "售后政策": "睡眠灯 A1 整机保修两年,灯珠保修三年,均从签收之日起算。"
+              "人为损坏、进水、私自拆机不在保修范围内。"
+              "保修期内寄修运费由我们承担,寄回请保留快递单号。",
+  "常见问题": "有用户反馈灯体偶尔自动熄灭。这通常是开启了「人来灯亮」感应模式,"
+              "十五分钟无人移动会自动关闭。长按色温滑条底端三秒可以关闭这个功能。",
+}
+print(f"原始资料 {len(docs)} 篇,共 {sum(len(v) for v in docs.values())} 字\n")
+
+# ---- ① 切块:每块 40 字,相邻块重叠 10 字 ----
+def chunk(text, size=40, overlap=10):
+    out, i = [], 0
+    while i < len(text):
+        out.append(text[i:i+size])
+        i += size - overlap
+    return out
+
+chunks = [{"src": n, "idx": k, "text": c}
+          for n, t in docs.items() for k, c in enumerate(chunk(t))]
+print(f"切块:每块 40 字、重叠 10 字  →  {len(chunks)} 块")
+
+# ---- ② 切词:用一份领域词表做「最长匹配」 ----
+# 中文没有空格,不能直接按空格切。这里用一份词表,从左往右尽量匹配最长的词,
+# 匹配不到就退回单字。真实系统用 jieba 之类的分词器,思路一样。
+TERMS = sorted([
+    "睡眠灯", "色温滑条", "人来灯亮", "感应模式", "快递单号", "人为损坏",
+    "自动关闭", "自动熄灭", "循环切换", "夜灯模式", "保修范围", "保修期",
+    "亮度", "低亮", "中亮", "高亮", "圆环", "轻触", "长按", "两秒", "灯体",
+    "侧面", "滑条", "暖黄", "冷白", "整机", "保修", "灯珠", "签收", "进水",
+    "拆机", "寄修", "运费", "承担", "保留", "用户", "反馈", "偶尔", "开启",
+    "分钟", "无人", "移动", "底端", "三秒", "功能", "支持", "三档", "之间",
+    "调到", "进入", "降到", "可以", "通常", "关闭", "怎么", "多久", "几年",
+], key=len, reverse=True)
+
+def tokenize(s):
+    out, i = [], 0
+    while i < len(s):
+        for t in TERMS:
+            if s.startswith(t, i):
+                out.append(t); i += len(t); break
+        else:
+            out.append(s[i]); i += 1
+    return out
+
+print("\n切词示例(这就是中文检索和英文最大的不同):")
+print("   长按色温滑条底端三秒 →", " / ".join(tokenize("长按色温滑条底端三秒")))
+
+# ---- ③ 向量化:TF-IDF ----
+vocab = sorted({w for c in chunks for w in tokenize(c["text"])})
+vindex = {w: i for i, w in enumerate(vocab)}
+df = {}
+for c in chunks:
+    for w in set(tokenize(c["text"])):
+        df[w] = df.get(w, 0) + 1
+
+def vec(text):
+    v = np.zeros(len(vocab))
+    for w in tokenize(text):
+        if w in vindex:
+            v[vindex[w]] += 1
+    v /= (v.sum() + 1e-9)
+    idf = np.array([np.log((1 + len(chunks)) / (1 + df.get(w, 0))) + 1 for w in vocab])
+    v = v * idf
+    return v / (np.linalg.norm(v) + 1e-9)
+
+M = np.array([vec(c["text"]) for c in chunks])
+print(f"\n词表 {len(vocab)} 个词,每块变成一个 {len(vocab)} 维向量。")
+
+def search(q, k=2):
+    sims = M @ vec(q)
+    return [(chunks[i], sims[i]) for i in np.argsort(-sims)[:k]]
+
+print("=" * 56)
+for q in ["怎么调亮度", "保修几年", "灯总是自动关闭"]:
+    print(f"\n问:{q}")
+    for c, s in search(q):
+        mark = "✓" if s &gt; 0.001 else " "
+        print(f"   {mark} 相似度 {s:.3f}  [{c['src']}#{c['idx']}] {c['text'][:30]}…")
+
+print("\n" + "=" * 56)
+q_bad = "质保期多久"
+print(f"\n问:{q_bad}(故意换一个说法)")
+for c, s in search(q_bad):
+    print(f"     相似度 {s:.3f}  [{c['src']}#{c['idx']}] {c['text'][:30]}…")
+print(f"   切词结果:{' / '.join(tokenize(q_bad))}")
+print("   → 全是 0。因为「质保」不在词表里,和资料里的「保修」一个字都不重合。")
+print("\n这正是 RAG 必须有 Embedding 模型的原因:")
+print("   这种检索靠「字面重合」,换个同义词就彻底失效。")
+print("   而 Embedding 把「保修」和「质保」映射到相邻位置,靠意思而不是靠字。")
+print("   所以真实 RAG 是「向量检索为主 + 关键词检索兜底」的混合方案,各补各的短板。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>原始资料 3 篇,共 221 字
+
+切块:每块 40 字、重叠 10 字  →  9 块
+
+切词示例(这就是中文检索和英文最大的不同):
+   长按色温滑条底端三秒 → 长按 / 色温滑条 / 底端 / 三秒
+
+词表 101 个词,每块变成一个 101 维向量。
+========================================================
+
+问:怎么调亮度
+   ✓ 相似度 0.195  [说明书#1] 亮之间循环切换。长按圆环两秒进入夜灯模式,亮度自动降到最低。…
+   ✓ 相似度 0.187  [说明书#0] 睡眠灯 A1 支持三档亮度。轻触顶部圆环可以在低亮、中亮、高…
+
+问:保修几年
+   ✓ 相似度 0.368  [售后政策#0] 睡眠灯 A1 整机保修两年,灯珠保修三年,均从签收之日起算。…
+     相似度 0.000  [说明书#0] 睡眠灯 A1 支持三档亮度。轻触顶部圆环可以在低亮、中亮、高…
+
+问:灯总是自动关闭
+   ✓ 相似度 0.190  [常见问题#1] 式,十五分钟无人移动会自动关闭。长按色温滑条底端三秒可以关闭…
+   ✓ 相似度 0.169  [常见问题#0] 有用户反馈灯体偶尔自动熄灭。这通常是开启了「人来灯亮」感应模…
+
+========================================================
+
+问:质保期多久(故意换一个说法)
+     相似度 0.000  [说明书#0] 睡眠灯 A1 支持三档亮度。轻触顶部圆环可以在低亮、中亮、高…
+     相似度 0.000  [说明书#1] 亮之间循环切换。长按圆环两秒进入夜灯模式,亮度自动降到最低。…
+   切词结果:质 / 保 / 期 / 多久
+   → 全是 0。因为「质保」不在词表里,和资料里的「保修」一个字都不重合。
+
+这正是 RAG 必须有 Embedding 模型的原因:
+   这种检索靠「字面重合」,换个同义词就彻底失效。
+   而 Embedding 把「保修」和「质保」映射到相邻位置,靠意思而不是靠字。
+   所以真实 RAG 是「向量检索为主 + 关键词检索兜底」的混合方案,各补各的短板。</div>
+      <p>三个命中很直观:问「亮度」命中的是讲亮度的块,问「保修」命中的是售后政策。但<b>真正有价值的是第四问</b>——「质保期多久」和「保修几年」问的是同一件事,结果一个 0.368、一个全 0。差别只在<b>「质保」和「保修」两个字不重合</b>。<br>这就是纯字面检索的天花板。真实 RAG 换用 Embedding 模型之后,「质保」和「保修」在向量空间里是邻居,这一问就能命中。<b>但即使换成 Embedding 也不是万能的</b>——专有名词、型号、编号这类精确匹配,反而字面检索更准。所以生产环境常见的是「两路都跑,结果融合」。<br>另外注意切块那一步:每块 40 字、<b>相邻块留 10 字重叠</b>。重叠是防「一句话正好被切开、两半都搜不到」的——这一条是踩过才写得出来的经验。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>拼提示词与生成:搜不到时该发生什么</span></h2>
+      <p>检索到的块拼进提示词,再交给模型。生成那一步用桩模型代替,重点看<b>搜不到的时候</b>。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_answer.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="34">import numpy as np
+
+# ---- 复用第 1 步的检索部分(完整版见 step1_retrieve.py)----
+docs = {
+  "说明书": "睡眠灯 A1 支持三档亮度。轻触顶部圆环可以在低亮、中亮、高亮之间循环切换。"
+            "长按圆环两秒进入夜灯模式,亮度自动降到最低。",
+  "售后政策": "睡眠灯 A1 整机保修两年,灯珠保修三年,均从签收之日起算。"
+              "人为损坏、进水、私自拆机不在保修范围内。",
+  "常见问题": "有用户反馈灯体偶尔自动熄灭。这通常是开启了「人来灯亮」感应模式,"
+              "十五分钟无人移动会自动关闭。",
+}
+TERMS = sorted(["睡眠灯","感应模式","自动关闭","夜灯模式","保修范围","保修期","人为损坏",
+    "亮度","低亮","中亮","高亮","圆环","轻触","长按","两秒","灯体","整机","保修","灯珠",
+    "签收","进水","拆机","用户","反馈","偶尔","开启","分钟","无人","移动","功能","支持",
+    "三档","之间","降到","进入","可以","通常","关闭","怎么","多久","几年","怎么调"],
+    key=len, reverse=True)
+
+def tokenize(s):
+    out, i = [], 0
+    while i &lt; len(s):
+        for t in TERMS:
+            if s.startswith(t, i):
+                out.append(t); i += len(t); break
+        else:
+            out.append(s[i]); i += 1
+    return out
+
+def chunk(t, size=40, overlap=10):
+    return [t[i:i+size] for i in range(0, len(t), size - overlap)]
+
+chunks = [{"src": n, "text": c} for n, t in docs.items() for c in chunk(t)]
+vocab = sorted({w for c in chunks for w in tokenize(c["text"])})
+vi = {w: i for i, w in enumerate(vocab)}
+df = {}
+for c in chunks:
+    for w in set(tokenize(c["text"])):
+        df[w] = df.get(w, 0) + 1
+
+def vec(t):
+    v = np.zeros(len(vocab))
+    for w in tokenize(t):
+        if w in vi: v[vi[w]] += 1
+    v /= (v.sum() + 1e-9)
+    v *= np.array([np.log((1+len(chunks))/(1+df.get(w,0)))+1 for w in vocab])
+    return v / (np.linalg.norm(v) + 1e-9)
+
+M = np.array([vec(c["text"]) for c in chunks])
+
+def retrieve(q, k=2, thresh=0.05):
+    """比第 1 步多一个门槛:相似度太低就不要,宁可没有上下文"""
+    sims = M @ vec(q)
+    top = np.argsort(-sims)[:k]
+    return [chunks[i] for i in top if sims[i] &gt;= thresh]
+
+# ---- 组装提示词 ----
+def build_prompt(q, ctx):
+    if not ctx:
+        return f"资料:\n(没有找到相关资料)\n\n问题:{q}"
+    body = "\n".join(f"[{c['src']}] {c['text']}" for c in ctx)
+    return (f"严格依据下面的资料回答问题。资料里没有的内容,直接回答「资料中没有提到」,"
+            f"不要编。回答末尾标出用到的出处。\n\n资料:\n{body}\n\n问题:{q}")
+
+# ---- 桩模型:真实场景这里是 API 调用 ----
+# 它模拟一个「守规矩」的模型:只从资料里找答案,找不到就说不知道。
+def stub_model(prompt, q):
+    if "(没有找到相关资料)" in prompt:
+        return "资料中没有提到。"
+    body = prompt.split("资料:\n")[1].split("\n\n问题:")[0]
+    qs = set(tokenize(q)) - {"怎么", "多久", "几年", "可以"}
+    best, best_hit = None, 0
+    for line in body.split("\n"):
+        hit = len(qs & set(tokenize(line)))
+        if hit &gt; best_hit:
+            best, best_hit = line, hit
+    if best is None:
+        return "资料中没有提到。"
+    src = best.split("]")[0] + "]"
+    return f"{best.split('] ', 1)[1]}\n(出处:{src})"
+
+print("=" * 58)
+for q in ["怎么调亮度", "保修几年", "质保期多久"]:
+    ctx = retrieve(q)
+    prompt = build_prompt(q, ctx)
+    print(f"\n问:{q}")
+    print(f"   检索到 {len(ctx)} 块")
+    print(f"   提示词长度 {len(prompt)} 字")
+    ans = stub_model(prompt, q).split("\n")
+    for line in ans:
+        print(f"   答:{line}")
+
+print("\n" + "=" * 58)
+print("\n三问的对比就是 RAG 的完整链路:")
+print("   检索 → 拼提示词 → 生成。三步里任何一步出错,答案都会错。")
+print("\n最后一问值得单独看:检索一个字都没命中,于是上下文是空的,")
+print("模型照约定回答了「资料中没有提到」。")
+print("这就是 RAG 治幻觉的机制 —— 不是让模型更聪明,是「给它材料、并允许它说不知道」。")
+print("\n另外注意前两问的答案结尾都是断的(「…私自拆机」「…均从签收之日起算。人为损坏…」)。")
+print("不是桩模型的问题 —— 块就是 40 字,答案自然也被截在 40 字。")
+print("这就是切块大小真正的取舍:块小,检索准但答案可能残缺;")
+print("块大,答得整但容易掺进不相干的内容。RAG 调参最花时间的地方就在这里。")
+print("\n工程上最该盯的一环是「相似度门槛」(代码里的 thresh):")
+print("   门槛太低,不相干的块也会被塞进提示词,模型就会顺着它编;")
+print("   门槛太高,该答的也答不出来。这个数只能靠自己的数据一条条试出来。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>==========================================================
+
+问:怎么调亮度
+   检索到 2 块
+   提示词长度 152 字
+   答:亮之间循环切换。长按圆环两秒进入夜灯模式,亮度自动降到最低。
+   答:(出处:[说明书])
+
+问:保修几年
+   检索到 1 块
+   提示词长度 115 字
+   答:睡眠灯 A1 整机保修两年,灯珠保修三年,均从签收之日起算。人为损坏、进水、私自
+   答:(出处:[售后政策])
+
+问:质保期多久
+   检索到 0 块
+   提示词长度 24 字
+   答:资料中没有提到。
+
+==========================================================
+
+三问的对比就是 RAG 的完整链路:
+   检索 → 拼提示词 → 生成。三步里任何一步出错,答案都会错。
+
+最后一问值得单独看:检索一个字都没命中,于是上下文是空的,
+模型照约定回答了「资料中没有提到」。
+这就是 RAG 治幻觉的机制 —— 不是让模型更聪明,是「给它材料、并允许它说不知道」。
+
+另外注意前两问的答案结尾都是断的(「…私自拆机」「…均从签收之日起算。人为损坏…」)。
+不是桩模型的问题 —— 块就是 40 字,答案自然也被截在 40 字。
+这就是切块大小真正的取舍:块小,检索准但答案可能残缺;
+块大,答得整但容易掺进不相干的内容。RAG 调参最花时间的地方就在这里。
+
+工程上最该盯的一环是「相似度门槛」(代码里的 thresh):
+   门槛太低,不相干的块也会被塞进提示词,模型就会顺着它编;
+   门槛太高,该答的也答不出来。这个数只能靠自己的数据一条条试出来。</div>
+      <p>三行输出对应整条链路,而<b>第三问才是这一节的重点</b>。注意它的提示词只有 24 字——因为检索为空,<code>build_prompt</code> 直接走了「没有找到相关资料」那个分支。<b>模型此时唯一正确的行为就是说不知道</b>,而这一步不是模型自己悟出来的,是提示词里那句「资料里没有的内容,直接回答『资料中没有提到』,不要编」约束出来的。<br>这就是 RAG 治幻觉的真实机制:<b>不是让模型变聪明,是给它材料、并明确允许它说不知道。</b>少了后半句,即使检索为空,模型也会顺着问题编一个像模像样的答案——回看 <a href="../AI使用/U01-它到底在干什么.html">U01</a>,这正是「幻觉」在工程里的具体形态。<br>另外那两处答案被截断也值得记:<b>块切成 40 字,答案就只能是 40 字。</b>切块大小是 RAG 里最影响效果、也最没有标准答案的一个参数——块小检索准但答不完整,块大答得整但容易掺进无关内容。唯一可靠的办法是拿自己的数据一档档试。</p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 第 1 步把 <code>overlap</code> 从 10 改成 0,再问「怎么调亮度」。命中的块变了吗?——<b>重叠就是为了防「关键词正好落在切缝上」。</b><br>
+        <b>②</b> 第 1 步把 <code>size</code> 从 40 改成 100(基本一篇一块),看相似度怎么变。块变大了,还能精确命中吗?<br>
+        <b>③</b> 第 1 步在 <code>TERMS</code> 里加上 <code>"质保"</code>,再问「质保期多久」。相似度还是 0 吗?——<b>但资料里根本没有「质保」这两个字,加了词表也没用。</b>这说明了什么?<br>
+        <b>④</b> 第 2 步把 <code>thresh</code> 从 0.05 改成 0.0001,再跑「质保期多久」。会发生什么?——检索不再为空,模型会拿到不相干的块,然后<b>顺着它编一个答案</b>。这就是门槛设太低的后果。<br>
+        <b>⑤</b> 第 2 步把提示词里「不要编」那半句删掉,把桩模型换成「总是尽力回答」的版本(自己改 <code>stub_model</code>)。看它面对空上下文会说出什么。</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>所有相似度都是 0.000</td><td>问句里的词一个都不在词表里(中文没空格,切词没切上)</td><td>看那一行打印的「切词结果」;把问句换成本书里出现过的说法</td></tr>
+            <tr><td>报 <code>ZeroDivisionError</code></td><td>某个向量全是 0,归一化时除以 0</td><td>代码里 <code>+ 1e-9</code> 就是防这个的;自己写的时候别漏</td></tr>
+            <tr><td>改 <code>size</code> 之后块数变了</td><td>步长是 <code>size - overlap</code>,两个参数一起决定块数</td><td>正常;想让块数稳定就固定 <code>size - overlap</code></td></tr>
+            <tr><td>答案里出现资料外的内容</td><td>用的是桩模型,它只做关键词匹配;真实模型会有幻觉</td><td>这正是提示词里那句「不要编」要管的事,改一改 ⑤ 可以亲手复现</td></tr>
+            <tr><td>换了资料之后完全搜不到</td><td>新资料里的词不在 <code>TERMS</code> 里</td><td>把新词补进 <code>TERMS</code>;真实系统用通用分词器就不用手工维护</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">RAG 的四步里,真正决定效果的往往不是模型,是前面三步:<b>块怎么切、用什么检索、门槛卡多高。</b>这一节用一个故意失败的问句把这件事挑明——同样的资料、同样的问题,只因为两个字不重合,检索就完全落空。<br>理解这一点的实际价值在于:当 RAG 答得不好时,就能分清是<b>资料里没有(数据问题)、切块切坏了(预处理问题)、检索没找对(度量问题)、还是模型在编(提示词问题)</b>——而不是笼统地觉得「模型不行」。</p>
+
+      <nav class="chapter-nav">
+        <a href="../应用工程/A03-RAG检索增强生成.html"><span class="lb">回讲义</span><span class="tt">A03 RAG 检索增强生成</span></a>
+        <a href="../项目/P5-个人知识库问答.html" class="next"><span class="lb">接着做</span><span class="tt">项目 P5 个人知识库问答</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-19 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>切块与检索</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>拼提示词与生成</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-19" data-kind="lab" data-title="RAG:开卷考试,和它开卷也答不出的那一道"></script>
+</body>
+</html>

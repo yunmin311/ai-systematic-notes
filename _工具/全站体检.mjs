@@ -18,11 +18,17 @@ const files = []
   }
 })(ROOT)
 
-const noBg = [], broken = [], badAnchor = [], stale = []
+const noBg = [], broken = [], badAnchor = [], stale = [], injected = []
 const STALE = ['规划中', '制作中', '待建', '(即将', '敬请期待']
 
 for (const f of files) {
   const raw = readFileSync(f, 'utf8')
+
+  // ⑤ 工具注入的标记:预览器会给元素塞 data-page-node-id(2026-09-11 发现)。
+  //    它不影响浏览器显示,但会让「写死标签」的解析全部失效——
+  //    实验自检就因此把整份 lab-12 / lab-15 静默跳过。见到就要清掉。
+  const inj = (raw.match(/data-page-node-id/g) || []).length
+  if (inj) injected.push(`${f.substring(ROOT.length + 1).replace(/\\/g, '/')}  ${inj} 处`)
   // 脚本里的字符串拼接不是真链接,先剔掉(2026-08-21)
   const s = raw.replace(/<script(?![^>]*\ssrc=)[^>]*>[\s\S]*?<\/script>/g, '')
   const rel = f.substring(ROOT.length + 1).replace(/\\/g, '/')
@@ -66,3 +72,15 @@ p('① 没有纸材背景', noBg)
 p('② 内部死链', [...new Set(broken)])
 p('③ 锚点失效', [...new Set(badAnchor)])
 p('④ 过时字样(需人工判断)', stale)
+p('⑤ 工具注入的标记(要清掉)', injected)
+
+// 2026-09-11 补:这个脚本以前**没有退出码**,死链再多也 exit 0——
+// 维护约定写着「四个脚本全绿才算完」,而它其实从来没拦过任何东西。
+// 现在:①②⑤ 任意一项非空即不合格。④ 是「需人工判断」,只报不拦。
+const failed = noBg.length + broken.length + badAnchor.length + injected.length
+if (failed) {
+  console.log(`\n不合格:底纹缺失 ${noBg.length} / 死链 ${broken.length} / 锚点失效 ${badAnchor.length} / 工具注入 ${injected.length}`)
+  console.log(`  死链与锚点必须清零;工具注入的标记要清掉(它会让按标签解析的脚本全部失效)。`)
+  process.exit(1)
+}
+console.log(`\n全部通过`)

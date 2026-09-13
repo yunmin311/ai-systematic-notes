@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-17 · Transformer 块:把一个块拆成四件套,再看它为什么能堆</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../深度课程/D15-Transformer完整结构.html">D15</a><span class="sep">—</span>
+      <a href="lab-17-Transformer结构.html" class="current">lab-17 Transformer 结构</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-17 · 配套 D15 Transformer 完整结构 · 只要 numpy</p>
+        <h1>Transformer 块:把一个块拆成四件套,再看它为什么能堆</h1>
+        <p class="recap">D15 说 Transformer 就是把「注意力 + 前馈」打包成块、加残差和归一化、然后堆 N 层。这一节先用 40 行 numpy 把<b>一个块的四件套</b>搭出来,确认进出形状完全一样——那是能堆的前提;再做一次三方对比,看<b>残差和归一化为什么必须配对</b>:只堆会归零,只加残差会爆炸,两个一起才稳住。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>一个块走完四件套,形状从 (6,16) 出发、回到 (6,16) 不变</li>
+          <li>注意力和前馈的分工:一个是横向交流,一个是纵向各自加工</li>
+          <li>裸堆 40 层,信号归零;只加残差,涨到 16 万%</li>
+          <li>残差 + 归一化之后,40 层纹丝不动——这才是能堆几十层的原因</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../深度课程/D15-Transformer完整结构.html">D15</a> 的块结构、前馈层与残差归一化;<b>注意力四步的手算</b>在 <a href="lab-07-手算注意力.html">lab-07</a>,<b>它相对 RNN 的优势</b>在 <a href="lab-16-序列模型.html">lab-16</a>,数学细节在 <a href="../深度课程/D14-注意力机制逐步手算.html">D14</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p>两段都<b>只用 numpy</b>。<b>方式 A</b> 点「▶ 运行」(Pyodide,浏览器里的真实 Python);<b>方式 B</b> 本机跑 <code>实验室\code\lab17\</code> 下的同名文件。两段都不到一秒。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>Transformer 的所有复杂度都藏在细节里,但骨架只有一句话:<b>把「注意力 + 前馈」包成一个进出形状不变的块,再把它堆起来。</b>这一节先把骨架跑通,再回答那个真正的问题——为什么非要有残差和归一化。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>一个块的四件套</span></h2>
+      <p>6 个词、每个 16 维、注意力分 4 个头。看数据穿过每一件套之后形状怎么变。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_block.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="44">import numpy as np
+np.random.seed(0)
+
+T, D, H = 6, 16, 4        # 6 个词,每个 16 维,注意力分 4 个头
+
+def layernorm(x, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)
+    sd = x.std(axis=-1, keepdims=True)
+    return (x - mu) / (sd + eps)
+
+def softmax(z):
+    z = z - z.max(axis=-1, keepdims=True)
+    e = np.exp(z)
+    return e / e.sum(axis=-1, keepdims=True)
+
+dh = D // H
+Wq = np.random.randn(D, D) / np.sqrt(D)
+Wk = np.random.randn(D, D) / np.sqrt(D)
+Wv = np.random.randn(D, D) / np.sqrt(D)
+Wo = np.random.randn(D, D) / np.sqrt(D)
+W1 = np.random.randn(D, 4 * D) / np.sqrt(D)   # 前馈层:先放大 4 倍
+W2 = np.random.randn(4 * D, D) / np.sqrt(4 * D)  # 再压回来
+
+def attention(x):
+    """多头注意力:把 D 维切成 H 份,每份各自算一遍,最后拼回来"""
+    Q, K, V = x @ Wq, x @ Wk, x @ Wv
+    # 切成 H 个头: (T, D) -> (H, T, dh)
+    split = lambda m: m.reshape(T, H, dh).transpose(1, 0, 2)
+    q, k, v = split(Q), split(K), split(V)
+    score = q @ k.transpose(0, 2, 1) / np.sqrt(dh)          # 每个头各算一份分数
+    out = softmax(score) @ v
+    return out.transpose(1, 0, 2).reshape(T, D) @ Wo        # 拼回 (T, D)
+
+def ffn(x):
+    """前馈层:每个位置各自独立地过一遍两层小网络,不看别人"""
+    return np.maximum(0, x @ W1) @ W2
+
+x = np.random.randn(T, D)
+print("一个 Transformer 块的四件套:\n")
+print(f"   输入                 {x.shape}")
+
+a = attention(x)
+print(f"   ① 多头注意力          {a.shape}   ← 横向交流:每个词看全句")
+x = layernorm(x + a)
+print(f"   ② 残差 + 层归一化      {x.shape}   ← 把输入原样加回来,再拉回规整分布")
+
+f = ffn(x)
+print(f"   ③ 前馈层              {f.shape}   ← 纵向加工:每个词自己消化(先放大 4 倍再压回)")
+x = layernorm(x + f)
+print(f"   ④ 残差 + 层归一化      {x.shape}")
+
+print(f"\n进出的形状完全一样:{x.shape} —— 这就是能一层层往上堆的全部原因。")
+print("\n两个子层分工很清楚:")
+print("   注意力 = 横向的(词与词之间交流),前馈 = 纵向的(每个词自己加工)。")
+print("   注意力里那句 reshape/transpose 就是「多头」:把 16 维切成 4 份各 4 维,")
+print("   每份独立算一遍注意力,最后拼回来 —— 相当于让模型从 4 个角度同时看这句话。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>一个 Transformer 块的四件套:
+
+   输入                 (6, 16)
+   ① 多头注意力          (6, 16)   ← 横向交流:每个词看全句
+   ② 残差 + 层归一化      (6, 16)   ← 把输入原样加回来,再拉回规整分布
+   ③ 前馈层              (6, 16)   ← 纵向加工:每个词自己消化(先放大 4 倍再压回)
+   ④ 残差 + 层归一化      (6, 16)
+
+进出的形状完全一样:(6, 16) —— 这就是能一层层往上堆的全部原因。
+
+两个子层分工很清楚:
+   注意力 = 横向的(词与词之间交流),前馈 = 纵向的(每个词自己加工)。
+   注意力里那句 reshape/transpose 就是「多头」:把 16 维切成 4 份各 4 维,
+   每份独立算一遍注意力,最后拼回来 —— 相当于让模型从 4 个角度同时看这句话。</div>
+      <p>四行形状都一样,看着平淡,但这正是 D15 那句「进去什么形状,出来还是什么形状」的字面意思——<b>形状不变,才能一层接一层地堆</b>。真实模型是 32 到 100 多层。<br>两个子层的分工也值得记牢:<b>注意力做横向交流</b>(每个词去问遍全句,决定该从谁那里取信息),<b>前馈做纵向加工</b>(每个词把刚收到的信息自己消化一遍,不看别人)。前者负责「沟通」,后者负责「思考」。<br>代码里 <code>W1</code> 那一行是前馈的典型形状:先把 16 维放大到 64 维,过一次 ReLU,再压回 16 维。<b>放大 4 倍是 Transformer 的惯例</b>,也是参数量的主要来源之一。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>残差 + 归一化:为什么必须配对</span></h2>
+      <p>这一节回答真正的问题:有了块,为什么不能直接堆?把同一个子层连堆 40 层,看三种接法的差别。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_residual.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="40">import numpy as np
+np.random.seed(0)
+
+D = 32
+LAYERS = 40
+
+def make_sublayer():
+    """一层子层(注意力 / 前馈)。缩放到谱范数 0.5:
+       也就是说,单独过一层,信号会少一半。"""
+    W = np.random.randn(D, D)
+    return W * (0.5 / np.linalg.norm(W, 2))
+
+def layernorm(x, eps=1e-5):
+    """把每个位置的向量拉回「均值 0、方差 1」。注意它保证的是方差为 1,
+       所以拉完之后向量的长度恒等于 √D —— 不长不短,正好是一个稳定的标尺。"""
+    mu = x.mean(axis=-1, keepdims=True)
+    sd = x.std(axis=-1, keepdims=True)
+    return (x - mu) / (sd + eps)
+
+W = make_sublayer()
+x0 = np.random.randn(D); x0 /= np.linalg.norm(x0)
+
+a, b, c = x0.copy(), x0.copy(), x0.copy()
+print("同一个子层连堆 40 层,三种接法的信号强度(初始 = 100%):\n")
+print("   层数    裸堆(无残差)   只加残差     残差 + 层归一化")
+for i in range(1, LAYERS + 1):
+    a = W @ a                              # 裸堆
+    b = b + W @ b                          # 只加残差
+    c = layernorm(c + W @ c)               # 残差 + 归一化(Transformer 的做法)
+    if i in (1, 2, 5, 10, 20, 40):
+        print(f"   {i:>4}   {np.linalg.norm(a)/np.linalg.norm(x0)*100:>12.6f}%"
+              f"  {np.linalg.norm(b)/np.linalg.norm(x0)*100:>11.2f}%"
+              f"  {np.linalg.norm(c)/np.linalg.norm(x0)*100:>14.4f}%")
+
+print("\n三列三种命运,一个都不能少:")
+print(f"   裸堆:       只剩 {np.linalg.norm(a)/np.linalg.norm(x0)*100:.6f}% —— 每层乘 0.5,40 层下来信号归零。")
+print( "               浅层学到的东西传不到深层,梯度也传不回来。这就是「梯度消失」。")
+print(f"   只加残差:   涨到 {np.linalg.norm(b)/np.linalg.norm(x0)*100:,.0f}% —— 走了另一个极端。")
+print( "               残差是 (I + W),每层最多放大到 1.5 倍,层数一多就失控。")
+print( "               所以「加个残差」本身不是解药,它只是把消失换成了爆炸。")
+print(f"   残差+归一化:{np.linalg.norm(c)/np.linalg.norm(x0)*100:.4f}% —— 40 层之后纹丝不动。")
+print(f"               这一列的数值和上面两列不同,是因为归一化的稳定点是 √32 = {np.sqrt(D):.3f},")
+print( "               不是 1。真正要看的是它从第 1 层到第 40 层没变过——不涨也不落。")
+
+print("\n这解释了 D15 为什么把「残差 + 层归一化」写成一个词:")
+print("   残差负责「有一条系数为 1 的直达通道,梯度不用连乘几十个矩阵」;")
+print("   归一化负责「把每层的结果拉回同一个尺度」,不让残差把数值堆上天。")
+print("   两个一起用,才有「能堆几十上百层」这件事。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>同一个子层连堆 40 层,三种接法的信号强度(初始 = 100%):
+
+   层数    裸堆(无残差)   只加残差     残差 + 层归一化
+      1      24.769509%        98.15%        565.6521%
+      2       6.348691%       102.42%        565.6799%
+      5       0.079923%       149.01%        565.6805%
+     10       0.000072%       372.31%        565.6807%
+     20       0.000000%      2414.09%        565.6809%
+     40       0.000000%    164707.85%        565.6809%
+
+三列三种命运,一个都不能少:
+   裸堆:       只剩 0.000000% —— 每层乘 0.5,40 层下来信号归零。
+               浅层学到的东西传不到深层,梯度也传不回来。这就是「梯度消失」。
+   只加残差:   涨到 164,708% —— 走了另一个极端。
+               残差是 (I + W),每层最多放大到 1.5 倍,层数一多就失控。
+               所以「加个残差」本身不是解药,它只是把消失换成了爆炸。
+   残差+归一化:565.6809% —— 40 层之后纹丝不动。
+               这一列的数值和上面两列不同,是因为归一化的稳定点是 √32 = 5.657,
+               不是 1。真正要看的是它从第 1 层到第 40 层没变过——不涨也不落。
+
+这解释了 D15 为什么把「残差 + 层归一化」写成一个词:
+   残差负责「有一条系数为 1 的直达通道,梯度不用连乘几十个矩阵」;
+   归一化负责「把每层的结果拉回同一个尺度」,不让残差把数值堆上天。
+   两个一起用,才有「能堆几十上百层」这件事。</div>
+      <p>中间那一列最容易出乎意料——<b>「加个残差」本身不是解药</b>,它只是把「信号归零」换成了「信号爆炸」。原因很直接:残差算的是 <code>x + W@x</code>,也就是 <code>(I+W)@x</code>,而 <code>I+W</code> 的放大能力比 <code>W</code> 还大(最多 1.5 倍)。层数一多,1.5⁴⁰ 就是个天文数字。<br>所以要连起来读 D15 的那句话:<b>「残差 + 归一化」是一个整体,不是两件可选的事</b>。残差给梯度开了一条直达通道(这才是它真正的作用),归一化把每层的输出拉回同一个尺度(防止那条通道把数值越堆越高)。少任何一个,块就堆不深。<br>回到 D09 那两堵墙,会发现这是同一个故事:RNN 用「循环权重靠近 1」硬扛,Transformer 用「残差 + 归一化」正面解决。<b>能让网络变深的那个设计,才是大模型成立的前提。</b></p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 第 1 步把 <code>H</code> 从 4 改成 1(单头)。形状会变吗?<code>dh</code> 变成多少?——<b>多头不改变形状,只改变「从几个角度看」。</b><br>
+        <b>②</b> 第 1 步把前馈层的放大倍数从 4 改成 1(<code>W1</code> 的形状改成 <code>(D, D)</code>,<code>W2</code> 改成 <code>(D, D)</code>)。能跑,但模型表达能力会掉——这就是「为什么前馈要放大」的现场。<br>
+        <b>③</b> 第 2 步把子层的谱范数从 0.5 改成 0.95再跑。裸堆那一列衰减会慢很多(0.95⁴⁰ ≈ 13%),但只加残差那列会更疯。<br>
+        <b>④</b> 第 2 步把 <code>LAYERS</code> 从 40 改成 100,只看「残差+归一化」那列。还会稳住吗?<b>这就是它能堆到一百层的原因。</b><br>
+        <b>⑤</b> 第 2 步把 <code>layernorm</code> 里的 <code>x.std</code> 换成 <code>x.max</code>(换成另一种归一化)。第三列还稳吗?——稳,因为「拉回同一尺度」这件事换种算法也能做到。</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>第 1 步报 <code>ValueError: cannot reshape</code></td><td><code>D</code> 不能被头数 <code>H</code> 整除</td><td><code>dh = D // H</code> 会悄悄取整,把 D、H 设成能整除的组合(16/4、32/8)</td></tr>
+            <tr><td>第 2 步某些层变成了 <code>nan</code></td><td>子层谱范数太大,数值溢出了</td><td>调小谱范数;真实训练里靠归一化和较小的初始化来避免</td></tr>
+            <tr><td>「只加残差」那列涨得没这里夸张</td><td>numpy 版本或随机种子不同</td><td>趋势一致(爆炸而不是稳定)就算对</td></tr>
+            <tr><td>第 1 步输出全是 0 或全一样</td><td>softmax 之前没减最大值,数值溢出后退化</td><td>代码里 <code>z - z.max(...)</code> 那一行就是防这个的,别删</td></tr>
+            <tr><td>第三列不是 565.68%</td><td><code>D</code> 被改过,√D 跟着变</td><td>不是 bug;恒等于 √D × 100%,验算一下就知道对不对</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">到这一节,大模型的骨架就完整了:<b>注意力让词与词交流(lab-07 / lab-16),前馈让每个词自己加工,残差和归一化保证它能堆得深,堆 N 层之后最后一层的向量就是全句的理解。</b>后面 D16 讲的预训练、微调、RLHF,都是在这副骨架上加训练目标,不再改结构。<br>还有一个很实际的收获:中间那一列告诉我们,<b>「多加一个看起来有帮助的组件」不一定有帮助</b>——残差单独用会让事情更糟。组件之间的配合关系,比单个组件本身更重要。这条经验在调参、换模型、改架构的时候都用得上。</p>
+
+      <nav class="chapter-nav">
+        <a href="../深度课程/D15-Transformer完整结构.html"><span class="lb">回讲义</span><span class="tt">D15 Transformer 完整结构</span></a>
+        <a href="../台账/学习台账.html" class="next"><span class="lb">记一笔</span><span class="tt">学习台账</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-17 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>一个块的四件套</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>残差 + 归一化</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-17" data-kind="lab" data-title="Transformer 块:把一个块拆成四件套,再看它为什么能堆"></script>
+</body>
+</html>

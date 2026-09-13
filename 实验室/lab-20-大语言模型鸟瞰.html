@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-20 · 预测下一个词:把整个大模型缩到能用眼睛看完</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a><span class="sep">—</span>
+      <a href="lab-20-大语言模型鸟瞰.html" class="current">lab-20 大语言模型鸟瞰</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-20 · 配套 第 8 章 大语言模型鸟瞰 · 只要 numpy</p>
+        <h1>预测下一个词:把整个大模型缩到能用眼睛看完</h1>
+        <p class="recap">第 8 章说大模型只做一件事:给定前面的文字,预测下一个最可能的 token,接上去,重复。<b>这一节用 10 句话造一个能看全的语言模型</b>——学到的表能一屏打出来,接龙能一句句跟读。然后再看 temperature:它<b>一点都没改模型学到了什么</b>,只改了「从分布里怎么抽」,输出就从完全确定变成了五花八门。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>一个语言模型学到的东西,就是一串「某个词后面可能跟什么」的概率</li>
+          <li>同一个起点「猫」,接龙三次各不相同——因为每步都是从分布里抽的</li>
+          <li>温度 0.2 时首选词占 99.2%,温度 5.0 时只占 38.4%</li>
+          <li>但那张概率表从头到尾没变过——温度只作用于采样</li>
+          <li>抽 200 次验证:温度 0.1 时首选 100%,温度 5.0 时只剩 39.5%</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../基础课程/08-大语言模型鸟瞰.html">第 8 章</a> 的自回归生成;<b>token 怎么切、怎么算钱</b>见 <a href="lab-08-Token与账单.html">lab-08</a>;<b>注意力怎么把「前面所有词」压成一个表示</b>见 <a href="lab-16-序列模型.html">lab-16</a> 与 <a href="lab-17-Transformer结构.html">lab-17</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p>两段都<b>只用 numpy,不调 API</b>。<b>方式 A</b> 点「▶ 运行」(Pyodide);<b>方式 B</b> 本机跑 <code>实验室\code\lab20\</code> 下的同名文件。两段都是毫秒级。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>「大模型」三个字容易被神化。把词表缩到 12 个词、语料缩到 10 句之后,<b>机制是完全一样的</b>——一样到可以逐句读懂它为什么接出这个词。这一节要看的就是这个机制,以及 temperature 在链条的哪一环动手。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>预测下一个词</span></h2>
+      <p>先统计「谁跟在谁后面」,然后让模型从这个统计里接龙。这张表就是它的全部知识。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_next_word.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="46">import numpy as np
+from collections import defaultdict, Counter
+np.random.seed(0)
+
+# 一个极小的语料。真实模型见的是几万亿字,这里只有 10 句——
+# 但要看的机制完全一样:统计「谁跟在谁后面」,然后照着概率往下接。
+corpus = [
+    "猫 喜欢 吃 鱼",     "猫 喜欢 睡 觉",     "猫 喜欢 晒太阳",
+    "猫 抓 老鼠",        "猫 在 沙发 上 睡",
+    "狗 喜欢 吃 骨头",   "狗 喜欢 跑 步",     "狗 喜欢 摇 尾巴",
+    "狗 看 家",          "狗 在 院子 里 跑",
+]
+
+nxt = defaultdict(Counter)
+for line in corpus:
+    ws = line.split()
+    for i in range(len(ws) - 1):
+        nxt[ws[i]][ws[i + 1]] += 1
+
+print("模型学到的是这样一张表(每个词后面可能跟什么):")
+for w in ["猫", "喜欢", "吃", "狗"]:
+    total = sum(nxt[w].values())
+    items = "、".join(f"{k}({v}/{total})" for k, v in nxt[w].most_common())
+    print(f"   {w:<4} → {items}")
+
+def probs(word):
+    """把计数变成概率分布——这就是语言模型每一步的输出"""
+    c = nxt[word]
+    total = sum(c.values())
+    if total == 0:
+        return [], np.array([])
+    return list(c.keys()), np.array([v / total for v in c.values()])
+
+def generate(start="猫", steps=6, temperature=1.0):
+    """接龙:预测下一个词 → 采样一个 → 接到末尾 → 再预测"""
+    out = [start]
+    for _ in range(steps):
+        keys, p = probs(out[-1])
+        if len(keys) == 0:
+            out.append("[句尾]")          # 没有后继 = 这句话说完了
+            break
+        if temperature != 1.0:            # 温度只改「怎么采」,不改模型学到的这张表
+            logits = np.log(p + 1e-12) / temperature
+            p = np.exp(logits - logits.max())
+            p = p / p.sum()
+        out.append(keys[np.random.choice(len(keys), p=p)])
+    return " ".join(out)
+
+print("\n让它接龙三次(起点都是「猫」):")
+for i in range(3):
+    print(f"   {i+1}. {generate()}")
+
+print("\n三次结果不一样,但每次都通顺——因为模型输出的是概率分布,")
+print("每一步都是从分布里抽一个,抽到什么有随机性。")
+print("这就是同一个问题每次答案会变的原因:不是它「改主意」了,是采样在起作用。")
+
+print("\n那句 [句尾] 也值得注意:词表里没有词的后面什么也不跟,模型就停在那里。")
+print("真实模型专门有一个「结束」符号来表示该收尾了——")
+print("否则它会一直往下编,永远停不下来。")
+
+print("\n真实的大语言模型做的还是同一件事,只是三样东西被放大了:")
+print("   · 表从「上一个词 → 下一个词」升级成「前面所有词 → 下一个词」")
+print("   · 词表从 12 个词变成几万到十几万个 token")
+print("   · 参数从这张几百个数的表变成几千亿个权重")
+print("机制没变:给定前面的文字,算下一个词的概率,采样,接到末尾,重复。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>模型学到的是这样一张表(每个词后面可能跟什么):
+   猫    → 喜欢(3/5)、抓(1/5)、在(1/5)
+   喜欢   → 吃(2/6)、睡(1/6)、晒太阳(1/6)、跑(1/6)、摇(1/6)
+   吃    → 鱼(1/2)、骨头(1/2)
+   狗    → 喜欢(3/5)、看(1/5)、在(1/5)
+
+让它接龙三次(起点都是「猫」):
+   1. 猫 喜欢 跑 步 [句尾]
+   2. 猫 喜欢 睡 觉 [句尾]
+   3. 猫 喜欢 摇 尾巴 [句尾]
+
+三次结果不一样,但每次都通顺——因为模型输出的是概率分布,
+每一步都是从分布里抽一个,抽到什么有随机性。
+这就是同一个问题每次答案会变的原因:不是它「改主意」了,是采样在起作用。
+
+那句 [句尾] 也值得注意:词表里没有词的后面什么也不跟,模型就停在那里。
+真实模型专门有一个「结束」符号来表示该收尾了——
+否则它会一直往下编,永远停不下来。
+
+真实的大语言模型做的还是同一件事,只是三样东西被放大了:
+   · 表从「上一个词 → 下一个词」升级成「前面所有词 → 下一个词」
+   · 词表从 12 个词变成几万到十几万个 token
+   · 参数从这张几百个数的表变成几千亿个权重
+机制没变:给定前面的文字,算下一个词的概率,采样,接到末尾,重复。</div>
+      <p>那张表就是「模型的知识」——三行数字,一眼看完。注意<b>「喜欢」后面有 5 种可能</b>,而「吃」后面只有 2 种:语料里怎么说,它就怎么学。<b>大模型也是一样,只是它那张表有几万亿个格子。</b><br>三次接龙都从「猫 喜欢」开始,结果分别是"跑 步""睡 觉""摇 尾巴"——<b>这三次都不是模型改主意,是每步的采样抽到了不同的词。</b>所以「同一个问题问两遍答案不一样」不是故障,是它在按设计工作。<br>[句尾] 那一行也很实在:模型在「鱼」「觉」「步」这些词后面学不到任何后继,就停住了。真实模型靠一个专门的<b>结束符号</b>来收尾——没有它,模型会一直编下去停不下来。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>temperature:只改怎么采,不改学到了什么</span></h2>
+      <p>同一个分布,加不同温度重新采样。看概率怎么变形、以及真抽 200 次的结果。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_temperature.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="40">import numpy as np
+from collections import Counter
+np.random.seed(0)
+
+corpus = [
+    "猫 喜欢 吃 鱼",     "猫 喜欢 睡 觉",     "猫 喜欢 晒太阳",
+    "猫 抓 老鼠",        "猫 在 沙发 上 睡",
+    "狗 喜欢 吃 骨头",   "狗 喜欢 跑 步",     "狗 喜欢 摇 尾巴",
+    "狗 看 家",          "狗 在 院子 里 跑",
+]
+nxt = {}
+for line in corpus:
+    ws = line.split()
+    for i in range(len(ws) - 1):
+        nxt.setdefault(ws[i], Counter())[ws[i + 1]] += 1
+
+# 看「猫」后面那个词的分布——这是模型给出的原始概率
+keys = list(nxt["猫"].keys())
+p0 = np.array([nxt["猫"][k] for k in keys], dtype=float)
+p0 /= p0.sum()
+print("模型认为「猫」后面最可能跟的词:")
+for k, v in zip(keys, p0):
+    bar = "█" * int(v * 40)
+    print(f"   {k:<5} {v:6.1%}  {bar}")
+
+def with_temp(p, T):
+    """温度只作用在「怎么采」这一步:把对数概率除以 T 再重新归一化"""
+    logits = np.log(p + 1e-12) / T
+    e = np.exp(logits - logits.max())
+    return e / e.sum()
+
+print("\n同一个分布,加上不同温度之后(模型本身一点没变):")
+print("   温度       喜欢      抓       在      熵(越高越随机)")
+for T in [0.2, 0.5, 1.0, 2.0, 5.0]:
+    q = with_temp(p0, T)
+    H = -(q * np.log(q + 1e-12)).sum()
+    print(f"   {T:<6} {q[0]:>8.1%} {q[1]:>8.1%} {q[2]:>8.1%}   {H:>8.3f}")
+
+print("\n温度不改变模型学到了什么,只改变「从分布里怎么抽」。")
+print("   T &lt; 1  分布变尖 —— 高概率的词更容易被抽中,输出更确定、更保守")
+print("   T = 1  原样采样")
+print("   T &gt; 1  分布被抹平 —— 低概率的词也有机会,输出更发散、更容易跑偏")
+print("   T → 0  退化成「永远选概率最大的那个」,同一个问题每次答案都一样")
+
+# ---- 用采样次数把上面的话变成能数的东西 ----
+print("\n每种温度下真抽 200 次,看首选词占了多大比例:")
+print("(候选只有 3 个,所以别数「出现几种」——那个数最多到 3,看不出差别;要看占比)")
+for T in [0.1, 0.5, 1.0, 2.0, 5.0]:
+    q = with_temp(p0, T)
+    picks = [keys[i] for i in np.random.choice(len(keys), size=200, p=q)]
+    c = Counter(picks)
+    top_k, top_v = c.most_common(1)[0]
+    detail = "、".join(f"{k}×{v}" for k, v in c.most_common())
+    print(f"   T={T:<4} 首选「{top_k}」占 {top_v/200:5.1%}   ({detail})")
+
+print("\n这就是 API 里那个 temperature 参数的全部含义:")
+print("   调低 → 稳定、可复现,适合抽取信息、写代码、做分类;")
+print("   调高 → 多样、有惊喜,适合头脑风暴、写文案;")
+print("   同一个问题答案飘忽不定,多半是温度开高了 —— 它是采样,本来就不保证一样。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>模型认为「猫」后面最可能跟的词:
+   喜欢     60.0%  ████████████████████████
+   抓      20.0%  ████████
+   在      20.0%  ████████
+
+同一个分布,加上不同温度之后(模型本身一点没变):
+   温度       喜欢      抓       在      熵(越高越随机)
+   0.2       99.2%     0.4%     0.4%      0.053
+   0.5       81.8%     9.1%     9.1%      0.600
+   1.0       60.0%    20.0%    20.0%      0.950
+   2.0       46.4%    26.8%    26.8%      1.062
+   5.0       38.4%    30.8%    30.8%      1.093
+
+温度不改变模型学到了什么,只改变「从分布里怎么抽」。
+   T &lt; 1  分布变尖 —— 高概率的词更容易被抽中,输出更确定、更保守
+   T = 1  原样采样
+   T &gt; 1  分布被抹平 —— 低概率的词也有机会,输出更发散、更容易跑偏
+   T → 0  退化成「永远选概率最大的那个」,同一个问题每次答案都一样
+
+每种温度下真抽 200 次,看首选词占了多大比例:
+(候选只有 3 个,所以别数「出现几种」——那个数最多到 3,看不出差别;要看占比)
+   T=0.1  首选「喜欢」占 100.0%   (喜欢×200)
+   T=0.5  首选「喜欢」占 81.5%   (喜欢×163、抓×19、在×18)
+   T=1.0  首选「喜欢」占 59.5%   (喜欢×119、在×46、抓×35)
+   T=2.0  首选「喜欢」占 53.0%   (喜欢×106、在×48、抓×46)
+   T=5.0  首选「喜欢」占 39.5%   (喜欢×79、在×71、抓×50)
+
+这就是 API 里那个 temperature 参数的全部含义:
+   调低 → 稳定、可复现,适合抽取信息、写代码、做分类;
+   调高 → 多样、有惊喜,适合头脑风暴、写文案;
+   同一个问题答案飘忽不定,多半是温度开高了 —— 它是采样,本来就不保证一样。</div>
+      <p>两件事必须分清。<b>①模型本身一点没变。</b>那张概率表(60% / 20% / 20%)从头到尾是同一个——温度只是在采样那一步把对数概率除以 T 再归一化。所以<b>调温度不会让模型变聪明,只会让它更敢赌或更保守</b>。<br><b>②温度和「确定性」的关系是单调的,而且可以量。</b>看最后一列熵:0.2 时 0.053(几乎不随机),5.0 时 1.093(接近均匀分布)。抽 200 次的实测也对上了:温度 0.1 时首选词占 100%,温度 5.0 时只剩 39.5%。<br>这份实测还有个附带结论:<b>温度调到 0.1 时,"同一个问题每次答案一样"是可以做到的</b>——这解释了为什么写代码、做分类这类任务都建议把温度调到接近 0。反过来,感觉输出飘忽不定,先去检查温度,而不是怀疑模型坏了。</p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 第 1 步把起点从「猫」改成「狗」,再跑三次。出现「狗 喜欢 跑 步」的概率大吗?——看那张表里「喜欢」后面哪个词占 2/6 就知道。<br>
+        <b>②</b> 第 1 步在语料里加一句「猫 喜欢 吃 猫粮」,再跑。表里「喜欢」那一行的概率怎么变?<b>这就是「投喂数据改变模型行为」的最小例子。</b><br>
+        <b>③</b> 第 1 步把 <code>np.random.choice</code> 换成 <code>np.argmax</code>(永远选概率最大的)。接龙还会变吗?——这就是<strong>贪心解码</strong>,也叫温度 0。<br>
+        <b>④</b> 第 2 步把温度列表改成 <code>[0.01, 0.05]</code> 再跑,看首选占比是不是都接近 100%。这解释了为什么设 0.1 和设 0.01 感觉没差别。<br>
+        <b>⑤</b> 第 2 步把语料改成只有「猫 喜欢 吃 鱼」一句(分布变成 100%/0%/0%)。这时温度还起作用吗?——<b>温度改不动「模型本来就只有一个选择」的情况。</b></p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>报 <code>ValueError: a must be greater than 0</code></td><td>某个词后面没有后继,概率数组是空的</td><td>代码里那句 <code>if len(keys) == 0: break</code> 就是处理它的;真实模型靠结束符号</td></tr>
+            <tr><td>三次接龙结果完全一样</td><td><code>np.random.seed(0)</code> 固定了随机数,而且每步分布很尖</td><td>不是 bug;去掉 seed 或调高温度去看差异</td></tr>
+            <tr><td>温度改成 0 报除零错</td><td>除以 0</td><td>温度取一个很小的正数(如 1e-6)就是实际上的温度 0</td></tr>
+            <tr><td>长句子接不出有意义的上下文</td><td>这是二元模型,只看上一个词,不看整句</td><td>不是 bug;真实模型用的是「前面所有词」,见 lab-17</td></tr>
+            <tr><td>熵那一列看不懂</td><td>熵是「有多随机」的度量,均匀分布最大</td><td>只用来看趋势:温度升,熵升,就对了</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">第 8 章那句「一个字一个字地接龙」,在这一节变成了三行能读懂的代码:算下一个词的概率 → 采一个 → 接到末尾。放大到几万亿字、几万 token、几千亿参数之后,机制一字未改。<br>理解了这一点,很多日常疑惑就自动有了解释:<b>答案飘忽是采样;答非所问是概率分布学了不该学的东西;调温度不解决能力问题,只解决稳定性和多样性的取舍。</b>下一节 <a href="lab-08-Token与账单.html">lab-08</a> 已经把「一个 token 多少钱」算过一遍,两者合起来就是「大模型是什么、以及它怎么计费」的完整答案。</p>
+
+      <nav class="chapter-nav">
+        <a href="../基础课程/08-大语言模型鸟瞰.html"><span class="lb">回讲义</span><span class="tt">第 8 章 大语言模型鸟瞰</span></a>
+        <a href="../台账/学习台账.html" class="next"><span class="lb">记一笔</span><span class="tt">学习台账</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-20 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>预测下一个词</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>temperature</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-20" data-kind="lab" data-title="预测下一个词:把整个大模型缩到能用眼睛看完"></script>
+</body>
+</html>

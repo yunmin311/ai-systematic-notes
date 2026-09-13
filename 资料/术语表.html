@@ -480,7 +480,7 @@ article h2,article [id]{scroll-margin-top:64px;}
 .toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
 .toc-group{margin-bottom:14px;}
 .toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
-.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
 .toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
 .toc-sidebar a:hover{color:var(--ink);}
 .toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
@@ -859,10 +859,61 @@ body{
   <div class="gl"><b>量化</b><span class="en">quantization</span><span class="src">D17</span>
     <p>把权重从 16 位压成 8 位甚至 4 位存储。显存近似按比例下降、生成更快,精度略损。7B 模型 4-bit 约需 3.5 GB。</p></div>
 
+  <h2 id="sec13"><span class="no">13</span><span>项目 · P1–P7</span></h2>
+  <div class="gl"><b>数据体检</b><span class="en">data profiling</span><span class="src">P1</span>
+    <p>建模之前先摸清数据的六件事:规模、缺失、类型、分布、异常、关系。目的不是修数据,是先知道数据到底长什么样——多数返工都能追溯到这一步没做。</p></div>
+  <div class="gl"><b>切块重叠</b><span class="en">chunk overlap</span><span class="src">P5</span>
+    <p>相邻两个文本块之间故意留一段重复内容。块切小了检索准、但容易把一句话拦腰截断;留一点重叠能保住跨块的语义,代价是索引略大。</p></div>
+  <div class="gl"><b>工具说明书</b><span class="en">JSON schema(工具侧)</span><span class="src">P6</span>
+    <p>工具的两面之一:一面是真正干活的 Python 函数,另一面是给模型看的 JSON 描述(名字、参数、含义)。模型靠这份说明书决定「该调哪个、传什么参数」,写不清楚它就乱调。</p></div>
+  <div class="gl"><b>步数上限</b><span class="en">max_steps</span><span class="src">P6</span>
+    <p>给 agent loop 设的最大轮数。没有它,模型一旦在两个动作之间来回打转,就会一直烧钱到天亮——这是最小 harness 里最不能省的一个兜底。</p></div>
+  <div class="gl"><b>最小闭环</b><span class="en">minimum loop</span><span class="src">P4</span>
+    <p>先跑通「发一句、收一句」再谈别的功能。它的价值是让错误暴露在最薄的一层:闭环没通时,问题只可能在鉴权、网络或调用参数这三处。</p></div>
+  <div class="gl"><b>消融实验</b><span class="en">ablation</span><span class="src">P3</span>
+    <p>每次只去掉一个部件(比如去掉 Dropout、去掉池化层)再跑一遍,对比指标变化。用来亲手验证「这个部件到底有没有用」,而不是照着结论信。</p></div>
+  <div class="gl"><b>后端关口</b><span class="en">backend gateway</span><span class="src">P7</span>
+    <p>前端与模型之间唯一的那一道:密钥只在这里注入、限流与缓存只在这里做、请求只在这里记日志。把「唯一关口」做实,前端就永远碰不到密钥。</p></div>
+  <div class="gl"><b>监控四块表</b><span class="en">four monitoring dashboards</span><span class="src">P7</span>
+    <p>上线之后要盯的四类数:用量与成本、延迟、失败与报错、答案质量。少了任何一块,都只能在用户投诉之后才知道出了问题。</p></div>
+  <div class="gl"><b>平台托管 / 无服务器</b><span class="en">PaaS / serverless</span><span class="src">P7</span>
+    <p>把代码推上去、在后台设好环境变量,平台给一个公网网址。不用自己管机器,代价是可控性低、冷启动有延迟。适合入门和流量不大的应用。</p></div>
+
+  <h2 id="sec14"><span class="no">14</span><span>AI 使用 · U01–U07</span></h2>
+  <div class="gl"><b>工具回执</b><span class="en">tool result</span><span class="src">U01</span>
+    <p>工具执行完之后由程序回传给模型的那段结果。它是模型判断「自己做没做成」的唯一依据——回执被裁剪、被重试盖掉或压根没调工具,那句「已完成」照样会被生成出来。</p></div>
+  <div class="gl"><b>默认脸 / 分布中心</b><span class="en">mode / distribution center</span><span class="src">U01</span>
+    <p>不给具体约束时,产出会收敛到「语料里最常见的那种写法」。再叠加对齐训练奖励「多数人觉得还行」,两股力量一起把输出推向安全平均值。所以默认脸不是偷懒,是必然。</p></div>
+  <div class="gl"><b>前提确认</b><span class="en">premise check</span><span class="src">U01</span>
+    <p>开工前先让它用一句话说清材料是什么(几页、什么结构),确认无误再往下。模型内部没有「我不确定」的信号能中断生成,前提错了后面全错、且读起来毫无异常,所以这一步必须单独一轮。</p></div>
+  <div class="gl"><b>假绿灯</b><span class="en">false green</span><span class="src">U01</span>
+    <p>不表现为失败、而表现为成功的那种错。它最贵的地方在于:后续所有工作都接着这个不存在的地基往下做,等发现时返工量已经滚了几轮。</p></div>
+  <div class="gl"><b>缓存前缀</b><span class="en">prompt cache prefix</span><span class="src">U02</span>
+    <p>厂商提示缓存只缓存「从第一个 Token 开始连续不变的那一段」。所以改动位置越靠前、失效的部分越多——稳定的规则放开头、变动的东西放末尾,是硬规矩不是风格。</p></div>
+  <div class="gl"><b>中段衰减</b><span class="en">lost in the middle</span><span class="src">U02</span>
+    <p>注意力对超长序列中间部分的权重系统性偏低:开头结尾记得牢,中间容易被略过。第 20 轮说的一条约束,到第 80 轮时正落在衰减区里。</p></div>
+  <div class="gl"><b>规则强度阶梯</b><span class="en">rule strength ladder</span><span class="src">U03</span>
+    <p>同一条规则放的位置决定强度,差好几个数量级:①口头说 ②写进规则文件 ③自动注入 ④脚本校验 ⑤执行前硬拦截。前三层只是提高概率,后两层才是保证。</p></div>
+  <div class="gl"><b>可写面</b><span class="en">writable surface</span><span class="src">U06</span>
+    <p>会被写到的那一份东西:一个工作目录、暂存区、一条分支、一份共享配置,甚至一个编号池。冲突发生在「两个写者和同一个面」之间,所以判冲突要看面,不看是谁。</p></div>
+  <div class="gl"><b>转发块</b><span class="en">handoff block</span><span class="src">U06</span>
+    <p>把一个对话的结论交给另一个对话时用的固定格式。三条硬规矩:不预填未拍板的决定、不代写提出者的原话、块要自足(接收方看不到这边的上下文)。</p></div>
+  <div class="gl"><b>映射表</b><span class="en">mapping table</span><span class="src">U05</span>
+    <p>动手前先交的那张表,四列:参考里的项 / 实测值 / 本次要落到哪 / 怎么判定。判定方式那一列写不出来的项,说明还没拆到位。表没过不许开工。</p></div>
+  <div class="gl"><b>核心样本</b><span class="en">core sample</span><span class="src">U05</span>
+    <p>挑那个「做对了别的就都好办」的样本(最复杂的模块、最难的一段)先做到逐项判定通过,再复制到其余部分。先铺后改的返工量通常是先样后铺的十倍以上。</p></div>
+  <div class="gl"><b>快照</b><span class="en">snapshot</span><span class="src">U04</span>
+    <p>动正本之前先留的一份可回滚的副本。失败代价高的活(批量重命名、数据迁移)先在副本上跑一遍、比对结果,确认无误再对正本执行。</p></div>
+  <div class="gl"><b>待验单</b><span class="en">pending verification list</span><span class="src">U07</span>
+    <p>把「脚本过了、但还有必须人看的部分」单独列的一张单子。它可以进下一批,但不销账——让「还没验」这件事有地方待着,而不是被压进「完工」里悄悄消失。</p></div>
+  <div class="gl"><b>抽样错觉</b><span class="en">sampling illusion</span><span class="src">U07</span>
+    <p>抽查三处都对就当全过了。批量产出里的错误常常是成片的而不是随机的,三处全落在好的那一片是常事。能全量就全量,不能全量就明说「这是抽查,抽了几处」。</p></div>
+
   <div class="note">
     <span class="note-t">维护规则</span>
     每发布一章,新增术语按同样格式追加一个小节;同一个词后续章节有更深定义时,在旧条目后加「另见第 X 章」而不是覆盖。
-    <br>覆盖进度:<b>全部 39 章已收录</b>——基础 01–08、深度课程 D01–D17(三条 Track 全覆盖)、应用工程 A01–A07。共约 140 条。
+    <br>覆盖进度(2026-09-10 核对):<b>46 / 46 章已收录</b>——基础 01–08、深度课程 D01–D17(三条 Track 全覆盖)、应用工程 A01–A07、项目 P1–P7、AI 使用 U01–U07。共 166 条。
+    <br>注:项目与 AI 使用两节是 2026-09-10 补的(此前只收 32 章)。这两块的术语偏「做法」而非「概念」,遇到新说法继续按四行格式往对应的小节里追加即可。
   </div>
 
   <div class="pagefoot">
@@ -886,6 +937,8 @@ body{
         <a data-toc-target="sec10" href="#sec10"><i>10</i>深度课程 · 经典机器学习 D01–D06</a>
         <a data-toc-target="sec11" href="#sec11"><i>11</i>深度课程 · 深度学习 D07–D11</a>
         <a data-toc-target="sec12" href="#sec12"><i>12</i>深度课程 · 大模型内部 D12–D17</a>
+        <a data-toc-target="sec13" href="#sec13"><i>13</i>项目 · P1–P7</a>
+        <a data-toc-target="sec14" href="#sec14"><i>14</i>AI 使用 · U01–U07</a>
       </div>
     </aside>
   </div>

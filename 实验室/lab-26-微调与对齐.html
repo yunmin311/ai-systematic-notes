@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-26 · 微调和对齐:一笔参数账,和一次「把偏好变成分数」</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../深度课程/D16-预训练微调与RLHF.html">D16</a><span class="sep">—</span>
+      <a href="lab-26-微调与对齐.html" class="current">lab-26 微调与对齐</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-26 · 配套 D16 预训练、微调与 RLHF · 只要标准库,不调 API</p>
+        <h1>微调和对齐:一笔参数账,和一次「把偏好变成分数」</h1>
+        <p class="recap">D16 把三个阶段概括成三句话,其中后两段(指令微调、对齐)讲的都是工程手段。这一节把其中两件事算清楚:<b>LoRA 到底省多少参数</b>——7B 级模型上只动千分之一多一点;以及<b>RLHF 的数据从哪来</b>——人工只标了「谁赢」,怎么变成能训练的目标函数。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>7B 级模型全参要动 64.4 亿个参数,LoRA(r=8) 只动 839 万——占 0.130%</li>
+          <li>调大 rank 和目标层数,LoRA 参数最多涨到 4.167%,仍然是零头</li>
+          <li>推理时 LoRA 权重能加回原矩阵,部署不增加延迟</li>
+          <li>9 场「谁赢」的比较,转成了 1669 / 1175 / 862 / 295 的可排序分数</li>
+          <li>胜场更多的 C 排在胜场更少的 B 后面——因为 Elo 记的是「赢了谁」</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../深度课程/D16-预训练微调与RLHF.html">D16</a> 的指令微调与对齐两个阶段;模型骨架在 <a href="lab-17-Transformer结构.html">lab-17</a>,训练循环在 <a href="lab-06-五步循环.html">lab-06</a>,算力和成本的账可对照 <a href="lab-08-Token与账单.html">lab-08</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p>两段都<b>只用 Python 标准库</b>——第一段是纯算术,第二段是一个几十行的 Elo。<b>方式 A</b> 点「▶ 运行」(Pyodide);<b>方式 B</b> 跑 <code>实验室\code\lab26\</code> 下的同名文件。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>D16 说「能力主要来自第一段,好用与安全主要来自后两段」。后两段之所以能做得起,靠的是两个具体手段:<b>微调把参数量降下来</b>(否则重训一遍的成本没人付得起),<b>对齐把「人觉得哪个好」变成可优化的目标</b>(否则再好也只是个续写机器)。这一节把这两件事都算一遍。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>一笔参数账:LoRA 省了多少</span></h2>
+      <p>全参微调和 LoRA 各要动多少参数。三种规模的配置各算一遍,再看 rank 的影响。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_lora.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="44"># 全参微调 vs LoRA,到底差多少参数。算的是一道纯算术题。
+
+def full_params(layers, d, vocab=150000):
+    """一个 Transformer 的可训练参数(不含词表):
+       每层 = 注意力 4d² + 前馈 8d²(放大 4 倍再压回,两次都是 d×4d)"""
+    per_layer = 4 * d * d + 8 * d * d
+    return layers * per_layer, vocab * d      # 第二个数是词表(嵌入层)
+
+def lora_params(layers, d, rank, targets_per_layer=4):
+    """LoRA:不改原矩阵,只在旁边挂两个小矩阵 A(d×r) 和 B(r×d)。
+       每挂一处新增 r*d + d*r = 2rd 个参数。"""
+    return layers * targets_per_layer * 2 * rank * d
+
+CONFIGS = [
+    ("小模型 6 层 d=512",  6, 512),
+    ("中模型 24 层 d=1024", 24, 1024),
+    ("7B 级 32 层 d=4096", 32, 4096),
+]
+
+print(f"{'配置':&lt;22}{'全参(主体)':>14}{'LoRA(r=8)':>12}{'占比':>9}")
+rows = []
+for name, L, d in CONFIGS:
+    body, emb = full_params(L, d)
+    lora = lora_params(L, d, rank=8)
+    pct = lora / body
+    rows.append((name, body, emb, lora, pct))
+    print(f"{name:&lt;22}{body:>14,}{lora:>12,}{pct:>8.3%}")
+
+print("\n换几个 rank 和目标层数看看(以 7B 级那行的配置 L=32、d=4096 为例):")
+BIG_L, BIG_D = 32, 4096
+body, emb = full_params(BIG_L, BIG_D)
+print(f"   目标层数     rank       LoRA 参数        占主体的比例")
+for targets in [4, 8, 16, 32]:
+    for r in [8, 32]:
+        lp = lora_params(BIG_L, BIG_D, r, targets)
+        print(f"   {targets:>8}     {r:>4}   {lp:>13,}   {lp/body:>12.3%}")
+
+print("\n三个关键数字:")
+body, emb, lora, pct = rows[-1][1], rows[-1][2], rows[-1][3], rows[-1][4]
+print(f"   ① 全参要动 {body:,} 个参数(还不算词表 {emb:,});LoRA 只动 {lora:,} 个。")
+print(f"      占比 {pct:.3%} —— 千分之一多一点。")
+print(f"   ② 但训练时还要存梯度、优化器状态,全参微调的显存大约是参数的 3~4 倍。")
+print(f"      LoRA 这些全都不需要,所以显存降得比参数比例还多。")
+print(f"   ③ 推理时可以把 LoRA 权重直接加回原矩阵(B@A 加进 W),")
+print(f"      所以部署时不增加任何延迟 —— 这一点常常被忽略。")
+
+print("\n这就是「微调」在工程上真正便宜的地方:")
+print("   它不是把整个模型重训一遍,而是在每个权重矩阵旁边挂一块小补丁。")
+print("   原权重冻住不动,只学那块补丁 —— 这也解释了为什么便宜的同时")
+print("   它的能力上限不如全参微调:补丁能改的东西,本来就有限。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>配置                            全参(主体)   LoRA(r=8)       占比
+小模型 6 层 d=512             18,874,368     196,608  1.042%
+中模型 24 层 d=1024          301,989,888   1,572,864  0.521%
+7B 级 32 层 d=4096       6,442,450,944   8,388,608  0.130%
+
+换几个 rank 和目标层数看看(以 7B 级那行的配置 L=32、d=4096 为例):
+   目标层数     rank       LoRA 参数        占主体的比例
+          4        8       8,388,608         0.130%
+          4       32      33,554,432         0.521%
+          8        8      16,777,216         0.260%
+          8       32      67,108,864         1.042%
+         16        8      33,554,432         0.521%
+         16       32     134,217,728         2.083%
+         32        8      67,108,864         1.042%
+         32       32     268,435,456         4.167%
+
+三个关键数字:
+   ① 全参要动 6,442,450,944 个参数(还不算词表 614,400,000);LoRA 只动 8,388,608 个。
+      占比 0.130% —— 千分之一多一点。
+   ② 但训练时还要存梯度、优化器状态,全参微调的显存大约是参数的 3~4 倍。
+      LoRA 这些全都不需要,所以显存降得比参数比例还多。
+   ③ 推理时可以把 LoRA 权重直接加回原矩阵(B@A 加进 W),
+      所以部署时不增加任何延迟 —— 这一点常常被忽略。
+
+这就是「微调」在工程上真正便宜的地方:
+   它不是把整个模型重训一遍,而是在每个权重矩阵旁边挂一块小补丁。
+   原权重冻住不动,只学那块补丁 —— 这也解释了为什么便宜的同时
+   它的能力上限不如全参微调:补丁能改的东西,本来就有限。</div>
+      <p>三行数字连起来看:<b>模型越大,LoRA 的占比反而越小</b>——1.042% → 0.521% → 0.130%。原因是全参按 d² 增长,LoRA 按 d 线性增长,<b>模型一大,差距就拉开了</b>。这也解释了为什么 LoRA 在大模型上特别划算,小模型上省得有限。<br>下面那张 rank 表给出了调节旋钮:<b>目标层数翻倍、参数翻倍;rank 从 8 到 32 翻四倍、参数也翻四倍</b>。所以「用多大的 LoRA」是可以精确预估的,不用试。最猛的一档(32 层 × rank 32)也只占 4.167%,仍是零头。<br>最后那条推理时的性质最容易被忽略:<b>LoRA 训练时是旁路,部署时可以合并回原矩阵</b>,所以不会像「外挂一个适配器」那样增加延迟。省下来的只是训练成本,推理性能一点不损失——这是它能成为默认做法的关键。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>把偏好变成分数</span></h2>
+      <p>对齐阶段的训练数据长什么样?人工只标「谁赢」,没有分数。看这堆比较怎么变成可排序的目标。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_preference.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="44"># 对齐阶段的起点不是「打分」,而是「两个回答里哪个更好」。
+# 这一节把一批成对比较转成排名 —— 这就是 RLHF 里奖励模型吃的那份数据。
+
+MODELS = ["回答 A", "回答 B", "回答 C", "回答 D"]
+
+# 人工标注的成对偏好:(赢的, 输的)。注意标注员从没给过任何绝对分数。
+MATCHES = [
+    ("回答 A", "回答 B"), ("回答 A", "回答 B"), ("回答 A", "回答 C"),
+    ("回答 B", "回答 C"), ("回答 B", "回答 D"),
+    ("回答 C", "回答 D"), ("回答 C", "回答 D"), ("回答 C", "回答 D"),
+    ("回答 A", "回答 D"),
+]
+WIN_LOSS = {m: [0, 0] for m in MODELS}      # 顺手统计每个回答的胜负场次
+for w, l in MATCHES:
+    WIN_LOSS[w][0] += 1
+    WIN_LOSS[l][1] += 1
+
+def elo(matches, K=32, rounds=60, base=1000.0):
+    """Elo。每一轮结束后把分数整体平移回均值 1000——
+       否则相同数据反复跑会一路发散(分数没有绝对零点,只有相对差距有意义)。"""
+    score = {m: base for m in MODELS}
+    for _ in range(rounds):
+        for win, lose in matches:
+            exp = 1 / (1 + 10 ** ((score[lose] - score[win]) / 400))   # 预期胜率
+            delta = K * (1 - exp)                                     # 实际赢了(1),超出预期多少
+            score[win] += delta
+            score[lose] -= delta
+        mean = sum(score.values()) / len(score)
+        for m in score:
+            score[m] += base - mean                                   # 整轮平移,保持居中
+    return score
+
+final = elo(MATCHES)
+ranked = sorted(final.items(), key=lambda kv: -kv[1])
+
+print("人工只标了「谁赢」,从没给过分数。这是 9 场比较:")
+for w, l in MATCHES:
+    print(f"   {w}  >  {l}")
+print("\n每个回答的战绩:")
+for m in MODELS:
+    w, l = WIN_LOSS[m]
+    print(f"   {m}   {w} 胜 {l} 负")
+
+print("\n跑完 Elo,得到可以排序的分数(四者均值固定为 1000):")
+print("   名次   模型        分数       跟第一名差")
+top, bottom = ranked[0][1], ranked[-1][1]
+for i, (m, s) in enumerate(ranked, 1):
+    bar = "█" * min(44, max(1, int((s - bottom) / (top - bottom + 1e-9) * 44)))
+    print(f"   {i:>2}    {m:&lt;8}{s:>9.1f}     {s-top:>9.1f}  {bar}")
+
+print(f"\n排名:{' > '.join(m for m, _ in ranked)}")
+
+print("\n排名和战绩对不上,这一点最值得停一下看:")
+print("   C 是 3 胜 2 负,B 是 2 胜 2 负 —— 胜场更多的 C 却排在 B 后面。")
+print("   原因不复杂:B 和 C 交过手,B 赢了;而 C 那三场胜仗全是赢 D")
+print("   (唯一 0 胜 5 负的那个),含金量低。")
+print("   Elo 记的不是「赢了几场」,是「赢了谁」—— 这正是它比单纯数胜场")
+print("   更适合处理偏好的地方:光看胜率会把「专挑软柿子」当成强。")
+
+print("\n三件事要看清:")
+print("   ① 输入只有「谁赢」这种相对判断,输出却是可以排序的分数。")
+print("      这就是把「偏好」变成「目标函数」的那一步 —— 没有它,没法训练。")
+print("   ② 分数的绝对大小没有意义,只有相对差距有意义。")
+print("      代码里每轮把均值拉回 1000,就是因为这套分数没有绝对零点;")
+print("      换成 500 或 2000 当中心,排名一模一样。")
+print(f"   ③ A 拿到 {final['回答 A']:.0f} 分,比 D 高出 {final['回答 A']-final['回答 D']:.0f} 分。")
+print("      差距这么大,是因为这批数据里 A 一场没输过。")
+print("      少量比较就能拉开巨大差距,说明这种数据的信息量是有限的:")
+print("      它够排出顺序,不够说清「好多少」。")
+print()
+print("对应到 D16 的第三阶段:")
+print("   这批「谁赢」的数据 → 训练一个奖励模型 → 用奖励模型给模型的输出打分")
+print("   → 分数高的被鼓励。整条链路能从相对判断出发,")
+print("   靠的就是上面这个把「比较」变成「分数」的动作。")
+print()
+print("也正因为起点是人的偏好,而不是客观答案:")
+print("   它适合解决「哪种答法更好」这类没有标准答案的问题,")
+print("   也不可避免地把标注员的偏好一起学了进去。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>人工只标了「谁赢」,从没给过分数。这是 9 场比较:
+   回答 A  >  回答 B
+   回答 A  >  回答 B
+   回答 A  >  回答 C
+   回答 B  >  回答 C
+   回答 B  >  回答 D
+   回答 C  >  回答 D
+   回答 C  >  回答 D
+   回答 C  >  回答 D
+   回答 A  >  回答 D
+
+每个回答的战绩:
+   回答 A   4 胜 0 负
+   回答 B   2 胜 2 负
+   回答 C   3 胜 2 负
+   回答 D   0 胜 5 负
+
+跑完 Elo,得到可以排序的分数(四者均值固定为 1000):
+   名次   模型        分数       跟第一名差
+    1    回答 A       1668.7           0.0  ███████████████████████████████████████████
+    2    回答 B       1174.7        -494.0  ████████████████████████████
+    3    回答 C        861.9        -806.8  ██████████████████
+    4    回答 D        294.6       -1374.1  █
+
+排名:回答 A > 回答 B > 回答 C > 回答 D
+
+排名和战绩对不上,这一点最值得停一下看:
+   C 是 3 胜 2 负,B 是 2 胜 2 负 —— 胜场更多的 C 却排在 B 后面。
+   原因不复杂:B 和 C 交过手,B 赢了;而 C 那三场胜仗全是赢 D
+   (唯一 0 胜 5 负的那个),含金量低。
+   Elo 记的不是「赢了几场」,是「赢了谁」—— 这正是它比单纯数胜场
+   更适合处理偏好的地方:光看胜率会把「专挑软柿子」当成强。
+
+三件事要看清:
+   ① 输入只有「谁赢」这种相对判断,输出却是可以排序的分数。
+      这就是把「偏好」变成「目标函数」的那一步 —— 没有它,没法训练。
+   ② 分数的绝对大小没有意义,只有相对差距有意义。
+      代码里每轮把均值拉回 1000,就是因为这套分数没有绝对零点;
+      换成 500 或 2000 当中心,排名一模一样。
+   ③ A 拿到 1669 分,比 D 高出 1374 分。
+      差距这么大,是因为这批数据里 A 一场没输过。
+      少量比较就能拉开巨大差距,说明这种数据的信息量是有限的:
+      它够排出顺序,不够说清「好多少」。
+
+对应到 D16 的第三阶段:
+   这批「谁赢」的数据 → 训练一个奖励模型 → 用奖励模型给模型的输出打分
+   → 分数高的被鼓励。整条链路能从相对判断出发,
+   靠的就是上面这个把「比较」变成「分数」的动作。
+
+也正因为起点是人的偏好,而不是客观答案:
+   它适合解决「哪种答法更好」这类没有标准答案的问题,
+   也不可避免地把标注员的偏好一起学了进去。</div>
+      <p>这份输出里最该记住的是<b>「排名和战绩对不上」那一段</b>:C 赢了 3 场、B 只赢 2 场,但 B 排在前面。原因很实在——<b>B 赢过 C,而 C 那三场全是赢最弱的 D</b>。Elo 记的是「赢了谁」,不是「赢了几场」。<br>这一点直接对应到 RLHF 的实务:<b>标注数据里「哪一对被比较」比「一共标了多少条」更影响结果</b>。如果比较都集中在两个差回答之间,再多的量也排不出强的那一个。所以做对齐数据时,采样策略本身就是一个设计问题。<br>另一条是那个「没有绝对零点」:代码里每轮把均值拉回 1000,因为这套分数只有相对意义。这也解释了为什么 D16 里说对齐是「学会人更喜欢哪种答法」而不是「学会正确答案」——<b>它优化的是一个相对偏好,不是一个客观对错。</b>这也正是它会把标注员偏好一起学进去的原因。</p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 第 1 步把 <code>targets_per_layer</code> 的默认值从 4 改成 2(只对注意力的 Q、V 挂 LoRA)。参数会变成多少?<b>减半——LoRA 挂哪些层是可以选的,不是只能全挂。</b><br>
+        <b>②</b> 第 1 步把 <code>d</code> 从 4096 加到 8192,看占比那一列。<b>会变大还是变小?为什么?</b>(提示:全参是 d²,LoRA 是 d 的线性)<br>
+        <b>③</b> 第 2 步在 <code>MATCHES</code> 里加一条 <code>("回答 D", "回答 A")</code>(让 D 爆冷赢一次),再跑。排名会变吗?<b>一条反常数据的影响有多大?</b><br>
+        <b>④</b> 第 2 步把 <code>K</code> 从 32 改成 8 再跑。分数之间的差距会变大还是变小?<b>K 决定「每场比较改变多少」,太小则学得慢,太大则被单场噪声带跑。</b><br>
+        <b>⑤</b> 第 2 步把「每轮平移回 1000」那三行删掉再跑。<b>分数会飘到哪里去?</b>——这能看清「没有绝对零点」这句话的实际含义。</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>LoRA 占比算出来比预期大很多</td><td><code>targets_per_layer</code> 设得太大,或 rank 开得高</td><td>不是 bug;看改一改 ①,挂得越多越贵</td></tr>
+            <tr><td>Elo 分数一路上涨或一路下跌</td><td>忘了每轮做均值平移</td><td>加回那三行;这套分数只有相对意义,必须人为定一个零点</td></tr>
+            <tr><td>某个回答分数是负的</td><td>正常——分数只是相对位置</td><td>看排名和相对差距,别管绝对值</td></tr>
+            <tr><td>排名和胜场数对不上</td><td>Elo 看的是「赢了谁」,不是胜场数</td><td>不是 bug;这正是它比数胜场更合适的地方</td></tr>
+            <tr><td>两轮跑出来分数不一样</td><td>比较顺序变了,或 <code>rounds</code> 不够</td><td>加大 <code>rounds</code> 让它收敛;顺序在收敛后不影响排名</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">D16 那三个阶段,这一节把后两段的「怎么做得起」算了一遍。<b>指令微调靠 LoRA 把参数量压到千分之一,所以个人和小团队也做得起</b>;而且它部署时不增加延迟,这是它成为默认做法的原因。<br><b>对齐靠的是把「谁更好」这种相对判断转成可优化的分数</b>。这一步看着技术性强,实际含义很朴素:它意味着对齐的目标是人定的、是相对的——所以它能把模型调得「更好用」,也必然把标注者的偏好一起学进去。<b>理解这一点,比记住 RLHF 三个字母更重要。</b></p>
+
+      <nav class="chapter-nav">
+        <a href="../深度课程/D16-预训练微调与RLHF.html"><span class="lb">回讲义</span><span class="tt">D16 预训练、微调与 RLHF</span></a>
+        <a href="../台账/学习台账.html" class="next"><span class="lb">记一笔</span><span class="tt">学习台账</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-26 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>LoRA 省了多少</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>把偏好变成分数</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-26" data-kind="lab" data-title="微调和对齐:一笔参数账,和一次「把偏好变成分数」"></script>
+</body>
+</html>

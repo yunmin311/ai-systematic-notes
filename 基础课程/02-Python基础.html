@@ -28,9 +28,11 @@
   --fs-small:13px;   /* 表格 / 代码 / 次要说明 */
   --fs-body:15px;    /* 正文 */
   --fs-lead:16px;    /* 一句话定义 / 导语 */
-  --fs-h3:18px;
-  --fs-h2:22px;
-  --fs-h1:30px;
+  /* 2026-08-30 对齐全站:本页是样章,标题档还停在旧的 30/22/18;
+     skill design-system §8 增补已把标题提到 34/25/20,其余 62 页都已跟上,本页补齐。 */
+  --fs-h3:20px;
+  --fs-h2:25px;
+  --fs-h1:34px;
   /* 一切说明块共用同一套内外距,统一「框」的呼吸 */
   --pad-block:14px 18px;
   --gap-block:20px;
@@ -80,7 +82,7 @@ article{max-width:var(--measure);min-width:0;}
 .chapter-label{color:var(--ink-faint);margin:0 0 10px;}
 .chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
 .chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
-@media(max-width:640px){.chapter-opener h1{font-size:24px;}}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
 
 /* 骨架面板(与说明块同一套内外距,唯一区别=左线更粗更墨) */
 .schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
@@ -263,7 +265,7 @@ article h2,article [id]{scroll-margin-top:64px;}
 .toc-group{margin-bottom:14px;}
 .toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
 .toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;
-  border-left:2px solid transparent;transition:all .15s;font-size:12px;line-height:1.5;}
+  border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
 .toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
 .toc-sidebar a:hover{color:var(--ink);}
 .toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}

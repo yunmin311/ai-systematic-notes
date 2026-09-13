@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-21 · 幻觉怎么被查出来,以及省钱该砍谁</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../应用工程/A06-评估幻觉安全成本.html">A06</a><span class="sep">—</span>
+      <a href="lab-21-幻觉与成本.html" class="current">lab-21 幻觉与成本</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-21 · 配套 A06 评估、幻觉、安全、成本 · 只要标准库,不调 API</p>
+        <h1>幻觉怎么被查出来,以及省钱该砍谁</h1>
+        <p class="recap">A06 说「可信、可控、可负担」是能跑的 demo 和敢上线的产品之间的全部距离。这一节把其中两件事变成能跑的代码:<b>幻觉检测</b>——把回答按句拆开,逐句看有没有资料落脚点,一个编造的句子当场判 ✗;<b>成本决策</b>——预算不够时该砍历史、资料还是系统提示,三种砍法的代价完全不是一回事。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>把回答改写过(字面完全不同)的句子,照样判为「有依据」</li>
+          <li>编造的句子当场被标 ✗——「免费上门维修」在资料里一个字都没有</li>
+          <li>有依据的两句命中率是 100% 和 90%,编的那句只有 12%</li>
+          <li>想压到预算内,砍历史只需砍掉它自己 29%,砍资料要砍 42%,砍系统提示全砍也不够</li>
+          <li>一次请求的真实成本:输入 0.0071 元 + 输出 0.0024 元</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../应用工程/A06-评估幻觉安全成本.html">A06</a> 的评估、幻觉与成本三节;<b>检索这一环</b>见 <a href="lab-19-RAG检索增强.html">lab-19</a>,<b>token 怎么数和怎么计费</b>见 <a href="lab-08-Token与账单.html">lab-08</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p>两段都<b>只用 Python 标准库,不调 API</b>。<b>方式 A</b> 点「▶ 运行」(Pyodide);<b>方式 B</b> 本机跑 <code>实验室\code\lab21\</code> 下的同名文件。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>「幻觉」听起来是个玄学问题——模型一本正经地胡说。但它<b>有一个非常具体的可检测形态:说出来的东西在资料里没有落脚点</b>。这一节先用关键词比对把这件事量出来,再看清成本决策为什么不能只算钱。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>幻觉的可检测形态</span></h2>
+      <p>给同一个资料配上三版回答:两版老实、一版编造。看检测器能不能分出来。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_grounding.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="40">import re
+
+# 检索到的资料(真实系统里来自 RAG)
+context = (
+    "睡眠灯 A1 整机保修两年,灯珠保修三年,均从签收之日起算。"
+    "人为损坏、进水、私自拆机不在保修范围内。"
+    "保修期内寄修运费由我们承担。"
+)
+
+# 三版「模型回答」。前两版老实,第三版编了资料里没有的东西。
+answers = {
+    "A 有依据": "整机保修两年。人为损坏不在保修范围内。",
+    "B 有依据(带改写)": "睡眠灯 A1 的灯珠保修期是三年,从签收那天开始算。",
+    "C 编的":   "整机保修两年。另外我们还提供三年免费上门维修服务。",
+}
+
+def sentences(text):
+    return [s for s in re.split(r"[。;!?]", text) if s.strip()]
+
+def key_terms(s):
+    """粗粒度取词:2 字以上的连续汉字片段,再切成二字组合当关键词"""
+    raw = re.findall(r"[\u4e00-\u9fa5]{2,}", s)
+    out = set()
+    for seg in raw:
+        if len(seg) == 2: out.add(seg)
+        for i in range(len(seg) - 1): out.add(seg[i:i+2])
+    return out
+
+print("资料:")
+print("   " + context, "\n")
+print("把每版回答拆成句子,逐句看它的关键词能不能在资料里找到:\n")
+
+for name, ans in answers.items():
+    ss = sentences(ans)
+    hits = 0
+    detail = []
+    for s in ss:
+        terms = key_terms(s)
+        found = {t for t in terms if t in context}
+        ok = len(found) / max(len(terms), 1)
+        hits += ok &gt;= 0.5                        # 一半以上的词能在资料里找到,就算这句有依据
+        detail.append(f"{'✓' if ok &gt;= 0.5 else '✗'} {s}(命中 {ok:.0%})")
+    print(f"   {name}:  有依据 {hits}/{len(ss)} 句")
+    for d in detail:
+        print("        " + d)
+    print()
+
+print("三版对照看出两件事:")
+print("   ① B 版把「保修三年」改写成「保修期是三年,从签收那天开始算」——")
+print("      字面完全不同,但关键词都落在资料里,照样判为有依据。这说明这套检测")
+print("      算的是「有没有出处」,不是「是不是照抄」。")
+print("   ② C 版的第二句整句判 ✗:「免费上门维修」在资料里一个字都找不到。")
+print("      这就是幻觉的可检测形态 —— 不是它说得像不像,是它在资料里没有落脚点。")
+print("   注意 B 版只有 53%,离 50% 这条线很近 —— 阈值稍微调一下结论就翻。")
+print("   所以这套检测不能当唯一依据,它是个「报警器」,报出来的要人工看。")
+print()
+print("这就是 A06 说的「评估」能自动化的那一半:")
+print("   有依据 / 没依据,可以机械判定;")
+print("   但「答得好不好、有没有用」判不了,那部分只能人工抽样。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>资料:
+   睡眠灯 A1 整机保修两年,灯珠保修三年,均从签收之日起算。人为损坏、进水、私自拆机不在保修范围内。保修期内寄修运费由我们承担。 
+
+把每版回答拆成句子,逐句看它的关键词能不能在资料里找到:
+
+   A 有依据:  有依据 2/2 句
+        ✓ 整机保修两年(命中 100%)
+        ✓ 人为损坏不在保修范围内(命中 90%)
+
+   B 有依据(带改写):  有依据 1/1 句
+        ✓ 睡眠灯 A1 的灯珠保修期是三年,从签收那天开始算(命中 53%)
+
+   C 编的:  有依据 1/2 句
+        ✓ 整机保修两年(命中 100%)
+        ✗ 另外我们还提供三年免费上门维修服务(命中 12%)
+
+三版对照看出两件事:
+   ① B 版把「保修三年」改写成「保修期是三年,从签收那天开始算」——
+      字面完全不同,但关键词都落在资料里,照样判为有依据。这说明这套检测
+      算的是「有没有出处」,不是「是不是照抄」。
+   ② C 版的第二句整句判 ✗:「免费上门维修」在资料里一个字都找不到。
+      这就是幻觉的可检测形态 —— 不是它说得像不像,是它在资料里没有落脚点。
+   注意 B 版只有 53%,离 50% 这条线很近 —— 阈值稍微调一下结论就翻。
+   所以这套检测不能当唯一依据,它是个「报警器」,报出来的要人工看。
+
+这就是 A06 说的「评估」能自动化的那一半:
+   有依据 / 没依据,可以机械判定;
+   但「答得好不好、有没有用」判不了,那部分只能人工抽样。</div>
+      <p>三个命中率是这一节的骨架:<b>100% / 90% / 12%</b>。前两句都在 90% 以上,编的那句断崖式掉到 12%——<b>差距大得不需要精密阈值就能分开</b>,这是这类检测能用起来的根本原因。<br>但 B 版那 53% 才是真正该记住的:它<b>刚刚过线</b>。这说明阈值定在哪儿不是技术问题,是取舍——调高一点,B 版这种正常改写会被误判成幻觉;调低一点,C 版可能就漏过去了。<b>所以真实的评估流程是「机器报警 + 人工抽检」,不是「机器一票通过」。</b><br>还有一点值得想:这套检测之所以成立,前提是<b>我们有资料可对</b>。没有检索、只靠模型自己说的场景,幻觉就没有落脚点可查——这正是 <a href="lab-19-RAG检索增强.html">lab-19</a> 那些铺垫的用处。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>成本决策:砍谁</span></h2>
+      <p>一次请求由四部分组成。看它花多少钱,再看超预算时三种砍法的代价。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_budget.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="48"># 一次请求由四部分组成。数字是示例,实际要用真实 tokenizer 数(lab-08 做过)。
+parts = {
+    "系统提示": 320,
+    "检索资料": 1800,
+    "历史对话": 2600,
+    "用户问题": 40,
+}
+answer = 400                       # 模型生成的回答
+BUDGET = 4000                      # 每次请求的输入预算上限
+
+PRICE_IN = 1.5 / 1_000_000         # 假设:输入每百万 token 1.5 元
+PRICE_OUT = 6.0 / 1_000_000        # 假设:输出每百万 token 6 元(输出通常贵好几倍)
+
+total_in = sum(parts.values())
+
+print("一次请求的构成(单位:token):")
+for k, v in parts.items():
+    bar = "█" * int(v / 50)
+    print(f"   {k:<6} {v:>5}  {v/total_in:6.1%}  {bar}")
+print(f"   {'合计':<6} {total_in:>5}   ← 预算只有 {BUDGET},已经超了")
+print(f"   回答     {answer:>5}   ← 这部分算输出价,单价是输入的 4 倍\n")
+
+def money(inp, out):
+    return inp * PRICE_IN + out * PRICE_OUT
+
+c = money(total_in, answer)
+print(f"单次成本 = 输入 {total_in}×{PRICE_IN*1e6:.1f}元/M + 输出 {answer}×{PRICE_OUT*1e6:.1f}元/M")
+print(f"         = {total_in*PRICE_IN:.6f} + {answer*PRICE_OUT:.6f} = {c:.6f} 元")
+print(f"每天 1 万次请求 = {c*10000:.2f} 元 / 天,一个月约 {c*10000*30:.0f} 元\n")
+
+need = total_in - BUDGET
+print(f"要把输入从 {total_in} 压到 {BUDGET} 以内,得砍掉 {need} 个 token。三种砍法:")
+print("   " + f"{'砍哪部分':<10}{'这部分共':>8}{'能砍掉':>8}{'占自身':>8}{'达标?':>8}   代价")
+for name, price in [
+    ("历史对话", "多轮上下文断了,来回指代会失效"),
+    ("检索资料", "更容易幻觉——这正是 A06 要治的"),
+    ("系统提示", "角色和规则丢了,输出风格立刻跑偏"),
+]:
+    avail = parts[name]
+    take = min(avail, need)
+    pct = take / avail
+    ok = "✓" if take &gt;= need else "✗ 不够"
+    print(f"   {name:<10}{avail:>8}{take:>8}{pct:>7.0%}{ok:>8}   {price}")
+
+print()
+print("三行对照说明了这次决策的实质:")
+print("   · 砍历史对话:砍掉 760,占它自己的 29%,还留着七成。")
+print("   · 砍检索资料:同样砍 760,却占它 42% —— 要丢掉四成资料才凑够。")
+print("   · 砍系统提示:全砍光(100%)也不够,还得再去别处凑 440。")
+print()
+print("所以这道题不是「哪个便宜砍哪个」,而是「哪部分的信息最不能丢」:")
+print("   资料砍掉小一半,幻觉概率立刻上升;系统提示砍了,角色和规则直接丢。")
+print("   砍历史最稳——因为历史可以压缩:保留最近几轮原文,前面用一句摘要代替。")
+print()
+print("这就是 A06 把成本、幻觉、评估放在同一章讲的原因:它们互相牵制,")
+print("每一次省钱的选择,都会在另外两个指标上留下痕迹。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>一次请求的构成(单位:token):
+   系统提示     320    6.7%  ██████
+   检索资料    1800   37.8%  ████████████████████████████████████
+   历史对话    2600   54.6%  ████████████████████████████████████████████████████
+   用户问题      40    0.8%  
+   合计      4760   ← 预算只有 4000,已经超了
+   回答       400   ← 这部分算输出价,单价是输入的 4 倍
+
+单次成本 = 输入 4760×1.5元/M + 输出 400×6.0元/M
+         = 0.007140 + 0.002400 = 0.009540 元
+每天 1 万次请求 = 95.40 元 / 天,一个月约 2862 元
+
+要把输入从 4760 压到 4000 以内,得砍掉 760 个 token。三种砍法:
+   砍哪部分          这部分共     能砍掉     占自身     达标?   代价
+   历史对话          2600     760    29%       ✓   多轮上下文断了,来回指代会失效
+   检索资料          1800     760    42%       ✓   更容易幻觉——这正是 A06 要治的
+   系统提示           320     320   100%    ✗ 不够   角色和规则丢了,输出风格立刻跑偏
+
+三行对照说明了这次决策的实质:
+   · 砍历史对话:砍掉 760,占它自己的 29%,还留着七成。
+   · 砍检索资料:同样砍 760,却占它 42% —— 要丢掉四成资料才凑够。
+   · 砍系统提示:全砍光(100%)也不够,还得再去别处凑 440。
+
+所以这道题不是「哪个便宜砍哪个」,而是「哪部分的信息最不能丢」:
+   资料砍掉小一半,幻觉概率立刻上升;系统提示砍了,角色和规则直接丢。
+   砍历史最稳——因为历史可以压缩:保留最近几轮原文,前面用一句摘要代替。
+
+这就是 A06 把成本、幻觉、评估放在同一章讲的原因:它们互相牵制,
+每一次省钱的选择,都会在另外两个指标上留下痕迹。</div>
+      <p>表格里那三个百分比是决策的全部依据:<b>29% / 42% / 100%</b>。同样是省 760 个 token,砍历史只动它三成,砍资料要动四成,砍系统提示则根本不够——<b>「能省多少」和「要付多大代价」是两个独立的问题</b>,这张表把它们分开摆出来了。<br>再看那个成本:<b>输出 token 单价是输入的 4 倍</b>,但这次输出只占 400 个,所以总账里输入反而是大头(0.0071 元 vs 0.0024 元)。这提醒一件事——<b>省钱要先看清钱花在哪一部分</b>,凭直觉猜「输出贵就优化输出」在这里是错的。<br>最该记住的是最后那句:成本、幻觉、评估是<b>互相牵制</b>的。砍资料省钱,代价是幻觉上升;砍系统提示省钱,代价是行为失控。<b>每一次省钱的取舍,都会在另外两个指标上留下痕迹</b>——这就是 A06 把这三件事放在同一章的理由。</p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 第 1 步把阈值从 <code>0.5</code> 改成 <code>0.6</code> 再跑。B 版(53%)会怎么变?——<b>正常的改写被误判成幻觉,这就是「误报」。</b><br>
+        <b>②</b> 第 1 步把阈值改成 <code>0.3</code>。C 版那句(12%)会不会也过线?——<b>这就是「漏报」。两个方向都试一遍,才能体会阈值是怎么选的。</b><br>
+        <b>③</b> 第 1 步在资料里加一句「我们也提供付费上门维修」。C 版那句会变成有依据吗?命中率会升到多少?<b>这说明检测的是「资料里有没有」,不是「事实对不对」——资料本身错了,它照样判 ✓。</b><br>
+        <b>④</b> 第 2 步把 <code>BUDGET</code> 从 4000 改成 3000,再看那张表。这次三行都能达标吗?<b>预算越紧,可选的砍法越少。</b><br>
+        <b>⑤</b> 第 2 步把 <code>PRICE_OUT</code> 改成和 <code>PRICE_IN</code> 一样(输出不再更贵),重算一次成本。哪一部分的占比变了?——想想现实中什么情况下会这样(提示词缓存、批处理)。</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>所有句子都判 ✗</td><td>资料和回答用词完全不同(比如资料是英文、回答是中文)</td><td>这套检测靠字面重合;换用 Embedding 做语义比对才能跨过改写</td></tr>
+            <tr><td>所有句子都判 ✓</td><td>回答基本是资料的复制</td><td>看命中率那一列;都是 90%+ 说明模型没在做总结,只是在抄</td></tr>
+            <tr><td>报 <code>ZeroDivisionError</code></td><td>某个短句切不出关键词(<code>terms</code> 为空)</td><td>代码里的 <code>max(len(terms), 1)</code> 就是防这个的</td></tr>
+            <tr><td>成本算出来和实际账单对不上</td><td>这里的单价是假设值,token 数也是估的</td><td>不是 bug;真实核算要用厂商的单价和真实 tokenizer 数(lab-08)</td></tr>
+            <tr><td>预算怎么调都超</td><td>检索资料加历史本身就超过了预算</td><td>这时要改的是策略(减少召回条数、压缩历史),不是继续砍</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">这一节把 A06 里最玄的两个词落到了地上。<b>幻觉</b>不再是一个吓人的概念,而是一句「在资料里找不到落脚点」的话;<b>成本</b>也不只是算加法,而是「砍谁代价最小」的取舍。<br>最有价值的一条结论是那句互相牵制:<b>成本、幻觉、评估不是三件可以分别优化的事。</b>省钱会推高幻觉,治幻觉要花更多资料钱,评估又需要额外调用。<b>把它们放在一起看,才是「敢上线的产品」和「能跑的 demo」之间那段距离。</b></p>
+
+      <nav class="chapter-nav">
+        <a href="../应用工程/A06-评估幻觉安全成本.html"><span class="lb">回讲义</span><span class="tt">A06 评估、幻觉、安全、成本</span></a>
+        <a href="../台账/学习台账.html" class="next"><span class="lb">记一笔</span><span class="tt">学习台账</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-21 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>幻觉的可检测形态</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>成本决策:砍谁</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-21" data-kind="lab" data-title="幻觉怎么被查出来,以及省钱该砍谁"></script>
+</body>
+</html>

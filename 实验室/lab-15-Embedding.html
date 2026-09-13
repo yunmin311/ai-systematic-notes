@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-15 · Embedding:让「意思像不像」变成一个可以算的数</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../深度课程/D13-Embedding与向量空间.html">D13</a><span class="sep">—</span>
+      <a href="lab-15-Embedding.html" class="current">lab-15 Embedding</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-15 · 配套 D13 Embedding 与向量空间 · 只要 numpy</p>
+        <h1>Embedding:让「意思像不像」变成一个可以算的数</h1>
+        <p class="recap">这一节做两件事。<b>第一件</b>:同一个问题分别用余弦和欧氏距离算,看它们给出<b>相反</b>的答案——然后明白为什么文本检索默认用余弦。<b>第二件</b>:用 12 句自己编的语料、一个共现矩阵、一次 SVD,真的「学」出词向量出来,看猫狗兔子是怎么自己聚到一起的。全程不需要任何预训练模型。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>余弦说 A 离 B 更近,欧氏距离说 A 离 C 更近——两个度量直接打架</li>
+          <li>欧氏距离错在把「文章有多长」也算进了「像不像」</li>
+          <li>12 句语料 + 一次 SVD,猫、狗、兔子就自动互为最近邻</li>
+          <li>鱼、骨头、胡萝卜聚成另一堆——没人告诉程序它们都是吃的</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../深度课程/D13-Embedding与向量空间.html">D13</a> 的向量空间与相似度;这套东西真正用起来是 <a href="../应用工程/A03-RAG检索增强生成.html">A03</a> 的向量检索,项目里落在 <a href="../项目/P5-个人知识库问答.html">P5</a>。词表与切分是 <a href="../深度课程/D12-Tokenizer与词表.html">D12</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p>两段都<b>只用 numpy</b>,没有别的东西。<b>方式 A</b> 点「▶ 运行」(Pyodide);<b>方式 B</b> 本机跑 <code>实验室\code\lab15\</code> 下的同名文件。第二段里的语料是代码里现编的,改几个词就能试自己的想法。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>D13 那句话是:<b>意思变成位置,「像不像」变成「近不近」。</b>但「近」有很多种算法,选错了整套检索就都是歪的。这一节先把选哪个度量说清楚,再亲手把「位置」造出来。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>余弦还是欧氏:两个度量给出相反答案</span></h2>
+      <p>三篇文档,词频向量。看 A 到底和谁更像。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_cosine.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="26">import numpy as np
+
+def cos(a, b):
+    return (a @ b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+def euc(a, b):
+    return np.linalg.norm(a - b)
+
+# 三篇文档的词频向量,维度是 [猫, 狗, 鱼]
+A = np.array([10, 10, 0], dtype=float)   # 长文,只讲猫狗
+B = np.array([ 1,  1, 0], dtype=float)   # 短文,也只讲猫狗(同一主题,只是短)
+C = np.array([ 8,  8, 9], dtype=float)   # 和 A 差不多长的文,猫狗为主但也讲了不少鱼
+
+print("三篇文档的词频向量(维度: 猫 / 狗 / 鱼):")
+for name, v, note in [("A", A, "长文·只讲猫狗"), ("B", B, "短文·只讲猫狗"), ("C", C, "长文·猫狗+鱼")]:
+    print(f"   {name} = {v.astype(int)}    {note}")
+
+print("\nA 和谁更接近?两种度量给出相反的答案:")
+print("   组合     余弦相似度    欧氏距离")
+for n1, v1, n2, v2 in [("A", A, "B", B), ("A", A, "C", C)]:
+    print(f"   {n1}–{n2}     {cos(v1, v2):>8.3f}     {euc(v1, v2):>8.3f}")
+
+print(f"\n余弦:      A–B = {cos(A,B):.3f} &gt; A–C = {cos(A,C):.3f}   → B 更近,判对了")
+print(f"欧氏距离:  A–B = {euc(A,B):.2f} &gt; A–C = {euc(A,C):.2f}   → 说 C 更近,判错了")
+print("\n欧氏距离为什么会判错?因为它把「向量有多长」也算进去了。")
+print("B 是短文,词频整体偏小,于是它离 A 的直线距离被拉得很远——")
+print("可 B 和 A 的方向完全一致,讲的是一模一样的事。")
+print("\n文本里「长度」来自篇幅、重复次数、文档粗细,和「在讲什么」无关。")
+print("所以判断意思像不像要用余弦(只看方向,不看长度),这也是 RAG 向量检索的默认度量。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>三篇文档的词频向量(维度: 猫 / 狗 / 鱼):
+   A = [10 10  0]    长文·只讲猫狗
+   B = [1 1 0]    短文·只讲猫狗
+   C = [8 8 9]    长文·猫狗+鱼
+
+A 和谁更接近?两种度量给出相反的答案:
+   组合     余弦相似度    欧氏距离
+   A–B        1.000       12.728
+   A–C        0.783        9.434
+
+余弦:      A–B = 1.000 &gt; A–C = 0.783   → B 更近,判对了
+欧氏距离:  A–B = 12.73 &gt; A–C = 9.43   → 说 C 更近,判错了
+
+欧氏距离为什么会判错?因为它把「向量有多长」也算进去了。
+B 是短文,词频整体偏小,于是它离 A 的直线距离被拉得很远——
+可 B 和 A 的方向完全一致,讲的是一模一样的事。
+
+文本里「长度」来自篇幅、重复次数、文档粗细,和「在讲什么」无关。
+所以判断意思像不像要用余弦(只看方向,不看长度),这也是 RAG 向量检索的默认度量。</div>
+      <p>这个例子把差别推到极端,所以答案特别清楚:<b>余弦只看方向,欧氏距离把长度一起算进去。</b>现实中不会这么夸张,但方向是一样的——一篇文章扩写一倍,主题没变,欧氏距离却会明显变大。所以做向量检索时,<b>存向量之前通常还要做归一化(把长度统一成 1)</b>,那样余弦和内积就等价了,检索也更快。<br>顺带记住一个坑:<b>余弦判断不了「几乎没有共同词」的情况。</b>两个向量只要方向一致,哪怕内容都很稀疏,相似度也会很高。所以真实的混合检索常常是「向量 + 关键词」一起用。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>从共现矩阵里长出词向量</span></h2>
+      <p>下面这段没有用任何现成的词向量。语料只有 12 句,而且是代码里现编的。看它能不能自己发现「猫和狗是一类」。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_vectors.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="34">import numpy as np
+
+# 造一个「有规律」的小语料。规律不是写在注释里,而是靠重复的句式让统计能抓到:
+#   三种动物 × 三种食物,都用同一个句式 -> 动物出现在相似的位置,食物也出现在相似的位置。
+pets  = ["猫", "狗", "兔子"]
+foods = ["鱼", "骨头", "胡萝卜"]
+
+corpus = [f"{p} 吃 {f}" for p in pets for f in foods]      # 9 句
+corpus += [f"{p} 是 宠物" for p in pets]                    # 3 句
+print(f"语料 {len(corpus)} 句,词表 {len(set(w for s in corpus for w in s.split()))} 个词")
+print("前 4 句:", " / ".join(corpus[:4]), "\n")
+
+words = sorted({w for line in corpus for w in line.split()})
+idx = {w: i for i, w in enumerate(words)}
+V = len(words)
+
+# ---- ① 统计共现:窗口内一起出现就算一次 ----
+WIN = 2
+C = np.zeros((V, V))
+for line in corpus:
+    ws = line.split()
+    for i, w in enumerate(ws):
+        for j in range(max(0, i - WIN), min(len(ws), i + WIN + 1)):
+            if i != j:
+                C[idx[w], idx[ws[j]]] += 1
+
+show = ["猫", "狗", "兔子", "鱼", "骨头", "胡萝卜"]
+print("共现矩阵(行 = 当前词,列 = 它的邻居):")
+print("          " + "".join(f"{w:>6}" for w in show))
+for w in show:
+    print(f"   {w:<5} " + "".join(f"{int(C[idx[w], idx[x]]):>6}" for x in show))
+print("\n注意 猫、狗、兔子 三行的数字完全一样 —— 它们在语料里的位置是等价的。")
+
+# ---- ② SVD 把共现矩阵压成 2 维词向量 ----
+U, S, _ = np.linalg.svd(C, full_matrices=False)
+emb = U[:, :2] * S[:2]
+print(f"\n前两个奇异值 {S[0]:.2f} / {S[1]:.2f} 承载了矩阵的主要结构。")
+
+# ---- ③ 看谁和谁近 ----
+def nearest(word, k=3):
+    v = emb[idx[word]]
+    sims = [(w, float(v @ emb[idx[w]] / (np.linalg.norm(v) * np.linalg.norm(emb[idx[w]]))))
+            for w in words if w != word]
+    return sorted(sims, key=lambda t: -t[1])[:k]
+
+print("\n每个词的最近邻居(余弦相似度):")
+for w in ["猫", "狗", "兔子", "鱼", "骨头", "胡萝卜", "吃"]:
+    ns = "、".join(f"{n} {s:.3f}" for n, s in nearest(w))
+    print(f"   {w:<5} → {ns}")
+
+print("\n值得盯的几行:")
+print("   · 猫、狗、兔子互为最近邻 —— 没人告诉模型它们都是动物,")
+print("     只因为它们出现在同样的句式位置,坐标就长到了一起。")
+print("   · 鱼、骨头、胡萝卜 也聚在一起 —— 它们是「被吃的那个」。")
+print("   · 但「吃」的最近邻是 宠物 和 是(0.953),不是任何一类食物。")
+print("     它和每个动物、每种食物都连过一次,连得太均匀,反而谁也不偏向——")
+print("     这也说明:一个词连接范围太广时,它的坐标会变得「中庸」,判别力反而弱。")
+print("\n这就是 Embedding 的原理:统计谁和谁一起出现,相似的上下文长出相似的坐标。")
+print("真实词向量只是把语料从 12 句换成几万亿句,把维度从 2 换成几百上千。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>语料 12 句,词表 9 个词
+前 4 句: 猫 吃 鱼 / 猫 吃 骨头 / 猫 吃 胡萝卜 / 狗 吃 鱼
+
+共现矩阵(行 = 当前词,列 = 它的邻居):
+               猫     狗    兔子     鱼    骨头   胡萝卜
+   猫          0     0     0     1     1     1
+   狗          0     0     0     1     1     1
+   兔子         0     0     0     1     1     1
+   鱼          1     1     1     0     0     0
+   骨头         1     1     1     0     0     0
+   胡萝卜        1     1     1     0     0     0
+
+注意 猫、狗、兔子 三行的数字完全一样 —— 它们在语料里的位置是等价的。
+
+前两个奇异值 9.30 / 6.15 承载了矩阵的主要结构。
+
+每个词的最近邻居(余弦相似度):
+   猫     → 兔子 1.000、狗 1.000、胡萝卜 0.998
+   狗     → 兔子 1.000、猫 1.000、胡萝卜 0.998
+   兔子    → 狗 1.000、猫 1.000、胡萝卜 0.998
+   鱼     → 胡萝卜 1.000、骨头 1.000、兔子 0.998
+   骨头    → 胡萝卜 1.000、鱼 1.000、兔子 0.998
+   胡萝卜   → 骨头 1.000、鱼 1.000、兔子 0.998
+   吃     → 宠物 0.953、是 0.953、胡萝卜 0.400
+
+值得盯的几行:
+   · 猫、狗、兔子互为最近邻 —— 没人告诉模型它们都是动物,
+     只因为它们出现在同样的句式位置,坐标就长到了一起。
+   · 鱼、骨头、胡萝卜 也聚在一起 —— 它们是「被吃的那个」。
+   · 但「吃」的最近邻是 宠物 和 是(0.953),不是任何一类食物。
+     它和每个动物、每种食物都连过一次,连得太均匀,反而谁也不偏向——
+     这也说明:一个词连接范围太广时,它的坐标会变得「中庸」,判别力反而弱。
+
+这就是 Embedding 的原理:统计谁和谁一起出现,相似的上下文长出相似的坐标。
+真实词向量只是把语料从 12 句换成几万亿句,把维度从 2 换成几百上千。</div>
+      <p>整段的机制只有三步:<b>①数共现 → ②SVD 压到低维 → ③算余弦</b>。没有字典、没有人工标注、没有任何语言学知识,「动物」和「食物」这两个概念是自己冒出来的。<br>两个必须看清的地方:<b>共现矩阵里猫、狗、兔子三行完全一样</b>,因为它们的位置在语料里是对称的——这一行数字就是它们的「坐标来源」。而 <b>SVD 做的事,就是把「谁和谁一起出现」这张稀疏的大表,压成每个词的一小串坐标</b>,同时尽量保住原来的结构。真实词向量(word2vec、BERT 的 embedding)换的是统计方法和语料规模,这三步的精神没变。<br>最后那条关于「吃」的观察也很有用:它提醒: <b>词向量不是越连越多就越好</b>,连接范围太广的词(比如「是」「的」)会丢判别力。这也是为什么检索时常常要把这种高频虚词先去掉。</p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 第 2 步把 <code>WIN</code> 从 2 改成 1。共现矩阵会变成什么样?动物和食物还会连上吗?(窗口 1 时「猫 吃 鱼」里猫和鱼就不在窗口内了)<br>
+        <b>②</b> 第 2 步在语料里加一句 <code>"猫 追 老鼠"</code> 再跑。猫的邻居会变吗?它和狗还一样近吗?<b>这就是「语料决定词义」——改数据比改模型管用。</b><br>
+        <b>③</b> 第 2 步把 <code>emb = U[:, :2] * S[:2]</code> 改成只取 <code>U[:, :1]</code>(1 维)。再跑一次看邻居——一维够不够把两类分开?<br>
+        <b>④</b> 第 1 步把 B 改成 <code>[10, 10, 0]</code>(和 A 一样长)。这时余弦和欧氏距离还打架吗?——<b>长度拉平之后,两个度量就一致了。</b>这正是「先归一化再比对」的道理。<br>
+        <b>⑤</b> 第 2 步把 <code>np.linalg.svd(C)</code> 换成对 <code>C @ C.T</code> 做特征分解(<code>np.linalg.eigh</code>),再看邻居列表。结果应该基本相同——<b>SVD 和 PCA 在数学上是同一件事的两面</b>,只是一个从左切、一个从右切。</p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>报 <code>LinAlgError: SVD did not converge</code></td><td>共现矩阵全 0(语料被改空了,或窗口设成 0)</td><td>确认语料非空、<code>WIN</code> 至少为 1</td></tr>
+            <tr><td>所有相似度都接近 1.000</td><td>语料太小、结构太规整,所有词几乎等价</td><td>不是 bug;加几句打破对称的话再看(见改一改 ②)</td></tr>
+            <tr><td>邻居列表里出现 <code>吃</code> <code>是</code> 这类虚词</td><td>它们连接范围最广,SVD 之后落在中间</td><td>不是 bug;真实检索里会先用停用词表滤掉</td></tr>
+            <tr><td>除零警告 <code>RuntimeWarning: invalid value</code></td><td>某个词的向量长度是 0(它没跟任何词共现过)</td><td>检查语料里是不是有孤立的词</td></tr>
+            <tr><td>数字和这里对不上</td><td>语料被改过,或 numpy 版本的 SVD 符号约定不同</td><td>符号翻转不影响相似度;看「谁跟谁近」这个结论一致即可</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">D13 说「意思变成位置」,这一节把这个「变成」的过程跑了一遍:<b>数共现 → 压维度 → 算余弦</b>。真实词向量规模大得多,但没有任何魔法——它们也是从「谁和谁一起出现」里长出来的,只是见的语料多几亿倍。<br>理解这一点有个很实际的用处:当检索效果不好时,就知道该往哪儿调——<b>是切块切坏了(数据)、语料不对(数据)、还是相似度算法选错了(度量)</b>,而不是笼统地觉得「模型不行」。</p>
+
+      <nav class="chapter-nav">
+        <a href="../深度课程/D13-Embedding与向量空间.html"><span class="lb">回讲义</span><span class="tt">D13 Embedding 与向量空间</span></a>
+        <a href="../项目/P5-个人知识库问答.html" class="next"><span class="lb">接着做</span><span class="tt">项目 P5 个人知识库问答</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-15 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>余弦还是欧氏</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>从共现矩阵学词向量</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-15" data-kind="lab" data-title="Embedding:让「意思像不像」变成一个可以算的数"></script>
+</body>
+</html>

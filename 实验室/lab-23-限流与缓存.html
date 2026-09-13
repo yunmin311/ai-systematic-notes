@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lab-23 · 限流与缓存:把「能跑」变成「打不垮、烧不穿」</title>
+<style>
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --raise:#f4f6fb; --bg-edge:#e9edf5;
+  --ink:#14181f; --ink-soft:#55617a; --ink-faint:#8b95a8; --rule:#d8dee9;
+  --acc:#2743c7; --acc-soft:rgba(39,67,199,0.06);
+  --sans:'Noto Sans SC','Microsoft YaHei',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono','Cascadia Code','Consolas','SF Mono',monospace;
+  --fs-micro:11px; --fs-small:13px; --fs-body:15px; --fs-lead:16px; --fs-h3:20px; --fs-h2:25px; --fs-h1:34px;
+  --pad-block:14px 18px; --gap-block:20px; --measure:820px; --page-max:1240px; --line:1.72;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:var(--line);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+main{position:relative;}
+.chapter-label,.code-block .chead .lang,.chapter-nav .lb,.toc-sidebar .toc-label,.toc-group .tg{font-family:var(--mono);font-size:var(--fs-micro);line-height:1.4;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-faint);}
+.schema-panel .label,.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label,.sim .tag{font-family:var(--sans);font-size:var(--fs-small);line-height:1.4;letter-spacing:0;text-transform:none;font-weight:600;color:var(--ink-faint);}
+.progress-bar{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:100;transition:width 80ms linear;}
+.learning-path{position:sticky;top:0;z-index:50;background:rgba(238,241,246,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--rule);padding:14px 40px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-faint);}
+.learning-path .inner{max-width:var(--page-max);margin:0 auto;display:flex;align-items:center;flex-wrap:wrap;gap:2px;}
+.learning-path a{color:var(--ink-faint);text-decoration:none;padding:2px 0;margin:0 4px;}
+.learning-path a:first-child{margin-left:0;}
+.learning-path a:hover{color:var(--acc);}
+.learning-path .sep{color:var(--ink-faint);margin:0 2px;user-select:none;}
+.learning-path .current{color:var(--acc);font-weight:700;}
+.learning-path .plan{color:var(--ink-faint);opacity:.6;}
+.learning-path .spacer{flex:1;}
+.learning-path .jump{margin-left:14px;}
+.page{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:52px;max-width:var(--page-max);margin:0 auto;padding:26px 40px 90px;}
+@media(max-width:1080px){.page{grid-template-columns:1fr;gap:0;padding:18px 22px 64px;}.toc-sidebar{display:none;}}
+article{max-width:var(--measure);min-width:0;}
+.chapter-opener{padding:18px 0 20px;border-bottom:1px solid var(--rule);margin-bottom:24px;}
+.chapter-label{color:var(--ink-faint);margin:0 0 10px;}
+.chapter-opener h1{font-family:var(--sans);font-weight:700;font-size:var(--fs-h1);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;}
+.chapter-opener .recap{font-size:var(--fs-body);color:var(--ink-soft);margin:0;max-width:680px;line-height:1.7;}
+@media(max-width:640px){.chapter-opener h1{font-size:26px;}}
+.schema-panel{border-left:3px solid var(--ink);background:none;padding:2px 0 2px 15px;margin:22px 0 30px -18px;}
+.schema-panel .label{display:block;margin:0 0 10px;}
+.schema-panel ul{list-style:none;padding:0;margin:0;}
+.schema-panel li{padding:3px 0;margin:0;font-size:var(--fs-body);line-height:1.5;color:var(--ink);}
+.schema-panel li::before{content:"—  ";color:var(--ink-faint);}
+article p,article li{font-size:var(--fs-body);line-height:var(--line);color:var(--ink);margin:.9em 0;}
+article strong,article b{font-weight:600;color:var(--ink);}
+article :not(pre)>code{font-family:var(--mono);font-size:var(--fs-small);background:#dbe2ef;padding:1px 5px;border-radius:3px;color:var(--ink-soft);white-space:nowrap;}
+article a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;text-decoration-thickness:1px;transition:color .15s,text-decoration-color .15s;}
+article a:hover{text-decoration-color:var(--acc);}
+.handoff{color:var(--ink-soft);font-size:var(--fs-body);line-height:var(--line);margin:20px 0 6px;}
+.handoff b,.handoff strong{font-weight:inherit;color:inherit;}
+article>ul:not(.checklist),article>ol:not(.steps){list-style:none;padding-left:0;margin:.9em 0;}
+article>ul:not(.checklist)>li,article>ol:not(.steps)>li{position:relative;padding-left:0;margin:.85em 0;line-height:1.55;}
+article>ul:not(.checklist)>li::before{content:"—";position:absolute;left:-18px;color:var(--ink-faint);}
+article>ol:not(.steps){counter-reset:li;}
+article>ol:not(.steps)>li{counter-increment:li;}
+article>ol:not(.steps)>li::before{content:counter(li)".";position:absolute;left:-24px;color:var(--ink-faint);font-family:var(--mono);font-size:var(--fs-small);}
+article h2{font-family:var(--sans);font-weight:700;font-size:var(--fs-h2);line-height:1.3;margin:44px 0 12px;padding-top:18px;border-top:1px solid var(--rule);letter-spacing:-.005em;display:flex;align-items:baseline;gap:12px;}
+article h2 .no{font-family:var(--mono);font-weight:700;font-size:.9em;color:var(--ink);flex:none;}
+article h3{font-family:var(--sans);font-weight:600;font-size:var(--fs-h3);margin:26px 0 8px;}
+.one-liner{font-size:var(--fs-lead);line-height:1.6;color:var(--ink);font-weight:500;margin:12px 0 14px -18px;padding-left:15px;border-left:3px solid var(--ink-faint);}
+.one-liner .en{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);font-weight:400;margin-left:4px;}
+.rationale,.callout,.predict,.challenge{background:none;border-left:3px solid var(--ink-faint);padding:2px 0 2px 15px;margin:var(--gap-block) 0 var(--gap-block) -18px;font-size:var(--fs-body);}
+.rationale>.label,.callout>.label,.predict>.ql,.challenge>.label{display:block;margin:0 0 6px;}
+.rationale p,.callout p,.predict p,.challenge p{margin:6px 0;}
+.rationale>p:last-child,.callout>p:last-child,.predict>p:last-child,.challenge>p:last-child{margin-bottom:0;}
+.callout.warn{border-left-color:var(--acc);}
+.callout.go{border-left-color:var(--acc);}
+.code-block{margin:16px 0;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--surface);}
+.code-block .chead{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;background:var(--bg-edge);border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);}
+.code-block .chead .fn{font-weight:600;letter-spacing:.04em;}
+.code-block .chead .rt{display:flex;align-items:center;gap:12px;}
+.code-block .chead .lang{color:var(--ink-faint);text-transform:uppercase;font-weight:600;letter-spacing:.08em;}
+.code-block .chead .copy{border:none;background:transparent;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);cursor:pointer;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
+.code-block .chead .copy:hover,.code-block .chead .copy.copied{color:var(--acc);}
+.code-block pre{margin:0;padding:15px 16px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.72;color:var(--ink);}
+.tbl{margin:22px 0;width:100%;border-collapse:collapse;font-size:var(--fs-small);}
+.tbl caption{caption-side:bottom;text-align:center;font-family:var(--sans);font-size:var(--fs-small);text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-faint);padding:12px 0 0;}
+.tbl thead th{text-align:left;font-family:var(--sans);font-weight:600;font-size:var(--fs-small);color:var(--ink);padding:11px 14px;border-bottom:1.5px solid var(--ink);}
+.tbl tbody td{padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.65;}
+.tbl tbody tr.sel td:first-child{font-weight:600;}
+.tbl code{white-space:nowrap;}
+.tbl-scroll{overflow-x:auto;}
+figure{margin:26px 0;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px 20px 6px;}
+figure svg{display:block;margin:0 auto;max-width:100%;height:auto;}
+figure svg text{font-family:var(--sans);}
+figcaption{font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);line-height:1.55;}
+figcaption .fig-num{font-family:var(--mono);font-weight:600;color:var(--ink);margin-right:6px;font-size:var(--fs-micro);letter-spacing:.04em;}
+.fig-note{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-soft);text-align:center;margin:16px 0 0;}
+.d-ink{stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
+.d-acc{stroke:var(--acc);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.d-soft{stroke:var(--ink-faint);fill:none;stroke-width:1.1;stroke-dasharray:4 4;}
+.nf{fill:var(--surface);}
+.nf-acc{fill:var(--acc-soft);}
+.nl{font-family:var(--sans);font-size:13px;font-weight:600;fill:var(--ink);}
+.nl-acc{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--acc);}
+.el{font-family:var(--sans);font-size:12px;fill:var(--ink-soft);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.el-acc{font-family:var(--sans);font-size:12px;font-weight:700;fill:var(--acc);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;}
+.box{fill:var(--surface);stroke:var(--ink);stroke-width:1.4;}
+.box-acc{fill:var(--acc-soft);stroke:var(--acc);stroke-width:1.6;}
+.frozen{fill:#eef1f8;stroke:var(--ink-faint);stroke-width:1.3;}
+.dot{fill:var(--ink-soft);} .dot-acc{fill:var(--acc);}
+details{margin:10px 0 0;border-top:1px dashed var(--rule);padding-top:10px;}
+details>summary{cursor:pointer;list-style:none;font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;padding:4px 0;transition:color .15s;user-select:none;display:flex;align-items:center;gap:6px;}
+details>summary::-webkit-details-marker{display:none;}
+details>summary::before{content:"▸";color:var(--ink-faint);font-size:9px;transition:transform .2s,color .15s;}
+details[open]>summary::before{transform:rotate(90deg);color:var(--acc);}
+details>summary:hover,details>summary:hover::before{color:var(--acc);}
+details>*:not(summary){margin-top:8px;padding-left:14px;border-left:1px solid var(--rule);}
+details pre{background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:var(--fs-small);line-height:1.7;margin:8px 0;}
+.steps{padding-left:0;list-style:none;counter-reset:st;}
+.steps>li{position:relative;padding:0 0 18px 40px;margin:0;counter-increment:st;font-size:var(--fs-body);}
+.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:26px;height:26px;box-sizing:border-box;border:1px solid var(--rule);border-radius:50%;font-family:var(--mono);font-size:var(--fs-small);font-weight:600;line-height:1;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;}
+.self-check{margin:20px 0;}
+.checklist{list-style:none;padding:0;margin:12px 0 0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:var(--fs-body);border-bottom:1px solid var(--rule);line-height:1.6;}
+.checklist input{margin-top:4px;accent-color:var(--acc);flex:none;}
+.challenge h3{margin-top:0;font-size:var(--fs-body);}
+.chapter-nav{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-nav a{display:block;padding:12px 14px;border:1px solid var(--rule);border-radius:4px;text-decoration:none;color:var(--ink);transition:border-color .15s;background:var(--surface);}
+.chapter-nav a:hover{border-color:var(--acc);}
+.chapter-nav a.next{text-align:right;}
+.chapter-nav .lb{display:block;margin-bottom:4px;color:var(--ink-faint);}
+.chapter-nav .tt{font-weight:600;font-size:var(--fs-body);}
+.toc-sidebar{position:sticky;top:70px;align-self:start;padding-top:24px;max-height:calc(100vh - 92px);overflow-y:auto;}
+article h2,article [id]{scroll-margin-top:64px;}
+.toc-sidebar .toc-label{color:var(--ink-faint);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--rule);}
+.toc-group{margin-bottom:14px;}
+.toc-group .tg{display:block;color:var(--acc);margin:0 0 4px;}
+.toc-sidebar a{display:block;padding:3px 0 3px 10px;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;transition:all .15s;font-size:var(--fs-micro);line-height:1.5;}
+.toc-sidebar a i{font-family:var(--mono);font-style:normal;color:var(--ink-faint);margin-right:6px;}
+.toc-sidebar a:hover{color:var(--ink);}
+.toc-sidebar a.active{color:var(--acc);border-left-color:var(--acc);font-weight:500;}
+.toc-sidebar a.active i{color:var(--acc);}
+@media(prefers-reduced-motion:no-preference){.chapter-opener{animation:fi 400ms cubic-bezier(.2,.7,.3,1) both;}.schema-panel{animation:fi 400ms 100ms cubic-bezier(.2,.7,.3,1) both;}}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<style data-paper-rollout>
+/* 站点统一:灰蓝卡纸底纹 + 卡面微调 + 外部资源卡组件(2026-08-19)*/
+:root{--surface:#f6f8fc;}                         /* 纯白卡面 → 极淡冷白,和灰蓝纸更融 */
+body{
+  background-color:#e6eaf1;
+  background-image:url("../assets/paper-linen-v3.jpg");
+  background-repeat:repeat;
+  background-size:230px 230px;
+}
+.reslist{margin:16px 0 6px;display:flex;flex-direction:column;gap:14px;}
+.res{border:1px solid var(--rule);border-radius:6px;background:var(--surface);padding:13px 16px 11px;}
+.res.spine-card{border-color:var(--acc);border-left-width:3px;}
+.res .rh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px;}
+.res .rt2{font-weight:600;font-size:var(--fs-body);}
+.res .rt2 a{color:var(--acc);text-decoration:underline;text-decoration-color:rgba(39,67,199,.28);text-underline-offset:2px;}
+.res .spine{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:1px 7px;}
+.res .tags{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;color:var(--ink-faint);margin-left:auto;}
+.res .rrow{display:grid;grid-template-columns:78px 1fr;gap:10px;font-size:var(--fs-small);line-height:1.62;padding:5px 0;border-top:1px solid var(--rule);}
+.res .rk{color:var(--ink-faint);font-weight:600;}
+.res .rv b{color:var(--ink);font-weight:600;}
+@media(max-width:520px){.res .rrow{grid-template-columns:1fr;gap:1px;}.res .tags{margin-left:0;}}
+</style>
+<style data-lab-runner>
+.runner{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:14px 0;background:var(--surface);}
+.runner-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:var(--raise);border-bottom:1px solid var(--rule);}
+.runner-bar .fname{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-faint);margin-right:auto;letter-spacing:.04em;}
+.runner-bar button{font-family:var(--sans);font-size:var(--fs-micro);padding:4px 12px;border-radius:4px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer;}
+.runner-bar button.ghost{background:none;color:var(--acc);}
+.runner textarea{width:100%;box-sizing:border-box;border:0;padding:12px 14px;font-family:var(--mono);font-size:var(--fs-small);line-height:1.65;color:var(--ink);background:var(--surface);resize:vertical;display:block;}
+.runner textarea:focus{outline:2px solid var(--acc);outline-offset:-2px;}
+.runner .runout{margin:0;padding:11px 14px;border-top:1px dashed var(--rule);background:var(--raise);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;color:var(--ink-soft);}
+.runner .runout.err{color:#b3261e;}
+.expect{margin:6px 0 16px;padding:9px 13px;border-left:3px solid var(--acc);background:var(--acc-soft);font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;white-space:pre-wrap;}
+.expect b{font-family:var(--sans);font-size:var(--fs-micro);letter-spacing:.06em;color:var(--acc);display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<main>
+
+  <nav class="learning-path" aria-label="学习路径">
+    <div class="inner">
+      <a href="../index.html">课程首页</a><span class="sep">—</span>
+      <a href="index.html">实验室</a><span class="sep">—</span>
+      <a href="../应用工程/A07-工程化与部署.html">A07</a><span class="sep">—</span>
+      <a href="lab-23-限流与缓存.html" class="current">lab-23 限流与缓存</a>
+
+      <span class="spacer"></span>
+      <a href="#tweak" class="jump">自己改一改</a>
+      <a href="#trouble" class="jump">排错</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <article>
+
+      <header class="chapter-opener">
+        <p class="chapter-label">实验室 · lab-23 · 配套 A07 工程化与部署 · 纯 Python 标准库</p>
+        <h1>限流与缓存:把「能跑」变成「打不垮、烧不穿」</h1>
+        <p class="recap">A07 说从 demo 到产品,差的不是功能,是<b>稳(不崩)、安全(不被刷)、可持续(不烧穿预算)</b>。这一节把其中两件事写成代码:先用两种限流算法接同一段攻击流量,看它们<b>差在哪、各有什么漏洞</b>;再算两种缓存方案一天各省多少钱,结果和直觉相反——<b>「命中就直接返回」的那种,反而省得更少</b>。</p>
+      </header>
+
+      <section class="schema-panel">
+        <p class="label">跑完这个实验,会亲眼看到</p>
+        <ul>
+          <li>同一段突发流量,固定窗口挡掉 9 次、令牌桶只挡 6 次</li>
+          <li>但固定窗口有个漏洞:跨窗口的双突发能 10 次全过</li>
+          <li>令牌桶在同一种攻击下挡掉 4 次——它不看窗口边界</li>
+          <li>整条缓存省 41.4%,前缀缓存省 50.7%,而且前者被长尾拖累</li>
+          <li>不缓存 5.64 元/天,加前缀缓存后 2.78 元/天</li>
+        </ul>
+      </section>
+
+      <div class="callout">
+        <span class="label">配套哪一章</span>
+        <p>配套 <a href="../应用工程/A07-工程化与部署.html">A07</a> 的稳定性、安全与可持续三节;成本和预算的取舍见 <a href="lab-21-幻觉与成本.html">lab-21</a>,日志与治理抓手见 <a href="lab-09-最小harness.html">lab-09</a>。</p>
+      </div>
+
+      <h2 id="how"><span class="no">1</span><span>怎么跑</span></h2>
+      <p>两段都<b>只用 Python 标准库</b>,不装东西、不联网。限流那段用「逻辑时钟」而不是真实时间,所以每次跑结果完全一样——真实系统换成 <code>time.monotonic()</code>,算法一字不改。<b>方式 A</b> 点「▶ 运行」;<b>方式 B</b> 跑 <code>实验室\code\lab23\</code> 下的同名文件。</p>
+
+      <h2 id="goal"><span class="no">2</span><span>要看清的那件事</span></h2>
+      <p>限流和缓存看起来是两件不相干的事,其实回答的是同一个问题:<b>当请求量远超预期时,服务靠什么活下来。</b>限流管「进得来多少」,缓存管「每次要付多少」。这一节两样都算一遍,并各自看清它们的边界在哪。</p>
+
+      <h2 id="s3"><span class="no">3</span><span>限流:两种算法,各有漏洞</span></h2>
+      <p>拿两段攻击流量打同一套限制:一段是瞬时突发,一段卡在窗口边界上。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step1_ratelimit.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="46"># 用「逻辑时钟」而不是真实时间,这样每次跑结果完全一样。
+# 真实系统用 time.monotonic(),逻辑一样。
+
+class FixedWindow:
+    """固定窗口:每 10 秒一个窗口,每窗最多 5 次。简单,但有个经典缺陷。"""
+    def __init__(self, limit, window=10):
+        self.limit, self.window = limit, window
+        self.count, self.win_start = 0, 0
+    def allow(self, t):
+        if t - self.win_start &gt;= self.window:      # 进入新窗口,计数清零
+            self.win_start, self.count = t, 0
+        if self.count &lt; self.limit:
+            self.count += 1
+            return True
+        return False
+
+class TokenBucket:
+    """令牌桶:桶里最多 5 个令牌,每 2 秒补 1 个。允许短暂的突发。"""
+    def __init__(self, capacity=5, refill_every=2):
+        self.capacity, self.refill_every = capacity, refill_every
+        self.tokens, self.last = capacity, 0
+    def allow(self, t):
+        added = (t - self.last) // self.refill_every       # 这段时间该补几个
+        if added:
+            self.tokens = min(self.capacity, self.tokens + added)
+            self.last += added * self.refill_every
+        if self.tokens &gt; 0:
+            self.tokens -= 1
+            return True
+        return False
+
+patterns = {
+    "A 突发":   [0] * 8 + [1, 2, 3, 4, 5, 6],
+    "B 跨窗口": [9] * 5 + [11] * 5,
+}
+
+for pname, traffic in patterns.items():
+    print(f"流量模式 {pname}:共 {len(traffic)} 次请求,时间点 {traffic}")
+    for name, lim in [("固定窗口", FixedWindow(5)), ("令牌桶", TokenBucket())]:
+        ok = [lim.allow(t) for t in traffic]
+        blocked = [i + 1 for i, v in enumerate(ok) if not v]
+        tail = f"被挡:{blocked}" if blocked else "全部放行"
+        print(f"   {name}   通过 {sum(ok):>2}/{len(traffic)}   {tail}")
+    print()
+
+print("两个模式各暴露一件事:")
+print("   模式 A(突发):固定窗口挡掉 9 次,令牌桶只挡 6 次。")
+print("     同一段流量,固定窗口明显更严 —— 它只数「这个窗口里发了几次」,")
+print("     不管请求是均匀来的还是挤在一瞬间来的。")
+print("   模式 B(跨窗口):固定窗口把 10 次全部放行了,令牌桶挡掉 4 次。")
+print("     固定窗口在第 10 秒把计数清零了 —— 于是 t=9 的 5 次和 t=11 的 5 次")
+print("     落在两个窗口里,各自合法,合起来却是在 3 秒内打了 10 次。")
+print("     这是它的经典缺陷:限制的是「每个窗口内的次数」,不是「任意 10 秒内的次数」。")
+print("     令牌桶没被绕过去,因为它按时间补令牌,压根不看窗口边界在哪。")
+print()
+print("这就是 A07 说的「稳」:限流不是把用户挡在外面,是让服务在被打的时候还能喘气。")
+print("而选哪种算法,取决于业务能不能容忍突发、以及需不需要防住这种边界绕过。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>流量模式 A 突发:共 14 次请求,时间点 [0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6]
+   固定窗口   通过  5/14   被挡:[6, 7, 8, 9, 10, 11, 12, 13, 14]
+   令牌桶   通过  8/14   被挡:[6, 7, 8, 9, 11, 13]
+
+流量模式 B 跨窗口:共 10 次请求,时间点 [9, 9, 9, 9, 9, 11, 11, 11, 11, 11]
+   固定窗口   通过 10/10   全部放行
+   令牌桶   通过  6/10   被挡:[7, 8, 9, 10]
+
+两个模式各暴露一件事:
+   模式 A(突发):固定窗口挡掉 9 次,令牌桶只挡 6 次。
+     同一段流量,固定窗口明显更严 —— 它只数「这个窗口里发了几次」,
+     不管请求是均匀来的还是挤在一瞬间来的。
+   模式 B(跨窗口):固定窗口把 10 次全部放行了,令牌桶挡掉 4 次。
+     固定窗口在第 10 秒把计数清零了 —— 于是 t=9 的 5 次和 t=11 的 5 次
+     落在两个窗口里,各自合法,合起来却是在 3 秒内打了 10 次。
+     这是它的经典缺陷:限制的是「每个窗口内的次数」,不是「任意 10 秒内的次数」。
+     令牌桶没被绕过去,因为它按时间补令牌,压根不看窗口边界在哪。
+
+这就是 A07 说的「稳」:限流不是把用户挡在外面,是让服务在被打的时候还能喘气。
+而选哪种算法,取决于业务能不能容忍突发、以及需不需要防住这种边界绕过。</div>
+      <p>两段流量各揭一件事,合起来才是完整的判断依据。<b>模式 A 说明固定窗口太死板</b>:正常用户的几次连续操作,在它眼里和攻击没区别,直接挡掉。<b>模式 B 说明固定窗口还能被绕过</b>:只要把请求卡在窗口交界处,10 次全过——<b>它限制的是「每个窗口内几次」,不是「任意 10 秒内几次」</b>,这两句话听起来差不多,实际差很远。<br>令牌桶两种情况下都表现正常:桶里存着令牌,所以允许合理的瞬时突发;令牌按时间补,所以不看窗口在哪,绕不过去。<b>代价是它要维护一个状态(当前几个令牌、上次补充时间)</b>——分布式部署时这个状态得共享,工程复杂度就上来了。这就是 A07 里那句「选一条最短的能上线路径走通」的意思:先用简单的,被打疼了再换。</p>
+
+      <h2 id="s4"><span class="no">4</span><span>缓存:反直觉的那一格</span></h2>
+      <p>一天 1000 次请求,流量是「四成热门 + 六成长尾」。三种方案各算一遍成本。</p>
+      <div class="runner">
+        <div class="runner-bar"><span class="fname">step2_cache.py</span>
+          <button class="btn sm run" type="button">▶ 运行</button>
+          <button class="btn ghost sm reset" type="button">重置</button></div>
+        <textarea class="code" spellcheck="false" rows="42"># 模拟一天的请求。固定随机种子,保证每次跑结果一样。
+import random
+random.seed(0)
+
+TOTAL = 1000
+HOT = ["怎么调亮度", "保修几年", "灯自己灭了", "能定时吗", "怎么连接手机"]
+
+# 真实客服流量是「少量热门 + 长长一条长尾」:
+# 大约四成落在那 5 个热门问题上,其余六成各问各的,基本不重复。
+day = []
+for i in range(TOTAL):
+    if random.random() &lt; 0.4:
+        day.append(random.choice(HOT))          # 热门的,高度重复
+    else:
+        day.append(f"长尾问题_{i}")              # 长尾的,每个只出现一次
+
+SYSTEM, DOCS, QUESTION, ANSWER = 320, 1800, 40, 400
+PRICE_IN, PRICE_OUT = 1.5 / 1e6, 6.0 / 1e6
+PREFIX_DISCOUNT = 0.1        # 命中前缀缓存的那部分输入,按 10% 计价
+
+def cost(inp, out):
+    return inp * PRICE_IN + out * PRICE_OUT
+
+base_in = SYSTEM + DOCS + QUESTION
+no_cache = TOTAL * cost(base_in, ANSWER)
+
+# ---- 方案 1:整条缓存(问题 + 上下文完全相同才算命中) ----
+seen, hits1, cost1 = set(), 0, 0.0
+for q in day:
+    if q in seen:
+        hits1 += 1                    # 命中,直接返回,这次一分钱不花
+    else:
+        seen.add(q)
+        cost1 += cost(base_in, ANSWER)
+
+# ---- 方案 2:前缀缓存(系统提示 + 资料 固定,这部分输入按折价算) ----
+fixed = SYSTEM + DOCS
+cost2 = TOTAL * cost(fixed * PREFIX_DISCOUNT + QUESTION, ANSWER)
+
+print(f"一天 {TOTAL} 次请求:约四成落在 5 个热门问题上,其余是长尾(各问一次)。\n")
+print(f"{'方案':<22}{'一天成本':>11}{'省下':>9}   说明")
+print(f"{'0 不缓存':<20}{no_cache:>11.4f}{'—':>9}   每次都全价")
+print(f"{'1 整条缓存':<19}{cost1:>11.4f}{(1-cost1/no_cache):>8.1%}   命中 {hits1} 次,命中就直接返回不调模型")
+print(f"{'2 前缀缓存':<19}{cost2:>11.4f}{(1-cost2/no_cache):>8.1%}   每次都调模型,但固定前缀按一折算")
+
+top5 = sum(1 for q in day if q in HOT)
+print(f"\n流量构成:热门问题 {top5} 次({top5/TOTAL:.1%}),长尾 {TOTAL-top5} 次({(TOTAL-top5)/TOTAL:.1%})")
+
+print("\n这张表里最反直觉的一格:整条缓存的命中率被长尾拖住了。")
+print(f"   热门问题来了 {top5} 次,但每种第一次都得真调,所以真正省下的只有 {hits1} 次")
+print(f"   ({(1-cost1/no_cache):.1%});长尾那 {TOTAL-top5} 次一次也省不到。")
+print("   而前缀缓存不管问题重复不重复 —— 只要系统提示和资料一样就算命中,")
+print(f"   所以它一次不落地省下 {(1-cost2/no_cache):.1%},反而比整条缓存省得多。")
+
+print("\n两者的长处完全不同,所以真实系统两个一起上:")
+print("   整条缓存:命中就完全不出钱、延迟还低,但要求问题一字不差;")
+print("   前缀缓存:命中门槛低、覆盖面广,但每次仍要调模型,只是那一段打折。")
+print("   一个捡「几乎一样的请求」,一个覆盖「所有请求的固定部分」,互补。")
+
+print("\n这也是 A07 说的「可持续」:不是砍功能,是把每次都得付的那笔固定开销压下来。")</textarea>
+        <pre class="runout">点「▶ 运行」后,输出显示在这里</pre>
+      </div>
+      <div class="expect"><b>应该看到</b>一天 1000 次请求:约四成落在 5 个热门问题上,其余是长尾(各问一次)。
+
+方案                           一天成本       省下   说明
+0 不缓存                    5.6400        —   每次都全价
+1 整条缓存                  3.3050   41.4%   命中 414 次,命中就直接返回不调模型
+2 前缀缓存                  2.7780   50.7%   每次都调模型,但固定前缀按一折算
+
+流量构成:热门问题 419 次(41.9%),长尾 581 次(58.1%)
+
+这张表里最反直觉的一格:整条缓存的命中率被长尾拖住了。
+   热门问题来了 419 次,但每种第一次都得真调,所以真正省下的只有 414 次
+   (41.4%);长尾那 581 次一次也省不到。
+   而前缀缓存不管问题重复不重复 —— 只要系统提示和资料一样就算命中,
+   所以它一次不落地省下 50.7%,反而比整条缓存省得多。
+
+两者的长处完全不同,所以真实系统两个一起上:
+   整条缓存:命中就完全不出钱、延迟还低,但要求问题一字不差;
+   前缀缓存:命中门槛低、覆盖面广,但每次仍要调模型,只是那一段打折。
+   一个捡「几乎一样的请求」,一个覆盖「所有请求的固定部分」,互补。
+
+这也是 A07 说的「可持续」:不是砍功能,是把每次都得付的那笔固定开销压下来。</div>
+      <p>那一格反直觉的数字是 <b>41.4% vs 50.7%</b>:看起来「命中就完全免费」的整条缓存,反而省得更少。原因全在长尾——<b>581 次长尾请求,整条缓存一次都救不了</b>,因为它们各自只出现一次;而前缀缓存不管问题重复不重复,只要前面那一大段固定内容一样就算命中。<br>这个结论有个很实际的含义:<b>做缓存之前先看流量分布。</b>如果是客服机器人那种高度重复的场景,整条缓存很划算;如果是开放问答那种长尾为主的场景,前缀缓存才是主力。<b>不看清流量就上缓存,很可能优化了个寂寞。</b><br>还有一点容易被忽略:限流和缓存在一起才是完整的防护——限流挡住恶意的量,缓存压低正常的本。只有其中一个,服务都会在某个方向上被打穿。</p>
+
+      <h2 id="tweak"><span class="no">5</span><span>自己改一改</span></h2>
+      <div class="challenge">
+        <span class="label">改完再跑一次,预测一下会变成什么样</span>
+        <p><b>①</b> 第 1 步把 <code>FixedWindow</code> 的 <code>window</code> 从 10 改成 3 再跑模式 B。<b>它还会被绕过吗?</b>——窗口越短,这个漏洞越难利用,但代价是正常用户也更容易撞上限。<br>
+        <b>②</b> 第 1 步把令牌桶的 <code>capacity</code> 从 5 改成 1。模式 A 会变成什么样?——<b>桶越大越宽容,桶为 1 时它退化成「匀速放行」。</b><br>
+        <b>③</b> 第 1 步在 <code>patterns</code> 里加一个「匀速」模式 <code>[0,2,4,6,8,10]</code>,看两种算法怎么处理规规矩矩的流量。<b>固定窗口这次公平吗?</b><br>
+        <b>④</b> 第 2 步把热门流量占比从 <code>0.4</code> 改成 <code>0.8</code> 再跑。整条缓存会反超吗?<b>到多少才反超?</b>这决定了「该上哪种缓存」。<br>
+        <b>⑤</b> 第 2 步把 <code>PREFIX_DISCOUNT</code> 从 0.1 改成 0.5(缓存打折没那么狠),再看前缀缓存的优势。<b>这个折扣是厂商定的,不是技术定的。</b></p>
+      </div>
+
+      <h2 id="trouble"><span class="no">6</span><span>排错</span></h2>
+      <div class="tbl-scroll">
+        <table class="tbl">
+          <thead><tr><th>现象</th><th>原因</th><th>怎么办</th></tr></thead>
+          <tbody>
+            <tr><td>限流那段每次跑结果不一样</td><td>用了 <code>time.time()</code> 这类真实时钟</td><td>换回代码里的「逻辑时钟」(直接传时间点);真实系统才需要真实时钟</td></tr>
+            <tr><td>令牌桶的令牌数变成负数</td><td>补充逻辑算错了,<code>last</code> 没跟着往前走</td><td>检查 <code>self.last += added * self.refill_every</code> 有没有漏</td></tr>
+            <tr><td>缓存那段每次都略有不同</td><td><code>random.seed</code> 被删了</td><td>加回 <code>random.seed(0)</code>;比的是相对差距,不要求绝对一致</td></tr>
+            <tr><td>前缀缓存省的钱算出来超过 100%</td><td><code>PREFIX_DISCOUNT</code> 被设成了负数或大于 1</td><td>折扣是「按原价的百分之几算」,取值在 0 到 1 之间</td></tr>
+            <tr><td>整条缓存省了 99%</td><td>流量里只有几个问题,几乎全命中(不真实)</td><td>加长尾;真实流量的重复率没那么高,见改一改 ④</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="close"><span class="no">7</span><span>收口</span></h2>
+      <p class="handoff">这一节把 A07 那句话拆成了两组数字。「稳」是限流给的:同样一段攻击流量,固定窗口会把正常用户一起挡掉、还会被跨窗口绕过,令牌桶则两种情况下都稳——<b>但算法复杂度是要还的,分布式部署时那个桶的状态得共享。</b>「可持续」是缓存给的:一天 5.64 元压到 2.78 元,但<b>省得多不多,取决于流量是重复的还是一长条长尾</b>。<br>两条结论的共同点是同一个思路:<b>先看清流量的形状,再决定上什么机制。</b>不看流量就上缓存、不看攻击方式就选限流算法,都会在真实压力下露出破绽。</p>
+
+      <nav class="chapter-nav">
+        <a href="../应用工程/A07-工程化与部署.html"><span class="lb">回讲义</span><span class="tt">A07 工程化与部署</span></a>
+        <a href="../台账/学习台账.html" class="next"><span class="lb">记一笔</span><span class="tt">学习台账</span></a>
+      </nav>
+
+    </article>
+
+    <aside class="toc-sidebar" aria-label="本实验目录">
+      <p class="toc-label">lab-23 · 目录</p>
+      <div class="toc-group">
+        <span class="tg">准备</span>
+        <a data-toc-target="how" href="#how"><i>1</i>怎么跑</a>
+        <a data-toc-target="goal" href="#goal"><i>2</i>要看清什么</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">动手</span>
+        <a data-toc-target="s3" href="#s3"><i>3</i>限流:两种算法</a>
+        <a data-toc-target="s4" href="#s4"><i>4</i>缓存:反直觉的一格</a>
+      </div>
+      <div class="toc-group">
+        <span class="tg">收尾</span>
+        <a data-toc-target="tweak" href="#tweak"><i>5</i>自己改一改</a>
+        <a data-toc-target="trouble" href="#trouble"><i>6</i>排错</a>
+        <a data-toc-target="close" href="#close"><i>7</i>收口</a>
+      </div>
+    </aside>
+  </div>
+
+</main>
+
+<script>
+var progress=document.getElementById('progress');
+function updateProgress(){var h=document.documentElement;var max=h.scrollHeight-h.clientHeight;progress.style.width=(max>0?(h.scrollTop/max)*100:0)+'%';}
+window.addEventListener('scroll',updateProgress,{passive:true});
+window.addEventListener('resize',updateProgress);updateProgress();
+var tocLinks=document.querySelectorAll('.toc-sidebar a[data-toc-target]');
+var tocByCid=new Map();tocLinks.forEach(function(a){tocByCid.set(a.dataset.tocTarget,a);});
+var sectionEls=Array.from(tocByCid.keys()).map(function(id){return document.getElementById(id);}).filter(Boolean);
+var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){var link=tocByCid.get(e.target.id);if(!link)return;if(e.isIntersecting){tocLinks.forEach(function(a){a.classList.remove('active');});link.classList.add('active');}});},{rootMargin:'-25% 0px -65% 0px',threshold:0});
+sectionEls.forEach(function(el){obs.observe(el);});
+document.querySelectorAll('.code-block .copy').forEach(function(btn){btn.addEventListener('click',function(){var pre=btn.closest('.code-block').querySelector('pre');if(!pre)return;navigator.clipboard.writeText(pre.innerText).then(function(){var o=btn.textContent;btn.textContent='已复制';btn.classList.add('copied');setTimeout(function(){btn.textContent=o;btn.classList.remove('copied');},1400);}).catch(function(){btn.textContent='失败';setTimeout(function(){btn.textContent='复制';},1400);});});});
+</script>
+<script src="../assets/lab-runner.js"></script>
+<script src="../assets/study-tracker.js" data-ch="lab-23" data-kind="lab" data-title="限流与缓存:把「能跑」变成「打不垮、烧不穿」"></script>
+</body>
+</html>
